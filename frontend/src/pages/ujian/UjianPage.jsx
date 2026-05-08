@@ -379,12 +379,22 @@ const UjianPage = () => {
           .print-only { display: none; }
         }
         @media print {
-          @page { size: A5; margin: 15mm; }
-          body { background: white; margin: 0; padding: 0; }
-          .no-print, .sidebar, .navbar, .modal-overlay, .page-header, .stat-card, .btn-primary, .card { display: none !important; }
-          .print-only { display: block !important; }
-          .flex-col { gap: 0 !important; }
-          .a5-card { width: 100%; max-width: 148mm; margin: 0 auto; padding: 20px; border: 2px solid #000; border-radius: 8px; background: #fff; font-family: serif; }
+          @page { size: A5 portrait; margin: 15mm; }
+          body * {
+            visibility: hidden;
+          }
+          #print-kartu-tes, #print-kartu-tes * {
+            visibility: visible;
+          }
+          #print-kartu-tes {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+          }
+          .a5-card { width: 100%; max-width: 148mm; margin: 0 auto; padding: 20px; border: 1px solid #000; border-radius: 0; background: #fff; font-family: 'Times New Roman', serif; }
         }
       `}</style>
     </div>
