@@ -122,43 +122,117 @@ const UjianPage = () => {
   return (
     <div className="flex-col gap-6 w-full relative">
       {printSantri && (
-        <div id="print-kartu-tes" className="print-only">
+        <div id="print-kartu-tes" className="print-only" style={{ fontFamily: 'Arial, sans-serif' }}>
           <div className="a5-card">
-            <div className="card-header text-center border-b-2 border-black pb-2 mb-4">
-              <h1 className="font-bold text-xl uppercase">KARTU TES KENAIKAN JILID</h1>
-              <p className="text-sm">TPQ ANFAK AL AZIZAH</p>
-            </div>
-            <div className="card-body">
-              <table className="w-full text-sm mb-4">
-                <tbody>
-                  <tr><td className="py-1 w-32">Nama Lengkap</td><td>: <strong>{printSantri.santri?.nama_lengkap}</strong></td></tr>
-                  <tr><td className="py-1">NIS</td><td>: {printSantri.santri?.nomor_induk}</td></tr>
-                  <tr><td className="py-1">Kelas Asal</td><td>: {printSantri.santri?.kelas?.nama_kelas || printSantri.kelas?.nama_kelas}</td></tr>
-                  <tr><td className="py-1">Tanggal Tes</td><td>: _________________</td></tr>
-                </tbody>
-              </table>
-              <div className="border border-black p-4 min-h-[150px]">
-                <h3 className="font-bold mb-2">Penilaian:</h3>
-                <div className="flex gap-4 mb-2">
-                  <div className="w-4 h-4 border border-black rounded-sm"></div> Lulus
-                </div>
-                <div className="flex gap-4">
-                  <div className="w-4 h-4 border border-black rounded-sm"></div> Remidi / Mengulang
-                </div>
-                <div className="mt-8">
-                  <p>Catatan Penguji:</p>
-                  <p className="border-b border-black border-dotted mt-4"></p>
-                  <p className="border-b border-black border-dotted mt-4"></p>
+            
+            {/* Header Section */}
+            <div className="flex items-center gap-4 mb-4">
+              <img src="/assets/logoapp.png" alt="Logo" className="w-16 h-16 object-contain" />
+              <div className="flex-1 text-left">
+                <p className="text-xs font-bold leading-tight">YAYASAN MAJELIS PENDIDIKAN ISLAM</p>
+                <h1 className="font-bold text-2xl tracking-wide leading-tight">ANFAK AL AZIZIAH</h1>
+                <p className="text-[9px] leading-tight mt-1">Akta Notaris 04 Tgl 3 Juli 2007, No. Induk 02-06-04-001</p>
+                <p className="text-[9px] leading-tight">Alamat : Tepus Wetan, Surodadi, Candimulyo, Magelang 56191</p>
+              </div>
+              <div className="w-16 h-20 border-2 border-gray-200 rounded-b-full flex items-center justify-center p-1">
+                <div className="w-full h-14 bg-black text-white rounded-full flex items-center justify-center text-xs overflow-hidden">
+                  <span className="text-[8px]">Qiraati</span>
                 </div>
               </div>
             </div>
-            <div className="mt-8 flex justify-end">
-              <div className="text-center w-40">
-                <p>Penguji,</p>
-                <br /><br /><br />
-                <p>(_________________)</p>
-              </div>
+
+            {/* Title Section */}
+            <div className="text-center mb-4">
+              <h2 className="font-bold text-lg uppercase tracking-wider">KARTU TES KENAIKAN JILID</h2>
+              <p className="text-xs uppercase mt-1">TGL INPUT : {new Date().toLocaleString('id-ID', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':')}</p>
             </div>
+
+            {/* Main Table */}
+            <table className="w-full text-sm print-table border-collapse border border-black mb-4">
+              <tbody>
+                <tr>
+                  <td colSpan="2" className="p-2 border border-black font-bold text-base align-middle">
+                    NOMOR : TES/{new Date().getFullYear().toString().slice(2)}/{String(new Date().getMonth()+1).padStart(2, '0')}/{String(printSantri.id || printSantri.santri_id).padStart(3, '0')}
+                  </td>
+                  <td className="w-14 text-center border border-black text-[10px] align-top pt-1 pb-6">IKL</td>
+                  <td className="w-14 text-center border border-black text-[10px] align-top pt-1 pb-6">IA</td>
+                  <td className="w-14 text-center border border-black text-[10px] align-top pt-1 pb-6">SCAN</td>
+                </tr>
+                <tr>
+                  <td className="p-1.5 px-2 border border-black w-36">Nomor Induk</td>
+                  <td colSpan="4" className="p-1.5 px-2 border border-black">{printSantri.santri?.nomor_induk || '-'}</td>
+                </tr>
+                <tr>
+                  <td className="p-1.5 px-2 border border-black">Nama Lengkap</td>
+                  <td colSpan="4" className="p-1.5 px-2 border border-black">{printSantri.santri?.nama_lengkap || '-'}</td>
+                </tr>
+                <tr>
+                  <td className="p-1.5 px-2 border border-black">Kelas</td>
+                  <td colSpan="4" className="p-1.5 px-2 border border-black">{printSantri.santri?.kelas?.nama_kelas || printSantri.kelas?.nama_kelas || '-'}</td>
+                </tr>
+                <tr>
+                  <td className="p-1.5 px-2 border border-black">Tanggal Mulai</td>
+                  <td colSpan="4" className="p-1.5 px-2 border border-black">{printSantri.tanggal_mulai ? new Date(printSantri.tanggal_mulai).toLocaleDateString('id-ID') : '-'}</td>
+                </tr>
+                <tr>
+                  <td className="p-1.5 px-2 border border-black">Tanggal Selesai</td>
+                  <td colSpan="4" className="p-1.5 px-2 border border-black">{printSantri.tanggal_selesai ? new Date(printSantri.tanggal_selesai).toLocaleDateString('id-ID') : '-'}</td>
+                </tr>
+                <tr>
+                  <td className="p-1.5 px-2 border border-black">Masa Tempuh</td>
+                  <td colSpan="4" className="p-1.5 px-2 border border-black">{printSantri.aktual_hari || 0} hari</td>
+                </tr>
+                <tr>
+                  <td className="p-1.5 px-2 border border-black">Tagihan Syahriyah</td>
+                  <td colSpan="2" className="p-1.5 px-2 border border-black w-1/2"></td>
+                  <td colSpan="2" className="p-1.5 px-2 border border-black w-1/2"></td>
+                </tr>
+                <tr>
+                  <td className="p-1.5 px-2 border border-black align-top h-14">Keterangan</td>
+                  <td colSpan="4" className="p-1.5 px-2 border border-black"></td>
+                </tr>
+                <tr>
+                  <td className="p-1.5 px-2 border border-black">Tanggal Tes</td>
+                  <td colSpan="2" className="p-1.5 px-2 border border-black w-1/2"></td>
+                  <td colSpan="2" className="p-1.5 px-2 border border-black w-1/2"></td>
+                </tr>
+                <tr>
+                  <td className="p-1.5 px-2 border border-black">Tanggal Naik</td>
+                  <td colSpan="4" className="p-1.5 px-2 border border-black"></td>
+                </tr>
+                <tr>
+                  <td className="p-1.5 px-2 border border-black font-bold">NAIK/TIDAK NAIK</td>
+                  <td colSpan="4" className="p-1.5 px-2 border border-black"></td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Signature Table */}
+            <table className="w-full text-sm border-collapse border border-black mt-2">
+              <tbody>
+                <tr>
+                  <td className="border border-black text-center p-2 align-top w-1/4 h-24 relative">
+                    <p className="text-xs">Wali Santri</p>
+                    <p className="absolute bottom-2 left-0 w-full text-xs">(.........................)</p>
+                  </td>
+                  <td className="border border-black text-center p-2 align-top w-1/4 h-24 relative">
+                    <p className="text-xs">Wali Kelas</p>
+                    <p className="absolute bottom-2 left-0 w-full text-xs font-semibold px-1 truncate">
+                      {printSantri.santri?.kelas?.wali_kelas?.nama_lengkap || '__________________'}
+                    </p>
+                  </td>
+                  <td className="border border-black text-center p-2 align-top w-1/4 h-24 relative">
+                    <p className="text-xs">Kepala Lembaga</p>
+                    <p className="absolute bottom-2 left-0 w-full text-xs">(.........................)</p>
+                  </td>
+                  <td className="border border-black text-center p-2 align-top w-1/4 h-24 relative">
+                    <p className="text-xs">Wali Kelas Baru</p>
+                    <p className="absolute bottom-2 left-0 w-full text-xs">(.........................)</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
           </div>
         </div>
       )}
