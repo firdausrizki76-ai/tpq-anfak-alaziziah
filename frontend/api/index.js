@@ -314,14 +314,26 @@ app.delete('/api/guru/:id', async (req, res) => {
 // ==================== KELAS ====================
 app.get('/api/kelas', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('kelas').select('*').order('urutan');
+    const { data, error } = await supabase.from('kelas')
+      .select('*, wali_kelas:wali_kelas_id(id, nama_lengkap)')
+      .order('urutan');
     if (error) throw error;
+    
     // Get santri count per kelas
     const { data: counts } = await supabase.from('santri').select('kelas_id').eq('status', 'aktif');
     const countMap = {};
     (counts || []).forEach(s => { countMap[s.kelas_id] = (countMap[s.kelas_id] || 0) + 1; });
+    
     const enriched = (data || []).map(k => ({ ...k, jumlah_santri: countMap[k.id] || 0 }));
     ok(res, enriched);
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+app.post('/api/kelas', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('kelas').insert(req.body).select().single();
+    if (error) throw error;
+    ok(res, data, 'Kelas berhasil ditambahkan');
   } catch (e) { fail(res, e.message, 500); }
 });
 
