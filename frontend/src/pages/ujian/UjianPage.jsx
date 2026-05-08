@@ -220,21 +220,21 @@ const UjianPage = () => {
               <tbody>
                 <tr>
                   <td style={{ width: '25%', height: '80px', verticalAlign: 'top', textAlign: 'center', padding: '5px' }}>
-                    <div style={{ marginBottom: '40px' }}>Wali Santri</div>
+                    <div style={{ marginBottom: '30px' }}>Wali Santri</div>
                     <div>(.........................)</div>
                   </td>
                   <td style={{ width: '25%', height: '80px', verticalAlign: 'top', textAlign: 'center', padding: '5px' }}>
-                    <div style={{ marginBottom: '40px' }}>Wali Kelas</div>
+                    <div style={{ marginBottom: '30px' }}>Wali Kelas</div>
                     <div style={{ fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {printSantri.santri?.kelas?.wali_kelas?.nama_lengkap || '__________________'}
                     </div>
                   </td>
                   <td style={{ width: '25%', height: '80px', verticalAlign: 'top', textAlign: 'center', padding: '5px' }}>
-                    <div style={{ marginBottom: '40px' }}>Kepala Lembaga</div>
+                    <div style={{ marginBottom: '30px' }}>Kepala Lembaga</div>
                     <div>(.........................)</div>
                   </td>
                   <td style={{ width: '25%', height: '80px', verticalAlign: 'top', textAlign: 'center', padding: '5px' }}>
-                    <div style={{ marginBottom: '40px' }}>Wali Kelas Baru</div>
+                    <div style={{ marginBottom: '30px' }}>Wali Kelas Baru</div>
                     <div>(.........................)</div>
                   </td>
                 </tr>
@@ -387,13 +387,15 @@ const UjianPage = () => {
           .print-only { display: none; }
         }
         @media print {
-          @page { size: A5 portrait; margin: 15mm; }
-          body * {
-            visibility: hidden;
-          }
-          #print-kartu-tes, #print-kartu-tes * {
-            visibility: visible;
-          }
+          @page { size: A5 portrait; margin: 10mm; }
+          
+          /* Hide everything by default */
+          body * { visibility: hidden; }
+          
+          /* Show only the print container and its contents */
+          #print-kartu-tes, #print-kartu-tes * { visibility: visible; }
+          
+          /* Position the print container and force parents to be visible but not show their own content */
           #print-kartu-tes {
             position: absolute;
             left: 0;
@@ -402,9 +404,34 @@ const UjianPage = () => {
             margin: 0;
             padding: 0;
           }
-          .a5-card { width: 100%; max-width: 148mm; margin: 0 auto; padding: 15px; border: 1px solid #000; border-radius: 0; background: #fff; font-family: 'Times New Roman', serif; }
-          .ptable { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-          .ptable th, .ptable td { border: 1px solid #000 !important; padding: 6px 10px; font-size: 11px; vertical-align: middle; }
+          
+          /* Crucial: parents must not clip or hide the absolute child */
+          html, body, #root, .app-layout, .main-wrapper, .content-area, .content-container, .flex-col {
+            visibility: visible !important;
+            overflow: visible !important;
+            height: auto !important;
+            min-height: 0 !important;
+            position: static !important;
+            display: block !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          .a5-card { 
+            width: 100%; 
+            max-width: 148mm; 
+            margin: 0 auto; 
+            padding: 10px; 
+            border: 1px solid #000; 
+            background: #fff; 
+            font-family: 'Times New Roman', serif; 
+            box-sizing: border-box;
+          }
+          
+          .ptable { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+          .ptable th, .ptable td { border: 1px solid #000 !important; padding: 4px 8px; font-size: 11px; vertical-align: middle; }
         }
       `}</style>
     </div>
