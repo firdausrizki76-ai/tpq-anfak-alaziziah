@@ -300,7 +300,6 @@ const UjianPage = () => {
           </div>
         </div></div>
       )}
-    </div>
       <style>{`
         @media screen {
           .print-only { display: none; }
