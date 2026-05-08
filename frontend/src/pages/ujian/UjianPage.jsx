@@ -126,17 +126,17 @@ const UjianPage = () => {
           <div className="a5-card">
             
             {/* Header Section */}
-            <div className="flex items-center gap-4 mb-4">
-              <img src="/assets/logoapp.png" alt="Logo" className="w-16 h-16 object-contain" />
-              <div className="flex-1 text-left">
+            <div className="flex items-center gap-4 mb-4" style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+              <img src="/assets/logoapp.png" alt="Logo" style={{ width: '64px', height: '64px', objectFit: 'contain', flexShrink: 0 }} />
+              <div style={{ flex: 1, textAlign: 'left', paddingLeft: '16px' }}>
                 <p className="text-xs font-bold leading-tight">YAYASAN MAJELIS PENDIDIKAN ISLAM</p>
                 <h1 className="font-bold text-2xl tracking-wide leading-tight">ANFAK AL AZIZIAH</h1>
                 <p className="text-[9px] leading-tight mt-1">Akta Notaris 04 Tgl 3 Juli 2007, No. Induk 02-06-04-001</p>
                 <p className="text-[9px] leading-tight">Alamat : Tepus Wetan, Surodadi, Candimulyo, Magelang 56191</p>
               </div>
-              <div className="w-16 h-20 border-2 border-gray-200 rounded-b-full flex items-center justify-center p-1">
-                <div className="w-full h-14 bg-black text-white rounded-full flex items-center justify-center text-xs overflow-hidden">
-                  <span className="text-[8px]">Qiraati</span>
+              <div style={{ width: '64px', height: '80px', border: '2px solid #e5e7eb', borderBottomLeftRadius: '9999px', borderBottomRightRadius: '9999px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', flexShrink: 0 }}>
+                <div style={{ width: '100%', height: '56px', backgroundColor: '#000', color: '#fff', borderRadius: '9999px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  <span style={{ fontSize: '8px' }}>Qiraati</span>
                 </div>
               </div>
             </div>
