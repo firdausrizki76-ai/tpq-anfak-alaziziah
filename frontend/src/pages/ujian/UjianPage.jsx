@@ -122,112 +122,120 @@ const UjianPage = () => {
   return (
     <div className="flex-col gap-6 w-full relative">
       {printSantri && (
-        <div id="print-kartu-tes" className="print-only" style={{ fontFamily: 'Arial, sans-serif' }}>
+        <div id="print-kartu-tes" className="print-only">
           <div className="a5-card">
             
-            {/* Header Section */}
-            <div className="flex items-center gap-4 mb-4" style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
-              <img src="/assets/logoapp.png" alt="Logo" style={{ width: '64px', height: '64px', objectFit: 'contain', flexShrink: 0 }} />
-              <div style={{ flex: 1, textAlign: 'left', paddingLeft: '16px' }}>
-                <p className="text-xs font-bold leading-tight">YAYASAN MAJELIS PENDIDIKAN ISLAM</p>
-                <h1 className="font-bold text-2xl tracking-wide leading-tight">ANFAK AL AZIZIAH</h1>
-                <p className="text-[9px] leading-tight mt-1">Akta Notaris 04 Tgl 3 Juli 2007, No. Induk 02-06-04-001</p>
-                <p className="text-[9px] leading-tight">Alamat : Tepus Wetan, Surodadi, Candimulyo, Magelang 56191</p>
-              </div>
-              <div style={{ width: '64px', height: '80px', border: '2px solid #e5e7eb', borderBottomLeftRadius: '9999px', borderBottomRightRadius: '9999px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', flexShrink: 0 }}>
-                <div style={{ width: '100%', height: '56px', backgroundColor: '#000', color: '#fff', borderRadius: '9999px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                  <span style={{ fontSize: '8px' }}>Qiraati</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Title Section */}
-            <div className="text-center mb-4">
-              <h2 className="font-bold text-lg uppercase tracking-wider">KARTU TES KENAIKAN JILID</h2>
-              <p className="text-xs uppercase mt-1">TGL INPUT : {new Date().toLocaleString('id-ID', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':')}</p>
-            </div>
-
-            {/* Main Table */}
-            <table className="w-full text-sm print-table border-collapse border border-black mb-4">
+            {/* Header Table for perfect alignment */}
+            <table style={{ width: '100%', marginBottom: '15px', borderCollapse: 'collapse', border: 'none' }}>
               <tbody>
                 <tr>
-                  <td colSpan="2" className="p-2 border border-black font-bold text-base align-middle">
-                    NOMOR : TES/{new Date().getFullYear().toString().slice(2)}/{String(new Date().getMonth()+1).padStart(2, '0')}/{String(printSantri.id || printSantri.santri_id).padStart(3, '0')}
+                  <td style={{ width: '70px', verticalAlign: 'top', border: 'none', padding: 0 }}>
+                    <img src="/assets/logoapp.png" alt="Logo" style={{ width: '65px', height: '65px', objectFit: 'contain' }} />
                   </td>
-                  <td className="w-14 text-center border border-black text-[10px] align-top pt-1 pb-6">IKL</td>
-                  <td className="w-14 text-center border border-black text-[10px] align-top pt-1 pb-6">IA</td>
-                  <td className="w-14 text-center border border-black text-[10px] align-top pt-1 pb-6">SCAN</td>
-                </tr>
-                <tr>
-                  <td className="p-1.5 px-2 border border-black w-36">Nomor Induk</td>
-                  <td colSpan="4" className="p-1.5 px-2 border border-black">{printSantri.santri?.nomor_induk || '-'}</td>
-                </tr>
-                <tr>
-                  <td className="p-1.5 px-2 border border-black">Nama Lengkap</td>
-                  <td colSpan="4" className="p-1.5 px-2 border border-black">{printSantri.santri?.nama_lengkap || '-'}</td>
-                </tr>
-                <tr>
-                  <td className="p-1.5 px-2 border border-black">Kelas</td>
-                  <td colSpan="4" className="p-1.5 px-2 border border-black">{printSantri.santri?.kelas?.nama_kelas || printSantri.kelas?.nama_kelas || '-'}</td>
-                </tr>
-                <tr>
-                  <td className="p-1.5 px-2 border border-black">Tanggal Mulai</td>
-                  <td colSpan="4" className="p-1.5 px-2 border border-black">{printSantri.tanggal_mulai ? new Date(printSantri.tanggal_mulai).toLocaleDateString('id-ID') : '-'}</td>
-                </tr>
-                <tr>
-                  <td className="p-1.5 px-2 border border-black">Tanggal Selesai</td>
-                  <td colSpan="4" className="p-1.5 px-2 border border-black">{printSantri.tanggal_selesai ? new Date(printSantri.tanggal_selesai).toLocaleDateString('id-ID') : '-'}</td>
-                </tr>
-                <tr>
-                  <td className="p-1.5 px-2 border border-black">Masa Tempuh</td>
-                  <td colSpan="4" className="p-1.5 px-2 border border-black">{printSantri.aktual_hari || 0} hari</td>
-                </tr>
-                <tr>
-                  <td className="p-1.5 px-2 border border-black">Tagihan Syahriyah</td>
-                  <td colSpan="2" className="p-1.5 px-2 border border-black w-1/2"></td>
-                  <td colSpan="2" className="p-1.5 px-2 border border-black w-1/2"></td>
-                </tr>
-                <tr>
-                  <td className="p-1.5 px-2 border border-black align-top h-14">Keterangan</td>
-                  <td colSpan="4" className="p-1.5 px-2 border border-black"></td>
-                </tr>
-                <tr>
-                  <td className="p-1.5 px-2 border border-black">Tanggal Tes</td>
-                  <td colSpan="2" className="p-1.5 px-2 border border-black w-1/2"></td>
-                  <td colSpan="2" className="p-1.5 px-2 border border-black w-1/2"></td>
-                </tr>
-                <tr>
-                  <td className="p-1.5 px-2 border border-black">Tanggal Naik</td>
-                  <td colSpan="4" className="p-1.5 px-2 border border-black"></td>
-                </tr>
-                <tr>
-                  <td className="p-1.5 px-2 border border-black font-bold">NAIK/TIDAK NAIK</td>
-                  <td colSpan="4" className="p-1.5 px-2 border border-black"></td>
+                  <td style={{ textAlign: 'center', verticalAlign: 'top', border: 'none', padding: 0 }}>
+                    <div style={{ fontSize: '11px', fontWeight: 'bold' }}>YAYASAN MAJELIS PENDIDIKAN ISLAM</div>
+                    <div style={{ fontSize: '22px', fontWeight: '900', letterSpacing: '1px', marginTop: '2px', marginBottom: '2px' }}>ANFAK AL AZIZIAH</div>
+                    <div style={{ fontSize: '9px' }}>Akta Notaris 04 Tgl 3 Juli 2007, No. Induk 02-06-04-001</div>
+                    <div style={{ fontSize: '9px' }}>Alamat : Tepus Wetan, Surodadi, Candimulyo, Magelang 56191</div>
+                  </td>
+                  <td style={{ width: '70px', verticalAlign: 'top', border: 'none', padding: 0, textAlign: 'right' }}>
+                    <div style={{ width: '60px', height: '70px', border: '1px solid #ccc', borderBottomLeftRadius: '30px', borderBottomRightRadius: '30px', display: 'inline-block', textAlign: 'center', padding: '3px', boxSizing: 'border-box' }}>
+                      <div style={{ background: '#000', color: '#fff', height: '52px', borderRadius: '26px', fontSize: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                        Qiraati
+                      </div>
+                    </div>
+                  </td>
                 </tr>
               </tbody>
             </table>
 
-            {/* Signature Table */}
-            <table className="w-full text-sm border-collapse border border-black mt-2">
+            {/* Title Section */}
+            <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', letterSpacing: '0.5px' }}>KARTU TES KENAIKAN JILID</div>
+              <div style={{ fontSize: '10px', textTransform: 'uppercase', marginTop: '3px' }}>TGL INPUT : {new Date().toLocaleString('id-ID', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':')}</div>
+            </div>
+
+            {/* Main Data Table */}
+            <table className="ptable">
               <tbody>
                 <tr>
-                  <td className="border border-black text-center p-2 align-top w-1/4 h-24 relative">
-                    <p className="text-xs">Wali Santri</p>
-                    <p className="absolute bottom-2 left-0 w-full text-xs">(.........................)</p>
+                  <td colSpan="2" style={{ fontWeight: 'bold', fontSize: '13px', verticalAlign: 'middle' }}>
+                    NOMOR : TES/{new Date().getFullYear().toString().slice(2)}/{String(new Date().getMonth()+1).padStart(2, '0')}/{printSantri.santri?.nomor_induk?.slice(-3) || '001'}
                   </td>
-                  <td className="border border-black text-center p-2 align-top w-1/4 h-24 relative">
-                    <p className="text-xs">Wali Kelas</p>
-                    <p className="absolute bottom-2 left-0 w-full text-xs font-semibold px-1 truncate">
+                  <td style={{ width: '50px', textAlign: 'center', verticalAlign: 'top', fontSize: '10px', height: '35px' }}>IKL</td>
+                  <td style={{ width: '50px', textAlign: 'center', verticalAlign: 'top', fontSize: '10px' }}>IA</td>
+                  <td style={{ width: '50px', textAlign: 'center', verticalAlign: 'top', fontSize: '10px' }}>SCAN</td>
+                </tr>
+                <tr>
+                  <td style={{ width: '120px' }}>Nomor Induk</td>
+                  <td colSpan="4">{printSantri.santri?.nomor_induk || '-'}</td>
+                </tr>
+                <tr>
+                  <td>Nama Lengkap</td>
+                  <td colSpan="4">{printSantri.santri?.nama_lengkap || '-'}</td>
+                </tr>
+                <tr>
+                  <td>Kelas</td>
+                  <td colSpan="4">{printSantri.santri?.kelas?.nama_kelas || printSantri.kelas?.nama_kelas || '-'}</td>
+                </tr>
+                <tr>
+                  <td>Tanggal Mulai</td>
+                  <td colSpan="4">{printSantri.tanggal_mulai ? new Date(printSantri.tanggal_mulai).toLocaleDateString('id-ID') : '-'}</td>
+                </tr>
+                <tr>
+                  <td>Tanggal Selesai</td>
+                  <td colSpan="4">{printSantri.tanggal_selesai ? new Date(printSantri.tanggal_selesai).toLocaleDateString('id-ID') : '-'}</td>
+                </tr>
+                <tr>
+                  <td>Masa Tempuh</td>
+                  <td colSpan="4">{printSantri.aktual_hari || 0} hari</td>
+                </tr>
+                <tr>
+                  <td>Tagihan Syahriyah</td>
+                  <td colSpan="2" style={{ width: '50%' }}></td>
+                  <td colSpan="2" style={{ width: '50%' }}></td>
+                </tr>
+                <tr>
+                  <td style={{ height: '50px', verticalAlign: 'top' }}>Keterangan</td>
+                  <td colSpan="4"></td>
+                </tr>
+                <tr>
+                  <td>Tanggal Tes</td>
+                  <td colSpan="2" style={{ width: '50%' }}></td>
+                  <td colSpan="2" style={{ width: '50%' }}></td>
+                </tr>
+                <tr>
+                  <td>Tanggal Naik</td>
+                  <td colSpan="4"></td>
+                </tr>
+                <tr>
+                  <td style={{ fontWeight: 'bold' }}>NAIK/TIDAK NAIK</td>
+                  <td colSpan="4"></td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Signatures Table */}
+            <table className="ptable" style={{ marginTop: '10px' }}>
+              <tbody>
+                <tr>
+                  <td style={{ width: '25%', height: '80px', verticalAlign: 'top', textAlign: 'center', padding: '5px' }}>
+                    <div style={{ marginBottom: '40px' }}>Wali Santri</div>
+                    <div>(.........................)</div>
+                  </td>
+                  <td style={{ width: '25%', height: '80px', verticalAlign: 'top', textAlign: 'center', padding: '5px' }}>
+                    <div style={{ marginBottom: '40px' }}>Wali Kelas</div>
+                    <div style={{ fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {printSantri.santri?.kelas?.wali_kelas?.nama_lengkap || '__________________'}
-                    </p>
+                    </div>
                   </td>
-                  <td className="border border-black text-center p-2 align-top w-1/4 h-24 relative">
-                    <p className="text-xs">Kepala Lembaga</p>
-                    <p className="absolute bottom-2 left-0 w-full text-xs">(.........................)</p>
+                  <td style={{ width: '25%', height: '80px', verticalAlign: 'top', textAlign: 'center', padding: '5px' }}>
+                    <div style={{ marginBottom: '40px' }}>Kepala Lembaga</div>
+                    <div>(.........................)</div>
                   </td>
-                  <td className="border border-black text-center p-2 align-top w-1/4 h-24 relative">
-                    <p className="text-xs">Wali Kelas Baru</p>
-                    <p className="absolute bottom-2 left-0 w-full text-xs">(.........................)</p>
+                  <td style={{ width: '25%', height: '80px', verticalAlign: 'top', textAlign: 'center', padding: '5px' }}>
+                    <div style={{ marginBottom: '40px' }}>Wali Kelas Baru</div>
+                    <div>(.........................)</div>
                   </td>
                 </tr>
               </tbody>
@@ -394,7 +402,9 @@ const UjianPage = () => {
             margin: 0;
             padding: 0;
           }
-          .a5-card { width: 100%; max-width: 148mm; margin: 0 auto; padding: 20px; border: 1px solid #000; border-radius: 0; background: #fff; font-family: 'Times New Roman', serif; }
+          .a5-card { width: 100%; max-width: 148mm; margin: 0 auto; padding: 15px; border: 1px solid #000; border-radius: 0; background: #fff; font-family: 'Times New Roman', serif; }
+          .ptable { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+          .ptable th, .ptable td { border: 1px solid #000 !important; padding: 6px 10px; font-size: 11px; vertical-align: middle; }
         }
       `}</style>
     </div>
