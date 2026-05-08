@@ -1,0 +1,233 @@
+.dashboard-page {
+  width: 100%;
+}
+
+.page-title {
+  font-size: 28px;
+  color: var(--color-primary-container);
+  margin-bottom: 4px;
+}
+
+.page-subtitle {
+  color: var(--color-on-surface-variant);
+}
+
+.grid-4-cols {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.grid-2-cols {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .grid-4-cols {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-4-cols, .grid-2-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-card {
+  padding: 24px;
+}
+
+.stat-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-on-surface-variant);
+}
+
+.stat-icon-wrapper {
+  background-color: var(--color-surface-container-low);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  color: var(--color-gold);
+}
+
+.stat-value {
+  font-family: var(--font-family-display);
+  font-size: 28px;
+  color: var(--color-on-surface);
+  margin-bottom: 8px;
+}
+
+.stat-subtext {
+  font-size: 13px;
+  color: var(--color-outline);
+}
+
+.trend-icon {
+  color: var(--color-surface-tint);
+}
+
+.card-title {
+  font-family: var(--font-family-display);
+  font-size: 18px;
+  color: var(--color-primary-container);
+}
+
+/* Mock Charts */
+.mock-chart {
+  height: 200px;
+  border-bottom: 1px solid var(--color-surface-container-highest);
+  padding-bottom: 12px;
+}
+
+.chart-bar-wrapper {
+  height: 100%;
+  width: 8%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.chart-bar {
+  width: 100%;
+  background: linear-gradient(to top, var(--color-primary-container), var(--color-inverse-primary));
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  transition: height 1s ease-out;
+}
+
+.chart-bar.alt {
+  background: linear-gradient(to top, var(--color-gold), var(--color-secondary-fixed));
+}
+
+/* Tables */
+.table-responsive {
+  overflow-x: auto;
+}
+
+.data-table {
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.data-table th {
+  padding: 16px;
+  font-weight: 600;
+  color: var(--color-on-surface-variant);
+  border-bottom: 2px solid var(--color-surface-container-high);
+  font-size: 14px;
+}
+
+.data-table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-surface-container-high);
+  color: var(--color-on-surface);
+  font-size: 15px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-success {
+  background-color: #E6F4EA;
+  color: #137333;
+}
+
+.badge-info {
+  background-color: var(--color-primary-fixed);
+  color: var(--color-on-primary-fixed);
+}
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-container {
+  background-color: white;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: slideUp 0.3s ease-out;
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-surface-container-high);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title {
+  font-family: var(--font-family-display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-primary-container);
+}
+
+.modal-close {
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.modal-close:hover {
+  color: var(--color-on-surface);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 20px 24px;
+  border-top: 1px solid var(--color-surface-container-high);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-on-surface-variant);
+  margin-bottom: 8px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

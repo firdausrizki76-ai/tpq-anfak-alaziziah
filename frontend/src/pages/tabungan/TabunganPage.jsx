@@ -1,0 +1,134 @@
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, ArrowDownCircle, ArrowUpCircle, X, Save, Users, CreditCard, Calendar, Wallet, Loader2 } from 'lucide-react';
+import { tabunganAPI, santriAPI } from '../../services/api';
+import '../dashboard/Dashboard.css';
+
+const TabunganPage = () => {
+  const [santriData, setSantriData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeModal, setActiveModal] = useState(null);
+  const [selectedSantri, setSelectedSantri] = useState(null);
+  const [formData, setFormData] = useState({ santri_id: '', nominal: '', tanggal: new Date().toISOString().split('T')[0], keterangan: '' });
+
+  useEffect(() => { loadData(); }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try { const data = await tabunganAPI.getAll(); setSantriData(data || []); } catch (e) { console.error(e); }
+    setLoading(false);
+  };
+
+  const openModal = (type, santri = null) => {
+    setActiveModal(type);
+    if (santri) { setSelectedSantri(santri); setFormData(prev => ({ ...prev, santri_id: santri.id })); }
+    else { setSelectedSantri(null); setFormData({ santri_id: '', nominal: '', tanggal: new Date().toISOString().split('T')[0], keterangan: '' }); }
+  };
+
+  const closeModal = () => { setActiveModal(null); setSelectedSantri(null); };
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'santri_id' && value) { const s = santriData.find(s => s.id === value); setSelectedSantri(s); }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault(); setSaving(true);
+    try {
+      await tabunganAPI.transact({ santri_id: formData.santri_id, jenis: activeModal, nominal: parseInt(formData.nominal), tanggal: formData.tanggal, keterangan: formData.keterangan });
+      await loadData(); closeModal();
+    } catch (e) { alert(e.message); }
+    setSaving(false);
+  };
+
+  const formatRp = (n) => `Rp ${(n||0).toLocaleString('id-ID')}`;
+  const totalSaldo = santriData.reduce((s, d) => s + (d.saldo || 0), 0);
+
+  return (
+    <div className="flex-col gap-6 w-full">
+      <div className="page-header mb-6 flex justify-between items-center flex-wrap gap-4">
+        <div><h1 className="page-title">Tabungan Santri</h1><p className="page-subtitle">Pencatatan setoran dan penarikan tabungan santri</p></div>
+        <div className="flex gap-2">
+          <button className="btn-primary" style={{ backgroundColor: 'white', color: 'var(--color-primary-container)', border: '1px solid var(--color-surface-container-highest)', borderBottom: '2px solid var(--color-gold)' }} onClick={() => openModal('tarik')}><ArrowUpCircle size={18} /> Tarik</button>
+          <button className="btn-primary" onClick={() => openModal('setor')}><ArrowDownCircle size={18} /> Setor</button>
+        </div>
+      </div>
+
+      <div className="card w-full">
+        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
+          <div className="input-with-icon" style={{ maxWidth: '300px', width: '100%' }}>
+            <Search className="icon" size={18} />
+            <input type="text" className="input-field" placeholder="Cari nama santri..." />
+          </div>
+          <div className="font-semibold text-lg text-[var(--color-primary-container)] bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-100 flex items-center gap-2">
+            <Wallet className="text-emerald-600" size={20} />
+            Total Saldo: <span className="text-emerald-700">{formatRp(totalSaldo)}</span>
+          </div>
+        </div>
+
+        <div className="table-responsive">
+          <table className="data-table w-full">
+            <thead><tr><th>No</th><th>NIS</th><th>Nama</th><th>Kelas</th><th>Saldo</th><th className="text-center">Aksi</th></tr></thead>
+            <tbody>
+              {loading ? <tr><td colSpan="6" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
+              : santriData.length === 0 ? <tr><td colSpan="6" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data tabungan</td></tr>
+              : santriData.map((s, i) => (
+                <tr key={s.id}>
+                  <td>{i+1}</td><td>{s.nomor_induk}</td><td className="font-medium">{s.nama_lengkap}</td>
+                  <td>{s.kelas?.nama_kelas || '-'}</td>
+                  <td className="font-bold text-emerald-700">{formatRp(s.saldo)}</td>
+                  <td className="flex justify-center gap-2">
+                    <button className="p-1 px-3 text-sm bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded font-medium" onClick={() => openModal('setor', s)}>Setor</button>
+                    <button className="p-1 px-3 text-sm bg-orange-100 text-orange-700 hover:bg-orange-200 rounded font-medium" onClick={() => openModal('tarik', s)}>Tarik</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {(activeModal === 'setor' || activeModal === 'tarik') && (
+        <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '450px' }}>
+          <div className="modal-header">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${activeModal === 'setor' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'}`}>
+                {activeModal === 'setor' ? <ArrowDownCircle size={24} /> : <ArrowUpCircle size={24} />}
+              </div>
+              <h2 className="modal-title">{activeModal === 'setor' ? 'Setor Tabungan' : 'Tarik Tabungan'}</h2>
+            </div>
+            <X className="modal-close" onClick={closeModal} />
+          </div>
+          <form onSubmit={handleSubmit}><div className="modal-body"><div className="space-y-4">
+            <div className="form-group"><label className="form-label">Pilih Santri</label>
+              <select name="santri_id" className="input-field" value={formData.santri_id} onChange={handleInputChange} required disabled={!!selectedSantri}>
+                <option value="">-- Pilih --</option>
+                {santriData.map(s => <option key={s.id} value={s.id}>{s.nama_lengkap} ({s.kelas?.nama_kelas})</option>)}
+              </select>
+            </div>
+            {selectedSantri && (
+              <div className="bg-gray-50 p-3 rounded-lg border flex justify-between items-center">
+                <span className="text-sm text-gray-600 flex items-center gap-2"><Wallet size={16} /> Saldo</span>
+                <span className="font-bold text-emerald-700">{formatRp(selectedSantri.saldo)}</span>
+              </div>
+            )}
+            <div className="form-group"><label className="form-label">Nominal (Rp)</label>
+              <input type="number" name="nominal" className="input-field" value={formData.nominal} onChange={handleInputChange} placeholder="50000" required />
+              {activeModal === 'tarik' && selectedSantri && parseInt(formData.nominal) > (selectedSantri.saldo||0) && <p className="text-xs text-red-500 mt-1">Saldo tidak mencukupi!</p>}
+            </div>
+            <div className="form-group"><label className="form-label">Tanggal</label><input type="date" name="tanggal" className="input-field" value={formData.tanggal} onChange={handleInputChange} /></div>
+            <div className="form-group"><label className="form-label">Keterangan</label><textarea name="keterangan" className="input-field" rows="2" style={{ resize: 'none' }} value={formData.keterangan} onChange={handleInputChange}></textarea></div>
+          </div></div>
+          <div className="modal-footer">
+            <button type="button" className="btn-primary" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={closeModal}>Batal</button>
+            <button type="submit" className="btn-primary" style={{ backgroundColor: activeModal === 'setor' ? '#10b981' : '#f59e0b' }} disabled={saving || (activeModal === 'tarik' && selectedSantri && parseInt(formData.nominal) > (selectedSantri.saldo||0))}>
+              <Save size={18} /> Konfirmasi
+            </button>
+          </div></form>
+        </div></div>
+      )}
+    </div>
+  );
+};
+
+export default TabunganPage;
