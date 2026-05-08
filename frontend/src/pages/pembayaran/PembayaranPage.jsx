@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, Printer, CheckCircle, AlertCircle, X, Save, Receipt, CreditCard, Calendar, Users, Settings, Loader2 } from 'lucide-react';
+import { Search, Filter, Plus, Printer, CheckCircle, AlertCircle, X, Save, Receipt, CreditCard, Calendar, Users, Settings, Loader2, MessageCircle } from 'lucide-react';
 import { pembayaranAPI, santriAPI, jenisPembayaranAPI, kelasAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 
@@ -129,6 +129,18 @@ const PembayaranPage = () => {
     }, 100);
   };
 
+  const handleWA = (p) => {
+    const hp = p.santri?.no_hp_wali;
+    if (!hp) { alert('Nomor HP wali santri tidak tersedia'); return; }
+    const cleanHp = hp.replace(/\D/g, '');
+    const waNumber = cleanHp.startsWith('0') ? '62' + cleanHp.substring(1) : cleanHp;
+    const nama_tagihan = p.jenis?.nama || p.jenis_pembayaran?.nama || 'Tagihan';
+    const message = p.status === 'lunas' 
+      ? `Assalamualaikum Wr. Wb.\n\nTerima kasih, pembayaran *${nama_tagihan}* an. *${p.santri?.nama_lengkap}* periode *${p.bulan}/${p.tahun}* sebesar *${formatRp(p.nominal)}* telah LUNAS kami terima.\n\nTerima kasih atas kerja samanya.\n\nSalam,\n*TPQ Anfak Al Azizah*`
+      : `Assalamualaikum Wr. Wb.\n\nMohon maaf sekadar mengingatkan, tagihan *${nama_tagihan}* an. *${p.santri?.nama_lengkap}* periode *${p.bulan}/${p.tahun}* sebesar *${formatRp(p.nominal)}* saat ini statusnya BELUM LUNAS.\n\nMohon untuk segera diselesaikan. Terima kasih.\n\nSalam,\n*TPQ Anfak Al Azizah*`;
+    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
   return (
     <div className="flex-col gap-6 w-full">
       {/* Kwitansi Area (Visible only in Print) */}
@@ -190,7 +202,10 @@ const PembayaranPage = () => {
                   <td>{p.bulan}/{p.tahun}</td>
                   <td>{formatRp(p.nominal)}</td>
                   <td>{p.status === 'lunas' ? <span className="flex items-center gap-1 text-emerald-600 text-sm font-semibold"><CheckCircle size={16} /> Lunas</span> : <span className="flex items-center gap-1 text-orange-600 text-sm font-semibold"><AlertCircle size={16} /> Belum</span>}</td>
-                  <td className="text-center">{p.status === 'lunas' && <button className="p-2 text-blue-600 hover:bg-blue-50 rounded" onClick={() => handlePrint(p)}><Printer size={18} /></button>}</td>
+                  <td className="text-center flex justify-center gap-2">
+                    {p.status === 'lunas' && <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Cetak Kwitansi" onClick={() => handlePrint(p)}><Printer size={18} /></button>}
+                    <button className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded" title="Kirim Pesan WA" onClick={() => handleWA(p)}><MessageCircle size={18} /></button>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, CalendarCheck, LogOut, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, CalendarCheck, LogOut, Bell, PiggyBank } from 'lucide-react';
 import './TeacherLayout.css';
 
 const TeacherLayout = () => {
@@ -10,7 +10,8 @@ const TeacherLayout = () => {
   const menuItems = [
     { path: '/guru/dashboard', icon: <LayoutDashboard size={24} />, label: 'Beranda' },
     { path: '/guru/kelas', icon: <Users size={24} />, label: 'Kelas' },
-    { path: '/guru/absen', icon: <CalendarCheck size={24} />, label: 'Absen' }
+    { path: '/guru/absen', icon: <CalendarCheck size={24} />, label: 'Absen' },
+    { path: '/guru/tabungan', icon: <PiggyBank size={24} />, label: 'Tabungan' }
   ];
 
   return (

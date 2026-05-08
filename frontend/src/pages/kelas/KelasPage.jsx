@@ -5,19 +5,27 @@ import '../dashboard/Dashboard.css';
 
 const KelasPage = () => {
   const [kelasList, setKelasList] = useState([]);
+  const [guruList, setGuruList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
   const [selectedKelas, setSelectedKelas] = useState(null);
   const [santriInKelas, setSantriInKelas] = useState([]);
   const [loadingSantri, setLoadingSantri] = useState(false);
-  const [formData, setFormData] = useState({ deskripsi: '' });
+  const [formData, setFormData] = useState({ deskripsi: '', wali_kelas_id: '' });
 
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     setLoading(true);
-    try { const data = await kelasAPI.getAll(); setKelasList(data || []); } catch (e) { console.error(e); }
+    try { 
+      const [data, guruData] = await Promise.all([
+        kelasAPI.getAll().catch(() => []),
+        guruAPI.getAll().catch(() => [])
+      ]);
+      setKelasList(data || []); 
+      setGuruList(guruData || []);
+    } catch (e) { console.error(e); }
     setLoading(false);
   };
 
@@ -28,7 +36,7 @@ const KelasPage = () => {
   };
 
   const openEdit = (kelas) => {
-    setSelectedKelas(kelas); setFormData({ deskripsi: kelas.deskripsi || '' }); setActiveModal('edit');
+    setSelectedKelas(kelas); setFormData({ deskripsi: kelas.deskripsi || '', wali_kelas_id: kelas.wali_kelas_id || '' }); setActiveModal('edit');
   };
 
   const closeModal = () => { setActiveModal(null); setSelectedKelas(null); setSantriInKelas([]); };
@@ -65,12 +73,13 @@ const KelasPage = () => {
 
         <div className="table-responsive">
           <table className="data-table w-full">
-            <thead><tr><th>Urutan</th><th>Kode Kelas</th><th>Nama Kelas</th><th>Jumlah Santri</th><th className="text-center">Aksi</th></tr></thead>
+            <thead><tr><th>Urutan</th><th>Kode Kelas</th><th>Nama Kelas</th><th>Wali Kelas</th><th>Jumlah Santri</th><th className="text-center">Aksi</th></tr></thead>
             <tbody>
-              {loading ? <tr><td colSpan="5" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
+              {loading ? <tr><td colSpan="6" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
               : kelasList.map(kelas => (
                 <tr key={kelas.id}>
                   <td>{kelas.urutan}</td><td>{kelas.kode_kelas}</td><td className="font-medium">{kelas.nama_kelas}</td>
+                  <td>{kelas.wali_kelas?.nama_lengkap || '-'}</td>
                   <td>{kelas.jumlah_santri || 0} Santri</td>
                   <td className="flex justify-center gap-2">
                     <button className="p-2 text-blue-600 hover:bg-blue-50 rounded" title="Lihat Santri" onClick={() => openViewSantri(kelas)}><Users size={18} /></button>
@@ -86,7 +95,14 @@ const KelasPage = () => {
       {activeModal === 'edit' && selectedKelas && (
         <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '450px' }}>
           <div className="modal-header"><h2 className="modal-title">Edit Kelas: {selectedKelas.nama_kelas}</h2><X className="modal-close" onClick={closeModal} /></div>
-          <form onSubmit={handleSubmit}><div className="modal-body">
+          <form onSubmit={handleSubmit}><div className="modal-body space-y-4">
+            <div className="form-group">
+              <label className="form-label">Wali Kelas</label>
+              <select name="wali_kelas_id" value={formData.wali_kelas_id} onChange={handleInputChange} className="input-field">
+                <option value="">-- Pilih Wali Kelas --</option>
+                {guruList.map(g => <option key={g.id} value={g.id}>{g.nama_lengkap}</option>)}
+              </select>
+            </div>
             <div className="form-group"><label className="form-label">Deskripsi</label><textarea name="deskripsi" value={formData.deskripsi} onChange={handleInputChange} className="input-field" rows="3" style={{ resize: 'none' }}></textarea></div>
           </div>
           <div className="modal-footer">

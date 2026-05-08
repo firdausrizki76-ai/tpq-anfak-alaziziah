@@ -10,7 +10,7 @@ const GuruPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeModal, setActiveModal] = useState(null);
   const [selectedGuru, setSelectedGuru] = useState(null);
-  const [formData, setFormData] = useState({ nip: '', nama_lengkap: '', jabatan: '', no_hp: '', email: '', alamat: '', status: 'aktif', jenis_kelamin: 'L' });
+  const [formData, setFormData] = useState({ nip: '', nama_lengkap: '', jabatan: '', jenis_kelamin: 'L', tempat_lahir: '', tanggal_lahir: '', nik: '', no_kk: '', alamat: '', rt: '', rw: '', nama_ibu: '', no_hp: '', email: '', status: 'aktif' });
   const [files, setFiles] = useState({ foto: null, kk: null, ktp: null, ijazah: null });
 
   useEffect(() => { loadData(); }, []);
@@ -30,15 +30,22 @@ const GuruPage = () => {
         nip: guru.nip||'', 
         nama_lengkap: guru.nama_lengkap||'', 
         jabatan: guru.jabatan||'', 
+        jenis_kelamin: guru.jenis_kelamin||'L',
+        tempat_lahir: guru.tempat_lahir||'',
+        tanggal_lahir: guru.tanggal_lahir||'',
+        nik: guru.nik||'',
+        no_kk: guru.no_kk||'',
+        alamat: guru.alamat||'', 
+        rt: guru.rt||'',
+        rw: guru.rw||'',
+        nama_ibu: guru.nama_ibu||'',
         no_hp: guru.no_hp||'', 
         email: guru.email||'', 
-        alamat: guru.alamat||'', 
-        status: guru.status||'aktif', 
-        jenis_kelamin: guru.jenis_kelamin||'L' 
+        status: guru.status||'aktif'
       }); 
     }
     else { 
-      setFormData({ nip: '', nama_lengkap: '', jabatan: '', no_hp: '', email: '', alamat: '', status: 'aktif', jenis_kelamin: 'L' }); 
+      setFormData({ nip: '', nama_lengkap: '', jabatan: '', jenis_kelamin: 'L', tempat_lahir: '', tanggal_lahir: '', nik: '', no_kk: '', alamat: '', rt: '', rw: '', nama_ibu: '', no_hp: '', email: '', status: 'aktif' }); 
     }
   };
 
@@ -155,14 +162,33 @@ const GuruPage = () => {
           <div className="modal-header"><h2 className="modal-title">{activeModal === 'add' ? 'Tambah Guru Baru' : 'Edit Data Guru'}</h2><X className="modal-close" onClick={closeModal} /></div>
           <form onSubmit={handleSubmit}>
             <div className="modal-body">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-2">
+                <div className="col-span-2"><h3 className="font-bold text-gray-700 border-b pb-2">Data Pegawai</h3></div>
                 <div className="form-group"><label className="form-label">NIP</label><input type="text" name="nip" value={formData.nip} onChange={handleInputChange} className="input-field" required /></div>
                 <div className="form-group"><label className="form-label">Nama Lengkap</label><input type="text" name="nama_lengkap" value={formData.nama_lengkap} onChange={handleInputChange} className="input-field" required /></div>
                 <div className="form-group"><label className="form-label">Jabatan</label><input type="text" name="jabatan" value={formData.jabatan} onChange={handleInputChange} className="input-field" required /></div>
+                <div className="form-group"><label className="form-label">Status</label><select name="status" value={formData.status} onChange={handleInputChange} className="input-field"><option value="aktif">Aktif</option><option value="nonaktif">Nonaktif</option></select></div>
+
+                <div className="col-span-2 mt-2"><h3 className="font-bold text-gray-700 border-b pb-2">Data Pribadi</h3></div>
+                <div className="form-group">
+                  <label className="form-label">Jenis Kelamin</label>
+                  <select name="jenis_kelamin" value={formData.jenis_kelamin} onChange={handleInputChange} className="input-field">
+                    <option value="L">Laki-laki</option>
+                    <option value="P">Perempuan</option>
+                  </select>
+                </div>
+                <div className="form-group"><label className="form-label">No. KK</label><input type="text" name="no_kk" value={formData.no_kk} onChange={handleInputChange} className="input-field" /></div>
+                <div className="form-group"><label className="form-label">Tempat Lahir</label><input type="text" name="tempat_lahir" value={formData.tempat_lahir} onChange={handleInputChange} className="input-field" /></div>
+                <div className="form-group"><label className="form-label">Tanggal Lahir</label><input type="date" name="tanggal_lahir" value={formData.tanggal_lahir} onChange={handleInputChange} className="input-field" /></div>
+                <div className="form-group"><label className="form-label">NIK</label><input type="text" name="nik" value={formData.nik} onChange={handleInputChange} className="input-field" /></div>
+                <div className="form-group"><label className="form-label">Nama Ibu Kandung</label><input type="text" name="nama_ibu" value={formData.nama_ibu} onChange={handleInputChange} className="input-field" /></div>
+
+                <div className="col-span-2 mt-2"><h3 className="font-bold text-gray-700 border-b pb-2">Kontak & Alamat</h3></div>
                 <div className="form-group"><label className="form-label">No. Telepon</label><input type="text" name="no_hp" value={formData.no_hp} onChange={handleInputChange} className="input-field" /></div>
                 <div className="form-group"><label className="form-label">Email</label><input type="email" name="email" value={formData.email} onChange={handleInputChange} className="input-field" /></div>
-                <div className="form-group"><label className="form-label">Status</label><select name="status" value={formData.status} onChange={handleInputChange} className="input-field"><option value="aktif">Aktif</option><option value="nonaktif">Nonaktif</option></select></div>
-                <div className="form-group col-span-2"><label className="form-label">Alamat</label><textarea name="alamat" value={formData.alamat} onChange={handleInputChange} className="input-field" rows="2" style={{ resize: 'none' }}></textarea></div>
+                <div className="form-group col-span-2"><label className="form-label">Alamat Lengkap</label><textarea name="alamat" value={formData.alamat} onChange={handleInputChange} className="input-field" rows="2" style={{ resize: 'none' }}></textarea></div>
+                <div className="form-group"><label className="form-label">RT</label><input type="text" name="rt" value={formData.rt} onChange={handleInputChange} className="input-field" /></div>
+                <div className="form-group"><label className="form-label">RW</label><input type="text" name="rw" value={formData.rw} onChange={handleInputChange} className="input-field" /></div>
                 
                 {/* Upload Section */}
                 <div className="col-span-2 pt-4 mt-2 border-t border-gray-100">
@@ -210,13 +236,31 @@ const GuruPage = () => {
               <p className="text-gray-500">{selectedGuru.nip}</p>
               <span className={`mt-2 badge ${selectedGuru.status === 'aktif' ? 'badge-success' : ''}`}>{selectedGuru.status}</span>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"><Briefcase size={20} className="text-gray-400" /><div><p className="text-xs text-gray-500">Jabatan</p><p className="font-medium text-gray-800">{selectedGuru.jabatan}</p></div></div>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"><Phone size={20} className="text-gray-400" /><div><p className="text-xs text-gray-500">No. Telepon</p><p className="font-medium text-gray-800">{selectedGuru.no_hp || '-'}</p></div></div>
               </div>
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"><Mail size={20} className="text-gray-400" /><div><p className="text-xs text-gray-500">Email</p><p className="font-medium text-gray-800">{selectedGuru.email || '-'}</p></div></div>
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"><MapPin size={20} className="text-gray-400" /><div><p className="text-xs text-gray-500">Alamat</p><p className="font-medium text-gray-800">{selectedGuru.alamat || '-'}</p></div></div>
+
+              <div className="bg-gray-50 p-3 rounded-lg text-sm">
+                <h4 className="font-semibold text-gray-700 mb-2 border-b pb-1">Detail Pribadi</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div><span className="text-gray-500">Gender:</span> {selectedGuru.jenis_kelamin === 'P' ? 'Perempuan' : 'Laki-laki'}</div>
+                  <div><span className="text-gray-500">TTL:</span> {selectedGuru.tempat_lahir || '-'}, {selectedGuru.tanggal_lahir || '-'}</div>
+                  <div><span className="text-gray-500">NIK:</span> {selectedGuru.nik || '-'}</div>
+                  <div><span className="text-gray-500">No. KK:</span> {selectedGuru.no_kk || '-'}</div>
+                  <div className="col-span-2"><span className="text-gray-500">Nama Ibu Kandung:</span> {selectedGuru.nama_ibu || '-'}</div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-3 rounded-lg text-sm">
+                <h4 className="font-semibold text-gray-700 mb-2 border-b pb-1">Kontak & Alamat</h4>
+                <div className="mb-2"><span className="text-gray-500">Email:</span> {selectedGuru.email || '-'}</div>
+                <p className="mb-1"><span className="text-gray-500">Alamat:</span> {selectedGuru.alamat || '-'}</p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div><span className="text-gray-500">RT/RW:</span> {selectedGuru.rt || '-'}/{selectedGuru.rw || '-'}</div>
+                </div>
+              </div>
               
               {/* Dokumen Section */}
               {(selectedGuru.kk_url || selectedGuru.ktp_url || selectedGuru.ijazah_url) && (

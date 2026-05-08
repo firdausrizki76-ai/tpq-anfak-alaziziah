@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, Award, ArrowRight, Save, X, Calendar, Loader2, Plus, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Filter, Award, ArrowRight, Save, X, Calendar, Loader2, Plus, CheckCircle2, Printer } from 'lucide-react';
 import { ujianAPI, kelasAPI, santriAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 
@@ -11,6 +11,7 @@ const UjianPage = () => {
   const [saving, setSaving] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
   const [selectedSantri, setSelectedSantri] = useState(null);
+  const [printSantri, setPrintSantri] = useState(null);
   const [selectedSantriIds, setSelectedSantriIds] = useState([]);
   const [nextKelas, setNextKelas] = useState('');
   const [nextKelasId, setNextKelasId] = useState('');
@@ -93,10 +94,15 @@ const UjianPage = () => {
   const handlePromotionConfirm = async () => {
     setSaving(true);
     try {
-      await ujianAPI.naikKelas({ santri_id: selectedSantri.santri_id, kelas_dari_id: selectedSantri.kelas_id, kelas_ke_id: nextKelasId });
+      await ujianAPI.naikKelas({ santri_id: selectedSantri.santri_id, kelas_dari_id: selectedSantri.kelas_id, kelas_ke_id: nextKelasId, tanggal_naik: new Date().toISOString().split('T')[0] });
       await loadData(); closeModal();
     } catch (e) { alert(e.message); }
     setSaving(false);
+  };
+
+  const handlePrintKartu = (item) => {
+    setPrintSantri(item);
+    setTimeout(() => window.print(), 100);
   };
 
   const getStatus = (item) => {
@@ -114,8 +120,50 @@ const UjianPage = () => {
   });
 
   return (
-    <div className="flex-col gap-6 w-full">
-      <div className="page-header mb-6 flex justify-between items-center">
+    <div className="flex-col gap-6 w-full relative">
+      {printSantri && (
+        <div id="print-kartu-tes" className="print-only">
+          <div className="a5-card">
+            <div className="card-header text-center border-b-2 border-black pb-2 mb-4">
+              <h1 className="font-bold text-xl uppercase">KARTU TES KENAIKAN JILID</h1>
+              <p className="text-sm">TPQ ANFAK AL AZIZAH</p>
+            </div>
+            <div className="card-body">
+              <table className="w-full text-sm mb-4">
+                <tbody>
+                  <tr><td className="py-1 w-32">Nama Lengkap</td><td>: <strong>{printSantri.santri?.nama_lengkap}</strong></td></tr>
+                  <tr><td className="py-1">NIS</td><td>: {printSantri.santri?.nomor_induk}</td></tr>
+                  <tr><td className="py-1">Kelas Asal</td><td>: {printSantri.santri?.kelas?.nama_kelas || printSantri.kelas?.nama_kelas}</td></tr>
+                  <tr><td className="py-1">Tanggal Tes</td><td>: _________________</td></tr>
+                </tbody>
+              </table>
+              <div className="border border-black p-4 min-h-[150px]">
+                <h3 className="font-bold mb-2">Penilaian:</h3>
+                <div className="flex gap-4 mb-2">
+                  <div className="w-4 h-4 border border-black rounded-sm"></div> Lulus
+                </div>
+                <div className="flex gap-4">
+                  <div className="w-4 h-4 border border-black rounded-sm"></div> Remidi / Mengulang
+                </div>
+                <div className="mt-8">
+                  <p>Catatan Penguji:</p>
+                  <p className="border-b border-black border-dotted mt-4"></p>
+                  <p className="border-b border-black border-dotted mt-4"></p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-8 flex justify-end">
+              <div className="text-center w-40">
+                <p>Penguji,</p>
+                <br /><br /><br />
+                <p>(_________________)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="page-header mb-6 flex justify-between items-center no-print">
         <div><h1 className="page-title">Ujian & Kenaikan Kelas</h1><p className="page-subtitle">Kelola evaluasi akhir jilid dan kenaikan tingkat santri</p></div>
         <button className="btn-primary" onClick={() => openModal('register_exam')}><Plus size={18} /> Daftarkan Ujian</button>
       </div>
@@ -130,7 +178,7 @@ const UjianPage = () => {
 
         <div className="table-responsive">
           <table className="data-table w-full">
-            <thead><tr><th>No</th><th>Nama Santri</th><th>Kelas</th><th>Masa Tempuh</th><th>Target</th><th>Status</th><th className="text-center">Aksi</th></tr></thead>
+            <thead><tr><th>No</th><th>Nama Santri</th><th>Kelas</th><th>Tanggal</th><th>Masa Tempuh</th><th>Status</th><th className="text-center">Aksi</th></tr></thead>
             <tbody>
               {loading && !activeModal ? <tr><td colSpan="7" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
               : filteredExam.length === 0 ? <tr><td colSpan="7" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data pencapaian</td></tr>
@@ -142,19 +190,23 @@ const UjianPage = () => {
                     <td>{i+1}</td>
                     <td className="font-medium">{item.santri?.nama_lengkap || '-'}</td>
                     <td><span className="badge" style={{ backgroundColor: '#f1f5f9', color: '#475569' }}>{item.santri?.kelas?.nama_kelas || item.kelas?.nama_kelas || '-'}</span></td>
+                    <td className="text-xs text-gray-500">
+                      <div>Mulai: {item.tanggal_mulai ? new Date(item.tanggal_mulai).toLocaleDateString('id-ID') : '-'}</div>
+                      <div>Selesai: {item.tanggal_selesai ? new Date(item.tanggal_selesai).toLocaleDateString('id-ID') : '-'}</div>
+                    </td>
                     <td>
-                      <span className="font-bold">{item.aktual_hari || 0} Hari</span>
+                      <span className="font-bold">{item.aktual_hari || 0} Hari / {item.target_hari || 60}</span>
                       <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
                         <div className={`h-full ${pct >= 100 ? 'bg-orange-500' : 'bg-blue-500'}`} style={{ width: `${pct}%` }}></div>
                       </div>
                     </td>
-                    <td className="text-gray-500">{item.target_hari || 60} Hari</td>
                     <td>
                       {status === 'Siap Ujian' && <span className="badge" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>Siap Ujian</span>}
                       {status === 'Belajar' && <span className="badge" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }}>Belajar</span>}
                     </td>
-                    <td className="text-center">
-                      {status === 'Siap Ujian' && <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg flex items-center gap-1 mx-auto font-medium" onClick={() => openModal('input_nilai', item)}><Award size={18} /> Input Nilai</button>}
+                    <td className="text-center flex justify-center gap-2">
+                      {status === 'Siap Ujian' && <button className="p-1.5 text-orange-600 hover:bg-orange-50 rounded" title="Cetak Kartu Tes" onClick={() => handlePrintKartu(item)}><Printer size={18} /></button>}
+                      {status === 'Siap Ujian' && <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded flex items-center gap-1 font-medium" title="Input Nilai" onClick={() => openModal('input_nilai', item)}><Award size={18} /> Nilai</button>}
                       {status === 'Belajar' && <span className="text-gray-400 text-sm italic">Proses Belajar</span>}
                     </td>
                   </tr>
@@ -248,6 +300,20 @@ const UjianPage = () => {
           </div>
         </div></div>
       )}
+    </div>
+      <style>{`
+        @media screen {
+          .print-only { display: none; }
+        }
+        @media print {
+          @page { size: A5; margin: 15mm; }
+          body { background: white; margin: 0; padding: 0; }
+          .no-print, .sidebar, .navbar, .modal-overlay, .page-header, .stat-card, .btn-primary, .card { display: none !important; }
+          .print-only { display: block !important; }
+          .flex-col { gap: 0 !important; }
+          .a5-card { width: 100%; max-width: 148mm; margin: 0 auto; padding: 20px; border: 2px solid #000; border-radius: 8px; background: #fff; font-family: serif; }
+        }
+      `}</style>
     </div>
   );
 };

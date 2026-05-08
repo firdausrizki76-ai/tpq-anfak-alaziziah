@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS kelas (
   nama_kelas    VARCHAR(50) NOT NULL,
   urutan        SMALLINT NOT NULL,
   deskripsi     TEXT,
+  wali_kelas_id UUID,
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -25,7 +26,12 @@ CREATE TABLE IF NOT EXISTS guru (
   jenis_kelamin   CHAR(1) CHECK (jenis_kelamin IN ('L','P')),
   tempat_lahir    VARCHAR(100),
   tanggal_lahir   DATE,
+  nik             VARCHAR(20),
+  no_kk           VARCHAR(20),
   alamat          TEXT,
+  rt              VARCHAR(5),
+  rw              VARCHAR(5),
+  nama_ibu        VARCHAR(100),
   no_hp           VARCHAR(20),
   email           VARCHAR(100),
   jabatan         VARCHAR(50),
@@ -47,11 +53,30 @@ CREATE TABLE IF NOT EXISTS santri (
   jenis_kelamin     CHAR(1) CHECK (jenis_kelamin IN ('L','P')),
   tempat_lahir      VARCHAR(100),
   tanggal_lahir     DATE,
+  anak_ke           INT,
+  jumlah_saudara    INT,
+  nik               VARCHAR(20),
   alamat            TEXT,
+  rt                VARCHAR(5),
+  rw                VARCHAR(5),
+  desa              VARCHAR(50),
+  kecamatan         VARCHAR(50),
+  kabupaten         VARCHAR(50),
+  hobi              VARCHAR(100),
+  cita_cita         VARCHAR(100),
+  no_kk             VARCHAR(20),
   nama_ayah         VARCHAR(100),
+  nik_ayah          VARCHAR(20),
+  pekerjaan_ayah    VARCHAR(50),
+  pendidikan_ayah   VARCHAR(50),
   nama_ibu          VARCHAR(100),
+  nik_ibu           VARCHAR(20),
+  pekerjaan_ibu     VARCHAR(50),
+  pendidikan_ibu    VARCHAR(50),
   no_hp_wali        VARCHAR(20),
   nama_wali         VARCHAR(100),
+  pekerjaan_wali    VARCHAR(50),
+  hubungan_keluarga VARCHAR(50),
   status            VARCHAR(20) DEFAULT 'aktif'
                     CHECK (status IN ('aktif','nonaktif','lulus','pindah')),
   kelas_id          UUID REFERENCES kelas(id) ON DELETE SET NULL,
@@ -59,6 +84,7 @@ CREATE TABLE IF NOT EXISTS santri (
   foto_url          TEXT,
   tanggal_daftar    DATE DEFAULT CURRENT_DATE,
   tanggal_lulus     DATE,
+  tanggal_keluar    DATE,
   tahun_ajaran      VARCHAR(10),
   created_at        TIMESTAMPTZ DEFAULT NOW(),
   updated_at        TIMESTAMPTZ DEFAULT NOW()
@@ -148,6 +174,8 @@ CREATE TABLE IF NOT EXISTS riwayat_kelas (
   santri_id       UUID REFERENCES santri(id) ON DELETE CASCADE NOT NULL,
   kelas_dari_id   UUID REFERENCES kelas(id),
   kelas_ke_id     UUID REFERENCES kelas(id) NOT NULL,
+  tanggal_mulai   DATE,
+  tanggal_selesai DATE,
   tanggal_naik    DATE DEFAULT CURRENT_DATE,
   status_tes      VARCHAR(20) DEFAULT 'lulus'
                   CHECK (status_tes IN ('lulus','remidi','lulus_bersyarat')),
@@ -212,3 +240,6 @@ CREATE OR REPLACE TRIGGER trg_guru_updated_at
   BEFORE UPDATE ON guru
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE kelas ADD CONSTRAINT fk_kelas_wali_kelas FOREIGN KEY (wali_kelas_id) REFERENCES guru(id) ON DELETE SET NULL;
+
