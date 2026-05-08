@@ -140,9 +140,7 @@ const UjianPage = () => {
                   </td>
                   <td style={{ width: '70px', verticalAlign: 'top', border: 'none', padding: 0, textAlign: 'right' }}>
                     <div style={{ width: '60px', height: '70px', border: '1px solid #ddd', borderBottomLeftRadius: '30px', borderBottomRightRadius: '30px', display: 'inline-block', textAlign: 'center', padding: '3px', boxSizing: 'border-box' }}>
-                      <div style={{ background: '#000', color: '#fff', height: '52px', borderRadius: '26px', fontSize: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                        Qiraati
-                      </div>
+                      <img src="/assets/qiraati.jpg" alt="Qiraati" style={{ width: '100%', height: '52px', borderRadius: '26px', objectFit: 'contain' }} />
                     </div>
                   </td>
                 </tr>
