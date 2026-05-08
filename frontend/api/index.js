@@ -435,10 +435,48 @@ app.get('/api/pembayaran', async (req, res) => {
 app.put('/api/pembayaran/:id', async (req, res) => {
   try {
     const { status, tanggal_bayar, metode_bayar, catatan } = req.body;
+    
+    // 1. Jika metode bayar adalah tabungan, proses pemotongan saldo
+    if (metode_bayar === 'tabungan' && status === 'lunas') {
+      // Ambil data tagihan untuk tahu santri_id dan nominal
+      const { data: bill } = await supabase.from('pembayaran')
+        .select('santri_id, nominal, jenis:jenis_pembayaran_id(nama)')
+        .eq('id', req.params.id)
+        .single();
+      
+      if (!bill) return fail(res, 'Tagihan tidak ditemukan');
+
+      // Ambil saldo saat ini
+      const { data: history } = await supabase.from('tabungan_santri')
+        .select('jenis, nominal')
+        .eq('santri_id', bill.santri_id);
+      
+      const saldo = (history || []).reduce((s, t) => s + (t.jenis === 'setor' ? t.nominal : -t.nominal), 0);
+
+      if (bill.nominal > saldo) {
+        return fail(res, `Saldo tabungan tidak mencukupi. Saldo saat ini: Rp ${saldo.toLocaleString('id-ID')}`);
+      }
+
+      // Potong saldo (Insert ke tabungan_santri)
+      const newSaldo = saldo - bill.nominal;
+      const { error: errTabungan } = await supabase.from('tabungan_santri').insert({
+        santri_id: bill.santri_id,
+        jenis: 'tarik',
+        nominal: bill.nominal,
+        saldo_setelah: newSaldo,
+        keterangan: `Bayar ${bill.jenis?.nama || 'Tagihan'} via Tabungan`,
+        tanggal: tanggal_bayar || new Date().toISOString().split('T')[0]
+      });
+
+      if (errTabungan) throw errTabungan;
+    }
+
+    // 2. Update status pembayaran
     const { data, error } = await supabase.from('pembayaran')
       .update({ status, tanggal_bayar, metode_bayar, catatan })
       .eq('id', req.params.id)
       .select().single();
+    
     if (error) throw error;
     ok(res, data, 'Pembayaran berhasil dikonfirmasi');
   } catch (e) { fail(res, e.message, 500); }
@@ -468,17 +506,40 @@ app.post('/api/pembayaran', async (req, res) => {
 app.post('/api/pembayaran/generate', async (req, res) => {
   try {
     const { bulan, tahun, nominal, jenis_pembayaran_id, kelas_id } = req.body;
+    
+    // 1. Ambil list santri target
     let q = supabase.from('santri').select('id').eq('status', 'aktif');
     if (kelas_id) q = q.eq('kelas_id', kelas_id);
     const { data: santriList } = await q;
     if (!santriList || santriList.length === 0) return fail(res, 'Tidak ada santri aktif');
-    const records = santriList.map(s => ({
-      santri_id: s.id, jenis_pembayaran_id, bulan: parseInt(bulan), tahun: parseInt(tahun),
-      nominal: parseInt(nominal), status: 'belum', tahun_ajaran: `${tahun}/${parseInt(tahun)+1}`
+
+    // 2. Cek tagihan yang SUDAH ADA untuk periode & jenis ini
+    const { data: existing } = await supabase.from('pembayaran')
+      .select('santri_id')
+      .eq('jenis_pembayaran_id', jenis_pembayaran_id)
+      .eq('bulan', parseInt(bulan))
+      .eq('tahun', parseInt(tahun));
+    
+    const existingIds = new Set((existing || []).map(e => e.santri_id));
+
+    // 3. Filter santri yang belum punya tagihan ini
+    const toGenerate = santriList.filter(s => !existingIds.has(s.id));
+    
+    if (toGenerate.length === 0) return ok(res, { generated: 0 }, 'Semua santri sudah memiliki tagihan untuk periode ini');
+
+    const records = toGenerate.map(s => ({
+      santri_id: s.id, 
+      jenis_pembayaran_id, 
+      bulan: parseInt(bulan), 
+      tahun: parseInt(tahun),
+      nominal: parseInt(nominal), 
+      status: 'belum', 
+      tahun_ajaran: `${tahun}/${parseInt(tahun)+1}`
     }));
+
     const { error } = await supabase.from('pembayaran').insert(records);
     if (error) throw error;
-    ok(res, { generated: records.length }, `${records.length} tagihan berhasil dibuat`);
+    ok(res, { generated: records.length }, `${records.length} tagihan baru berhasil dibuat (${existingIds.size} sudah ada sebelumnya)`);
   } catch (e) { fail(res, e.message, 500); }
 });
 
@@ -487,7 +548,7 @@ app.get('/api/tabungan', async (req, res) => {
   try {
     // 1. Ambil data santri dasar dulu
     const { data: santriList, error: errSantri } = await supabase.from('santri')
-      .select('id, nomor_induk, nama_lengkap, status')
+      .select('id, nomor_induk, nama_lengkap, status, kelas:kelas_id(nama_kelas)')
       .eq('status', 'aktif')
       .order('nama_lengkap');
     

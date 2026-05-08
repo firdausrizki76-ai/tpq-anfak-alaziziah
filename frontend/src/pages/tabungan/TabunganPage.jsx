@@ -9,6 +9,8 @@ const TabunganPage = () => {
   const [saving, setSaving] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
   const [selectedSantri, setSelectedSantri] = useState(null);
+  const [riwayat, setRiwayat] = useState([]);
+  const [loadingRiwayat, setLoadingRiwayat] = useState(false);
   const [formData, setFormData] = useState({ santri_id: '', nominal: '', tanggal: new Date().toISOString().split('T')[0], keterangan: '' });
 
   useEffect(() => { loadData(); }, []);
@@ -25,7 +27,18 @@ const TabunganPage = () => {
     else { setSelectedSantri(null); setFormData({ santri_id: '', nominal: '', tanggal: new Date().toISOString().split('T')[0], keterangan: '' }); }
   };
 
-  const closeModal = () => { setActiveModal(null); setSelectedSantri(null); };
+  const openRiwayat = async (santri) => {
+    setSelectedSantri(santri);
+    setActiveModal('riwayat');
+    setLoadingRiwayat(true);
+    try {
+      const data = await tabunganAPI.getRiwayat(santri.id);
+      setRiwayat(data || []);
+    } catch (e) { console.error(e); }
+    setLoadingRiwayat(false);
+  };
+
+  const closeModal = () => { setActiveModal(null); setSelectedSantri(null); setRiwayat([]); };
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -77,9 +90,12 @@ const TabunganPage = () => {
                   <td>{i+1}</td><td>{s.nomor_induk}</td><td className="font-medium">{s.nama_lengkap}</td>
                   <td>{s.kelas?.nama_kelas || '-'}</td>
                   <td className="font-bold text-emerald-700">{formatRp(s.saldo)}</td>
-                  <td className="flex justify-center gap-2">
-                    <button className="p-1 px-3 text-sm bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded font-medium" onClick={() => openModal('setor', s)}>Setor</button>
-                    <button className="p-1 px-3 text-sm bg-orange-100 text-orange-700 hover:bg-orange-200 rounded font-medium" onClick={() => openModal('tarik', s)}>Tarik</button>
+                  <td>
+                    <div className="flex justify-center gap-2">
+                      <button className="p-1 px-3 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 rounded" onClick={() => openRiwayat(s)}>Riwayat</button>
+                      <button className="p-1 px-3 text-xs bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100 rounded" onClick={() => openModal('setor', s)}>Setor</button>
+                      <button className="p-1 px-3 text-xs bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-100 rounded" onClick={() => openModal('tarik', s)}>Tarik</button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -125,6 +141,40 @@ const TabunganPage = () => {
               <Save size={18} /> Konfirmasi
             </button>
           </div></form>
+        </div></div>
+      )}
+
+      {activeModal === 'riwayat' && selectedSantri && (
+        <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '600px' }}>
+          <div className="modal-header">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><CreditCard size={24} /></div>
+              <div><h2 className="modal-title">Riwayat Tabungan</h2><p className="text-xs text-gray-500">{selectedSantri.nama_lengkap}</p></div>
+            </div>
+            <X className="modal-close" onClick={closeModal} />
+          </div>
+          <div className="modal-body">
+            {loadingRiwayat ? <div className="text-center py-8"><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></div>
+            : riwayat.length === 0 ? <p className="text-center text-gray-400 py-8">Belum ada riwayat transaksi</p>
+            : (
+              <div className="table-responsive" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <table className="data-table w-full text-sm">
+                  <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}><tr><th>Tanggal</th><th>Tipe</th><th>Nominal</th><th>Keterangan</th></tr></thead>
+                  <tbody>
+                    {riwayat.map((r) => (
+                      <tr key={r.id}>
+                        <td>{new Date(r.tanggal).toLocaleDateString('id-ID')}</td>
+                        <td><span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${r.jenis === 'setor' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}`}>{r.jenis}</span></td>
+                        <td className={`font-medium ${r.jenis === 'setor' ? 'text-emerald-600' : 'text-orange-600'}`}>{r.jenis === 'setor' ? '+' : '-'}{formatRp(r.nominal)}</td>
+                        <td className="text-gray-500 text-xs">{r.keterangan || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+          <div className="modal-footer"><button className="btn-primary" onClick={closeModal}>Tutup</button></div>
         </div></div>
       )}
     </div>

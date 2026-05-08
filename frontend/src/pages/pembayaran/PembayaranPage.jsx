@@ -251,7 +251,7 @@ const PembayaranPage = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="form-group"><label className="form-label">Tanggal</label><input type="date" name="tanggal_bayar" className="input-field" value={formData.tanggal_bayar} onChange={handleInputChange} /></div>
-                  <div className="form-group"><label className="form-label">Metode</label><select name="metode_bayar" className="input-field" value={formData.metode_bayar} onChange={handleInputChange}><option value="tunai">Tunai</option><option value="transfer">Transfer</option></select></div>
+                  <div className="form-group"><label className="form-label">Metode</label><select name="metode_bayar" className="input-field" value={formData.metode_bayar} onChange={handleInputChange}><option value="tunai">Tunai</option><option value="transfer">Transfer</option><option value="tabungan">Potong Tabungan</option></select></div>
                 </div>
               </>
             )}
