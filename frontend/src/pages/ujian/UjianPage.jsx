@@ -125,22 +125,22 @@ const UjianPage = () => {
         <div id="print-kartu-tes" className="print-only">
           <div className="a5-card">
             
-            {/* Header Table for perfect alignment */}
-            <table style={{ width: '100%', marginBottom: '15px', borderCollapse: 'collapse', border: 'none' }}>
+            {/* Header Table: Left Aligned */}
+            <table style={{ width: '100%', marginBottom: '10px', borderCollapse: 'collapse', border: 'none' }}>
               <tbody>
                 <tr>
-                  <td style={{ width: '70px', verticalAlign: 'top', border: 'none', padding: 0 }}>
-                    <img src="/assets/logoapp.png" alt="Logo" style={{ width: '65px', height: '65px', objectFit: 'contain' }} />
+                  <td style={{ width: '70px', verticalAlign: 'middle', border: 'none', padding: 0 }}>
+                    <img src="/assets/logoapp.png" alt="Logo" style={{ width: '70px', height: '70px', objectFit: 'contain' }} />
                   </td>
-                  <td style={{ textAlign: 'center', verticalAlign: 'top', border: 'none', padding: 0 }}>
-                    <div style={{ fontSize: '11px', fontWeight: 'bold' }}>YAYASAN MAJELIS PENDIDIKAN ISLAM</div>
-                    <div style={{ fontSize: '22px', fontWeight: '900', letterSpacing: '1px', marginTop: '2px', marginBottom: '2px' }}>ANFAK AL AZIZIAH</div>
-                    <div style={{ fontSize: '9px' }}>Akta Notaris 04 Tgl 3 Juli 2007, No. Induk 02-06-04-001</div>
-                    <div style={{ fontSize: '9px' }}>Alamat : Tepus Wetan, Surodadi, Candimulyo, Magelang 56191</div>
+                  <td style={{ textAlign: 'left', verticalAlign: 'middle', border: 'none', padding: '0 0 0 10px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: '500' }}>YAYASAN MAJELIS PENDIDIKAN ISLAM</div>
+                    <div style={{ fontSize: '20px', fontWeight: '900', lineHeight: '1.1', margin: '2px 0' }}>ANFAK AL AZIZIAH</div>
+                    <div style={{ fontSize: '9px', lineHeight: '1.2' }}>Akta Notaris 04 Tgl 3 Juli 2007, No. Induk 02-06-04-001</div>
+                    <div style={{ fontSize: '9px', lineHeight: '1.2' }}>Alamat : Tepus Wetan, Surodadi, Candimulyo, Magelang 56191</div>
                   </td>
                   <td style={{ width: '70px', verticalAlign: 'top', border: 'none', padding: 0, textAlign: 'right' }}>
-                    <div style={{ width: '60px', height: '70px', border: '1px solid #ccc', borderBottomLeftRadius: '30px', borderBottomRightRadius: '30px', display: 'inline-block', textAlign: 'center', padding: '3px', boxSizing: 'border-box' }}>
-                      <div style={{ background: '#000', color: '#fff', height: '52px', borderRadius: '26px', fontSize: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                    <div style={{ width: '60px', height: '70px', border: '1px solid #ddd', borderBottomLeftRadius: '30px', borderBottomRightRadius: '30px', display: 'inline-block', textAlign: 'center', padding: '3px', boxSizing: 'border-box' }}>
+                      <div style={{ background: '#000', color: '#fff', height: '52px', borderRadius: '26px', fontSize: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
                         Qiraati
                       </div>
                     </div>
@@ -150,24 +150,24 @@ const UjianPage = () => {
             </table>
 
             {/* Title Section */}
-            <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-              <div style={{ fontSize: '16px', fontWeight: 'bold', letterSpacing: '0.5px' }}>KARTU TES KENAIKAN JILID</div>
-              <div style={{ fontSize: '10px', textTransform: 'uppercase', marginTop: '3px' }}>TGL INPUT : {new Date().toLocaleString('id-ID', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':')}</div>
+            <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', textTransform: 'uppercase' }}>KARTU TES KENAIKAN JILID</div>
+              <div style={{ fontSize: '11px', marginTop: '2px' }}>TGL INPUT : {new Date().toLocaleString('id-ID', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':')}</div>
             </div>
 
             {/* Main Data Table */}
             <table className="ptable">
               <tbody>
                 <tr>
-                  <td colSpan="2" style={{ fontWeight: 'bold', fontSize: '13px', verticalAlign: 'middle' }}>
-                    NOMOR : TES/{new Date().getFullYear().toString().slice(2)}/{String(new Date().getMonth()+1).padStart(2, '0')}/{printSantri.santri?.nomor_induk?.slice(-3) || '001'}
+                  <td colSpan="2" style={{ fontWeight: 'bold', fontSize: '14px', width: '65%' }}>
+                    NOMOR : TES/26/05/{printSantri.santri?.nomor_induk?.slice(-3) || '001'}
                   </td>
-                  <td style={{ width: '50px', textAlign: 'center', verticalAlign: 'top', fontSize: '10px', height: '35px' }}>IKL</td>
-                  <td style={{ width: '50px', textAlign: 'center', verticalAlign: 'top', fontSize: '10px' }}>IA</td>
-                  <td style={{ width: '50px', textAlign: 'center', verticalAlign: 'top', fontSize: '10px' }}>SCAN</td>
+                  <td style={{ width: '11.6%', textAlign: 'center', verticalAlign: 'top', fontSize: '9px', height: '35px' }}>IKL</td>
+                  <td style={{ width: '11.6%', textAlign: 'center', verticalAlign: 'top', fontSize: '9px' }}>IA</td>
+                  <td style={{ width: '11.6%', textAlign: 'center', verticalAlign: 'top', fontSize: '9px' }}>SCAN</td>
                 </tr>
                 <tr>
-                  <td style={{ width: '120px' }}>Nomor Induk</td>
+                  <td style={{ width: '150px' }}>Nomor Induk</td>
                   <td colSpan="4">{printSantri.santri?.nomor_induk || '-'}</td>
                 </tr>
                 <tr>
@@ -192,17 +192,18 @@ const UjianPage = () => {
                 </tr>
                 <tr>
                   <td>Tagihan Syahriyah</td>
-                  <td colSpan="2" style={{ width: '50%' }}></td>
-                  <td colSpan="2" style={{ width: '50%' }}></td>
+                  <td style={{ width: '150px' }}>Rp-5.000</td>
+                  <td colSpan="3"></td>
                 </tr>
                 <tr>
-                  <td style={{ height: '50px', verticalAlign: 'top' }}>Keterangan</td>
+                  <td style={{ height: '40px', verticalAlign: 'top' }}>Keterangan</td>
                   <td colSpan="4"></td>
                 </tr>
                 <tr>
                   <td>Tanggal Tes</td>
-                  <td colSpan="2" style={{ width: '50%' }}></td>
-                  <td colSpan="2" style={{ width: '50%' }}></td>
+                  <td></td>
+                  <td></td>
+                  <td colSpan="2"></td>
                 </tr>
                 <tr>
                   <td>Tanggal Naik</td>
@@ -215,27 +216,27 @@ const UjianPage = () => {
               </tbody>
             </table>
 
-            {/* Signatures Table */}
+            {/* Signatures Table: Larger boxes */}
             <table className="ptable" style={{ marginTop: '10px' }}>
               <tbody>
                 <tr>
-                  <td style={{ width: '25%', height: '80px', verticalAlign: 'top', textAlign: 'center', padding: '5px' }}>
-                    <div style={{ marginBottom: '30px' }}>Wali Santri</div>
-                    <div>(.........................)</div>
+                  <td style={{ width: '25%', height: '110px', verticalAlign: 'top', textAlign: 'center', padding: '8px' }}>
+                    <div style={{ marginBottom: '60px', fontSize: '11px' }}>Wali Santri</div>
+                    <div style={{ fontSize: '11px' }}>( ........................... )</div>
                   </td>
-                  <td style={{ width: '25%', height: '80px', verticalAlign: 'top', textAlign: 'center', padding: '5px' }}>
-                    <div style={{ marginBottom: '30px' }}>Wali Kelas</div>
-                    <div style={{ fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {printSantri.santri?.kelas?.wali_kelas?.nama_lengkap || '__________________'}
+                  <td style={{ width: '25%', height: '110px', verticalAlign: 'top', textAlign: 'center', padding: '8px' }}>
+                    <div style={{ marginBottom: '50px', fontSize: '11px' }}>Wali Kelas</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '11px', lineHeight: '1.2' }}>
+                      {printSantri.santri?.kelas?.wali_kelas?.nama_lengkap || 'Nina Laifatun Fatla'}
                     </div>
                   </td>
-                  <td style={{ width: '25%', height: '80px', verticalAlign: 'top', textAlign: 'center', padding: '5px' }}>
-                    <div style={{ marginBottom: '30px' }}>Kepala Lembaga</div>
-                    <div>(.........................)</div>
+                  <td style={{ width: '25%', height: '110px', verticalAlign: 'top', textAlign: 'center', padding: '8px' }}>
+                    <div style={{ marginBottom: '60px', fontSize: '11px' }}>Kepala Lembaga</div>
+                    <div style={{ fontSize: '11px' }}>( ........................... )</div>
                   </td>
-                  <td style={{ width: '25%', height: '80px', verticalAlign: 'top', textAlign: 'center', padding: '5px' }}>
-                    <div style={{ marginBottom: '30px' }}>Wali Kelas Baru</div>
-                    <div>(.........................)</div>
+                  <td style={{ width: '25%', height: '110px', verticalAlign: 'top', textAlign: 'center', padding: '8px' }}>
+                    <div style={{ marginBottom: '60px', fontSize: '11px' }}>Wali Kelas Baru</div>
+                    <div style={{ fontSize: '11px' }}>( ........................... )</div>
                   </td>
                 </tr>
               </tbody>
