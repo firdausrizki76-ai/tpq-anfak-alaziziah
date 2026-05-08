@@ -260,9 +260,44 @@ const PembayaranPage = () => {
       )}
 
       {activeModal === 'kelola_jenis' && (
-        <div className="modal-overlay no-print">
-          {/* ... existing modal code ... */}
-        </div>
+        <div className="modal-overlay no-print"><div className="modal-container" style={{ maxWidth: '700px' }}>
+          <div className="modal-header"><h2 className="modal-title">Kelola Jenis Pembayaran</h2><X className="modal-close" onClick={closeModal} /></div>
+          <div className="modal-body">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-sm font-semibold mb-3">{selectedJenis ? 'Edit Jenis' : 'Tambah Jenis Baru'}</h3>
+                <form onSubmit={handleJenisSubmit} className="space-y-3">
+                  <div className="form-group"><label className="form-label text-xs">Nama Jenis</label><input type="text" className="input-field" value={jenisForm.nama} onChange={(e) => setJenisForm({...jenisForm, nama: e.target.value})} placeholder="Contoh: Syahriah" required /></div>
+                  <div className="form-group"><label className="form-label text-xs">Kategori</label><select className="input-field" value={jenisForm.kategori} onChange={(e) => setJenisForm({...jenisForm, kategori: e.target.value})}><option value="bulanan">Bulanan</option><option value="insidental">Insidental</option><option value="kegiatan">Kegiatan</option></select></div>
+                  <div className="form-group"><label className="form-label text-xs">Nominal Default (Rp)</label><input type="number" className="input-field" value={jenisForm.nominal_default} onChange={(e) => setJenisForm({...jenisForm, nominal_default: e.target.value})} placeholder="50000" /></div>
+                  <div className="flex gap-2 pt-2">
+                    <button type="submit" className="btn-primary flex-1" disabled={saving}><Save size={16} /> {selectedJenis ? 'Update' : 'Simpan'}</button>
+                    {selectedJenis && <button type="button" className="btn-primary" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={() => { setSelectedJenis(null); setJenisForm({ nama: '', kategori: 'bulanan', nominal_default: '' }); }}>Batal</button>}
+                  </div>
+                </form>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold mb-3">Daftar Jenis</h3>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                  {jenisList.length === 0 ? <p className="text-xs text-gray-400 italic">Belum ada data</p>
+                  : jenisList.map(j => (
+                    <div key={j.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 group">
+                      <div>
+                        <div className="font-medium text-sm">{j.nama}</div>
+                        <div className="text-xs text-gray-500 uppercase tracking-wider" style={{ fontSize: '10px' }}>{j.kategori} • {formatRp(j.nominal_default)}</div>
+                      </div>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button className="p-1.5 text-blue-600 hover:bg-blue-100 rounded" title="Edit" onClick={() => { setSelectedJenis(j); setJenisForm({ nama: j.nama, kategori: j.kategori, nominal_default: j.nominal_default || '' }); }}><Settings size={14} /></button>
+                        <button className="p-1.5 text-red-600 hover:bg-red-100 rounded" title="Hapus" onClick={() => handleDeleteJenis(j.id)}><X size={14} /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-footer"><button className="btn-primary" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={closeModal}>Tutup</button></div>
+        </div></div>
       )}
 
       <style>{`
