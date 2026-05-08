@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Edit, X, Save, Download, Users, ArrowUpRight, BookOpen, User, Loader2 } from 'lucide-react';
-import { kelasAPI } from '../../services/api';
+import { kelasAPI, guruAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 
 const KelasPage = () => {
