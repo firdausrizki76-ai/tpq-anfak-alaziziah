@@ -113,18 +113,20 @@
 }
 
 .data-table th {
-  padding: 16px;
+  padding: 12px 16px;
   font-weight: 600;
   color: var(--color-on-surface-variant);
-  border-bottom: 2px solid var(--color-surface-container-high);
+  border: 1px solid var(--color-surface-container-highest);
+  background-color: var(--color-surface-container-low);
   font-size: 14px;
 }
 
 .data-table td {
-  padding: 16px;
-  border-bottom: 1px solid var(--color-surface-container-high);
+  padding: 12px 16px;
+  border: 1px solid var(--color-surface-container-highest);
   color: var(--color-on-surface);
-  font-size: 15px;
+  font-size: 14px;
+  vertical-align: middle;
 }
 
 .badge {

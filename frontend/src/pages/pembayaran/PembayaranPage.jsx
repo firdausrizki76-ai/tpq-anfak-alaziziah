@@ -204,7 +204,16 @@ const PembayaranPage = () => {
                   <td>{p.status === 'lunas' ? <span className="flex items-center gap-1 text-emerald-600 text-sm font-semibold"><CheckCircle size={16} /> Lunas</span> : <span className="flex items-center gap-1 text-orange-600 text-sm font-semibold"><AlertCircle size={16} /> Belum</span>}</td>
                   <td className="text-center flex justify-center gap-2">
                     {p.status === 'lunas' && <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Cetak Kwitansi" onClick={() => handlePrint(p)}><Printer size={18} /></button>}
-                    <button className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded" title="Kirim Pesan WA" onClick={() => handleWA(p)}><MessageCircle size={18} /></button>
+                    <button 
+                      className="p-1.5 rounded-full hover:bg-emerald-50 transition-all active:scale-95" 
+                      style={{ color: '#25D366', backgroundColor: '#f0fff4', border: '1px solid #dcfce7' }}
+                      title="Kirim Pesan WA" 
+                      onClick={() => handleWA(p)}
+                    >
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                        <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.187-2.59-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793 0-.852.448-1.271.607-1.445.159-.175.348-.218.463-.218.116 0 .232.001.334.005.109.004.256-.041.401.31.145.352.493 1.203.536 1.29.044.087.073.188.014.305-.058.116-.088.188-.174.289-.087.101-.182.227-.261.306-.087.087-.179.181-.077.357.102.176.454.748.975 1.211.672.596 1.24.782 1.416.869.176.087.278.073.381-.044.102-.116.448-.522.568-.7.12-.179.24-.15.405-.09.165.06 1.044.493 1.223.583.179.09.298.135.342.21.044.075.044.434-.1.839zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22c-5.523 0-10-4.477-10-10S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+                      </svg>
+                    </button>
                   </td>
                 </tr>
               ))}

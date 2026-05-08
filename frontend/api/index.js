@@ -588,30 +588,9 @@ app.get('/api/ujian', async (req, res) => {
     
     if (error) throw error;
 
-    // Fetch Syahriyah default nominal from jenis_pembayaran with robust lookup
-    const { data: allJenis } = await supabase.from('jenis_pembayaran').select('nama, nominal_default, kategori').eq('is_active', true);
-    
-    let syahriyahNominal = 0;
-    if (allJenis && allJenis.length > 0) {
-      // 1. Try exact match or ilike with keywords
-      const found = allJenis.find(j => 
-        j.nama.toLowerCase().includes('syahriyah') || 
-        j.nama.toLowerCase().includes('spp') || 
-        j.nama.toLowerCase().includes('iuran bulan')
-      );
-      
-      if (found) {
-        syahriyahNominal = found.nominal_default;
-      } else {
-        // 2. Fallback to first 'bulanan' item
-        const bulanan = allJenis.find(j => j.kategori === 'bulanan');
-        if (bulanan) syahriyahNominal = bulanan.nominal_default;
-      }
-    }
-
     const result = (data || []).map(item => ({
       ...item,
-      syahriyah_nominal: syahriyahNominal
+      syahriyah_nominal: 0
     }));
 
     ok(res, result);
