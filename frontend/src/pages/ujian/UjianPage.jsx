@@ -192,7 +192,7 @@ const UjianPage = () => {
                 </tr>
                 <tr>
                   <td>Tagihan Syahriyah</td>
-                  <td style={{ width: '150px' }}>Rp-5.000</td>
+                  <td style={{ width: '150px' }}>Rp {(printSantri.syahriyah_nominal || 0).toLocaleString('id-ID')}</td>
                   <td colSpan="3"></td>
                 </tr>
                 <tr>
@@ -227,7 +227,7 @@ const UjianPage = () => {
                   <td style={{ width: '25%', height: '110px', verticalAlign: 'top', textAlign: 'center', padding: '8px' }}>
                     <div style={{ marginBottom: '50px', fontSize: '11px' }}>Wali Kelas</div>
                     <div style={{ fontWeight: 'bold', fontSize: '11px', lineHeight: '1.2' }}>
-                      {printSantri.santri?.kelas?.wali_kelas?.nama_lengkap || 'Nina Laifatun Fatla'}
+                      {printSantri.santri?.kelas?.wali?.nama_lengkap || '__________________'}
                     </div>
                   </td>
                   <td style={{ width: '25%', height: '110px', verticalAlign: 'top', textAlign: 'center', padding: '8px' }}>

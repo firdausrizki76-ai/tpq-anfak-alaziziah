@@ -583,10 +583,24 @@ app.put('/api/pengaturan', async (req, res) => {
 app.get('/api/ujian', async (req, res) => {
   try {
     const { data, error } = await supabase.from('target_pencapaian')
-      .select('*, santri:santri_id(nama_lengkap, nomor_induk, kelas:kelas_id(nama_kelas, urutan))')
+      .select('*, santri:santri_id(id, nama_lengkap, nomor_induk, kelas:kelas_id(id, nama_kelas, urutan, wali:wali_kelas_id(nama_lengkap))), kelas:kelas_id(nama_kelas)')
       .order('created_at', { ascending: false });
+    
     if (error) throw error;
-    ok(res, data);
+
+    // Fetch Syahriyah default nominal from jenis_pembayaran
+    const { data: syahriyah } = await supabase.from('jenis_pembayaran')
+      .select('nominal_default')
+      .ilike('nama', '%syahriyah%')
+      .limit(1)
+      .maybeSingle();
+
+    const result = (data || []).map(item => ({
+      ...item,
+      syahriyah_nominal: syahriyah?.nominal_default || 0
+    }));
+
+    ok(res, result);
   } catch (e) { fail(res, e.message, 500); }
 });
 
