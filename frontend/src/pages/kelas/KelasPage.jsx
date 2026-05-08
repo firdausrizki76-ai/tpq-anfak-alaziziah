@@ -81,9 +81,11 @@ const KelasPage = () => {
                   <td>{kelas.urutan}</td><td>{kelas.kode_kelas}</td><td className="font-medium">{kelas.nama_kelas}</td>
                   <td>{kelas.wali_kelas?.nama_lengkap || '-'}</td>
                   <td>{kelas.jumlah_santri || 0} Santri</td>
-                  <td className="flex justify-center gap-2">
-                    <button className="p-2 text-blue-600 hover:bg-blue-50 rounded" title="Lihat Santri" onClick={() => openViewSantri(kelas)}><Users size={18} /></button>
-                    <button className="p-2 text-orange-600 hover:bg-orange-50 rounded" title="Edit Kelas" onClick={() => openEdit(kelas)}><Edit size={18} /></button>
+                  <td>
+                    <div className="flex justify-center gap-2">
+                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Lihat Santri" onClick={() => openViewSantri(kelas)}><Users size={18} /></button>
+                      <button className="p-2 text-orange-600 hover:bg-orange-50 rounded transition-colors" title="Edit Kelas" onClick={() => openEdit(kelas)}><Edit size={18} /></button>
+                    </div>
                   </td>
                 </tr>
               ))}

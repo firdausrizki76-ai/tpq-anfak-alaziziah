@@ -229,6 +229,10 @@ a:hover {
   background-color: var(--color-surface-container-low) !important;
 }
 
+.data-table button {
+  border: none !important;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

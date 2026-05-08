@@ -145,10 +145,12 @@ const GuruPage = () => {
                 <tr key={guru.id}>
                   <td>{i+1}</td><td>{guru.nip}</td><td className="font-medium">{guru.nama_lengkap}</td><td>{guru.jabatan}</td><td>{guru.no_hp}</td>
                   <td><span className={`badge ${guru.status === 'aktif' ? 'badge-success' : ''}`} style={guru.status !== 'aktif' ? { backgroundColor: '#f1f5f9', color: '#64748b' } : {}}>{guru.status}</span></td>
-                  <td className="flex justify-center gap-2">
-                    <button className="p-2 text-blue-600 hover:bg-blue-50 rounded" onClick={() => openModal('view', guru)}><Eye size={18} /></button>
-                    <button className="p-2 text-orange-600 hover:bg-orange-50 rounded" onClick={() => openModal('edit', guru)}><Edit size={18} /></button>
-                    <button className="p-2 text-red-600 hover:bg-red-50 rounded" onClick={() => openModal('delete', guru)}><Trash2 size={18} /></button>
+                  <td>
+                    <div className="flex justify-center gap-2">
+                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors" onClick={() => openModal('view', guru)} title="Lihat"><Eye size={18} /></button>
+                      <button className="p-2 text-orange-600 hover:bg-orange-50 rounded transition-colors" onClick={() => openModal('edit', guru)} title="Edit"><Edit size={18} /></button>
+                      <button className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors" onClick={() => openModal('delete', guru)} title="Hapus"><Trash2 size={18} /></button>
+                    </div>
                   </td>
                 </tr>
               ))}

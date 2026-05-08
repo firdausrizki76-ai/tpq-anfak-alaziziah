@@ -240,10 +240,12 @@ const SantriPage = () => {
                       {santri.status}
                     </span>
                   </td>
-                  <td className="flex justify-center gap-2">
-                    <button className="p-2 text-blue-600 hover:bg-blue-50 rounded" onClick={() => openModal('view', santri)}><Eye size={18} /></button>
-                    <button className="p-2 text-orange-600 hover:bg-orange-50 rounded" onClick={() => openModal('edit', santri)}><Edit size={18} /></button>
-                    <button className="p-2 text-red-600 hover:bg-red-50 rounded" onClick={() => openModal('delete', santri)}><Trash2 size={18} /></button>
+                  <td>
+                    <div className="flex justify-center gap-2">
+                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors" onClick={() => openModal('view', santri)} title="Lihat"><Eye size={18} /></button>
+                      <button className="p-2 text-orange-600 hover:bg-orange-50 rounded transition-colors" onClick={() => openModal('edit', santri)} title="Edit"><Edit size={18} /></button>
+                      <button className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors" onClick={() => openModal('delete', santri)} title="Hapus"><Trash2 size={18} /></button>
+                    </div>
                   </td>
                 </tr>
               ))}
