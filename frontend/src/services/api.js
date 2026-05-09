@@ -124,7 +124,10 @@ export const tabunganAPI = {
     return request(`/tabungan${qs ? `?${qs}` : ''}`);
   },
   getSummaryGuru: () => request('/tabungan/summary-guru'),
-  getRiwayat: (santriId) => request(`/tabungan/${santriId}/riwayat`),
+  getRiwayat: (santriId, params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/tabungan/${santriId}/riwayat${qs ? `?${qs}` : ''}`);
+  },
   transact: (body) => request('/tabungan', { method: 'POST', body }),
 };
 

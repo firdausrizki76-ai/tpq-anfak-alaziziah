@@ -649,8 +649,18 @@ app.get('/api/tabungan/summary-guru', async (req, res) => {
 
 app.get('/api/tabungan/:santriId/riwayat', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('tabungan_santri')
-      .select('*').eq('santri_id', req.params.santriId).order('created_at', { ascending: false });
+    const { month, year } = req.query;
+    let q = supabase.from('tabungan_santri')
+      .select('*').eq('santri_id', req.params.santriId);
+    
+    if (month && year) {
+      const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month, 0).getDate();
+      const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay}`;
+      q = q.gte('tanggal', startDate).lte('tanggal', endDate);
+    }
+
+    const { data, error } = await q.order('tanggal', { ascending: false }).order('created_at', { ascending: false });
     if (error) throw error;
     ok(res, data);
   } catch (e) { fail(res, e.message, 500); }

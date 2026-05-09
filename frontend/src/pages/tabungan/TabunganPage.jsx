@@ -13,6 +13,7 @@ const TabunganPage = () => {
   const [loadingRiwayat, setLoadingRiwayat] = useState(false);
   const [guruSummary, setGuruSummary] = useState([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [riwayatFilter, setRiwayatFilter] = useState({ month: new Date().getMonth() + 1, year: new Date().getFullYear() });
   const [formData, setFormData] = useState({ santri_id: '', nominal: '', tanggal: new Date().toISOString().split('T')[0], keterangan: '' });
   
   const user = JSON.parse(localStorage.getItem('tpq_user') || '{}');
@@ -41,15 +42,27 @@ const TabunganPage = () => {
     else { setSelectedSantri(null); setFormData({ santri_id: '', nominal: '', tanggal: new Date().toISOString().split('T')[0], keterangan: '' }); }
   };
 
-  const openRiwayat = async (santri) => {
+  const openRiwayat = async (santri, filter = null) => {
+    const f = filter || riwayatFilter;
     setSelectedSantri(santri);
     setActiveModal('riwayat');
     setLoadingRiwayat(true);
     try {
-      const data = await tabunganAPI.getRiwayat(santri.id);
+      const data = await tabunganAPI.getRiwayat(santri.id, f);
       setRiwayat(data || []);
     } catch (e) { console.error(e); }
     setLoadingRiwayat(false);
+  };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    const newFilter = { ...riwayatFilter, [name]: value };
+    setRiwayatFilter(newFilter);
+    if (selectedSantri) openRiwayat(selectedSantri, newFilter);
+  };
+
+  const downloadMutasi = () => {
+    window.print();
   };
 
   const closeModal = () => { setActiveModal(null); setSelectedSantri(null); setRiwayat([]); };
@@ -190,38 +203,73 @@ const TabunganPage = () => {
       )}
 
       {activeModal === 'riwayat' && selectedSantri && (
-        <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '600px' }}>
-          <div className="modal-header">
+        <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '700px' }}>
+          <div className="modal-header no-print">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><CreditCard size={24} /></div>
               <div><h2 className="modal-title">Riwayat Tabungan</h2><p className="text-xs text-gray-500">{selectedSantri.nama_lengkap}</p></div>
             </div>
             <X className="modal-close" onClick={closeModal} />
           </div>
-          <div className="modal-body">
-            {loadingRiwayat ? <div className="text-center py-8"><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></div>
-            : riwayat.length === 0 ? <p className="text-center text-gray-400 py-8">Belum ada riwayat transaksi</p>
-            : (
-              <div className="table-responsive" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                <table className="data-table w-full text-sm">
-                  <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}><tr><th>Tanggal</th><th>Tipe</th><th>Nominal</th><th>Keterangan</th></tr></thead>
-                  <tbody>
-                    {riwayat.map((r) => (
-                      <tr key={r.id}>
-                        <td>{new Date(r.tanggal).toLocaleDateString('id-ID')}</td>
-                        <td><span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${r.jenis === 'setor' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}`}>{r.jenis}</span></td>
-                        <td className={`font-medium ${r.jenis === 'setor' ? 'text-emerald-600' : 'text-orange-600'}`}>{r.jenis === 'setor' ? '+' : '-'}{formatRp(r.nominal)}</td>
-                        <td className="text-gray-500 text-xs">{r.keterangan || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          
+          <div className="modal-body p-0">
+            {/* Print Only Header */}
+            <div className="print-only mb-6 text-center" style={{ display: 'none' }}>
+              <h2 className="font-bold text-xl uppercase">Laporan Mutasi Tabungan</h2>
+              <p className="text-sm">{selectedSantri.nama_lengkap} ({selectedSantri.nomor_induk})</p>
+              <p className="text-xs text-gray-500">Periode: {riwayatFilter.month}/{riwayatFilter.year}</p>
+              <hr className="my-4" />
+            </div>
+
+            <div className="p-4 bg-gray-50 border-b flex justify-between items-center gap-4 no-print flex-wrap">
+              <div className="flex gap-2 items-center">
+                <select name="month" className="input-field py-1 px-2 text-sm" style={{ width: '130px' }} value={riwayatFilter.month} onChange={handleFilterChange}>
+                  {['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
+                </select>
+                <select name="year" className="input-field py-1 px-2 text-sm" style={{ width: '100px' }} value={riwayatFilter.year} onChange={handleFilterChange}>
+                  {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
               </div>
-            )}
+              <button className="btn-primary py-1.5 px-4 text-xs bg-white text-blue-600 border-blue-200" onClick={downloadMutasi}><ArrowDownCircle size={14} /> Download PDF</button>
+            </div>
+
+            <div className="p-4">
+              {loadingRiwayat ? <div className="text-center py-8"><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></div>
+              : riwayat.length === 0 ? <p className="text-center text-gray-400 py-8">Belum ada riwayat transaksi pada periode ini</p>
+              : (
+                <div className="table-responsive" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                  <table className="data-table w-full text-sm">
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}><tr><th>Tanggal</th><th>Tipe</th><th>Nominal</th><th>Keterangan</th><th>Saldo</th></tr></thead>
+                    <tbody>
+                      {riwayat.map((r) => (
+                        <tr key={r.id}>
+                          <td>{new Date(r.tanggal).toLocaleDateString('id-ID')}</td>
+                          <td><span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${r.jenis === 'setor' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}`}>{r.jenis}</span></td>
+                          <td className={`font-medium ${r.jenis === 'setor' ? 'text-emerald-600' : 'text-orange-600'}`}>{r.jenis === 'setor' ? '+' : '-'}{formatRp(r.nominal)}</td>
+                          <td className="text-gray-500 text-xs">{r.keterangan || '-'}</td>
+                          <td className="font-semibold">{formatRp(r.saldo_setelah)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="modal-footer"><button className="btn-primary" onClick={closeModal}>Tutup</button></div>
+          <div className="modal-footer no-print"><button className="btn-primary" onClick={closeModal}>Tutup</button></div>
         </div></div>
       )}
+
+      <style>{`
+        @media print {
+          .modal-overlay { position: static !important; background: white !important; display: block !important; padding: 0 !important; }
+          .modal-container { border: none !important; box-shadow: none !important; max-width: 100% !important; margin: 0 !important; }
+          .print-only { display: block !important; }
+          .no-print { display: none !important; }
+          table { width: 100% !important; border-collapse: collapse !important; }
+          th, td { border: 1px solid #ddd !important; padding: 8px !important; }
+        }
+      `}</style>
     </div>
   );
 };
