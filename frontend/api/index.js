@@ -407,44 +407,6 @@ app.post('/api/absensi', async (req, res) => {
   } catch (e) { fail(res, e.message, 500); }
 });
 
-// ==================== UJIAN & KENAIKAN ====================
-app.get('/api/ujian', async (req, res) => {
-  try {
-    const { data, error } = await supabase.from('target_pencapaian')
-      .select('*, santri:santri_id(id, nomor_induk, nama_lengkap, kelas:kelas_id(id, nama_kelas, urutan, kode_kelas)), kelas:kelas_id(nama_kelas)')
-      .is('tanggal_selesai', null).order('created_at', { ascending: false });
-    if (error) throw error;
-    ok(res, data);
-  } catch (e) { fail(res, e.message, 500); }
-});
-
-app.post('/api/ujian/nilai', async (req, res) => {
-  try {
-    const { santri_id, kelas_dari_id, nilai_tes, status_tes, catatan } = req.body;
-    const { data, error } = await supabase.from('riwayat_kelas').insert({
-      santri_id, kelas_dari_id, kelas_ke_id: kelas_dari_id,
-      nilai_tes, status_tes, catatan
-    }).select().single();
-    if (error) throw error;
-    ok(res, data, 'Hasil ujian berhasil disimpan');
-  } catch (e) { fail(res, e.message, 500); }
-});
-
-app.post('/api/ujian/naik-kelas', async (req, res) => {
-  try {
-    const { santri_id, kelas_dari_id, kelas_ke_id } = req.body;
-    // Update santri kelas
-    await supabase.from('santri').update({ kelas_id: kelas_ke_id }).eq('id', santri_id);
-    // Close old target
-    await supabase.from('target_pencapaian').update({ tanggal_selesai: new Date().toISOString().split('T')[0] })
-      .eq('santri_id', santri_id).eq('kelas_id', kelas_dari_id).is('tanggal_selesai', null);
-    // Create new target
-    await supabase.from('target_pencapaian').insert({ santri_id, kelas_id: kelas_ke_id, target_hari: 60 });
-    // Record history
-    await supabase.from('riwayat_kelas').insert({ santri_id, kelas_dari_id, kelas_ke_id, status_tes: 'lulus' });
-    ok(res, null, 'Kenaikan kelas berhasil');
-  } catch (e) { fail(res, e.message, 500); }
-});
 
 // ==================== PEMBAYARAN ====================
 app.get('/api/pembayaran', async (req, res) => {
