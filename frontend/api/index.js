@@ -585,7 +585,6 @@ app.get('/api/tabungan', async (req, res) => {
 
 app.get('/api/tabungan/summary-guru', async (req, res) => {
   try {
-    // Ambil semua guru yang mengampu kelas
     const { data: kelasList } = await supabase.from('kelas').select('id, nama_kelas, wali:wali_kelas_id(id, nama_lengkap)');
     const { data: saldoData } = await supabase.from('v_saldo_tabungan').select('santri_id, saldo');
     const { data: santriList } = await supabase.from('santri').select('id, kelas_id').eq('status', 'aktif');
@@ -593,19 +592,30 @@ app.get('/api/tabungan/summary-guru', async (req, res) => {
     const saldoMap = {};
     (saldoData || []).forEach(s => { saldoMap[s.santri_id] = s.saldo; });
 
-    const summary = (kelasList || []).map(k => {
+    const teacherMap = {};
+    (kelasList || []).forEach(k => {
+      const waliId = k.wali?.id || 'tanpa_wali';
+      const waliNama = k.wali?.nama_lengkap || 'Tanpa Wali';
+      
+      if (!teacherMap[waliId]) {
+        teacherMap[waliId] = {
+          id: waliId,
+          nama_guru: waliNama,
+          kelas_names: [],
+          total_saldo: 0,
+          jumlah_santri: 0
+        };
+      }
+      
       const santriInKelas = (santriList || []).filter(s => s.kelas_id === k.id);
-      const totalSaldo = santriInKelas.reduce((sum, s) => sum + (saldoMap[s.id] || 0), 0);
-      return {
-        kelas_id: k.id,
-        nama_kelas: k.nama_kelas,
-        wali_nama: k.wali?.nama_lengkap || 'Tanpa Wali',
-        total_saldo: totalSaldo,
-        jumlah_santri: santriInKelas.length
-      };
+      const saldoKelas = santriInKelas.reduce((sum, s) => sum + (saldoMap[s.id] || 0), 0);
+      
+      teacherMap[waliId].kelas_names.push(k.nama_kelas);
+      teacherMap[waliId].total_saldo += saldoKelas;
+      teacherMap[waliId].jumlah_santri += santriInKelas.length;
     });
 
-    ok(res, summary);
+    ok(res, Object.values(teacherMap));
   } catch (e) { fail(res, e.message, 500); }
 });
 

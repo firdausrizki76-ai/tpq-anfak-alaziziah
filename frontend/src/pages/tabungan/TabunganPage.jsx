@@ -116,13 +116,13 @@ const TabunganPage = () => {
             <div key={idx} className="card p-4 border-l-4 border-emerald-500">
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <h3 className="font-bold text-gray-800">{g.nama_kelas}</h3>
-                  <p className="text-xs text-gray-500">Wali: {g.wali_nama}</p>
+                  <h3 className="font-bold text-gray-800">{g.nama_guru}</h3>
+                  <p className="text-xs text-gray-500">Kelas: {g.kelas_names?.join(', ') || '-'}</p>
                 </div>
                 <div className="bg-emerald-50 p-2 rounded-lg text-emerald-600"><Users size={16} /></div>
               </div>
               <div className="mt-4">
-                <p className="text-xs text-gray-400 uppercase font-semibold">Total Saldo Kelas</p>
+                <p className="text-xs text-gray-400 uppercase font-semibold">Total Saldo di Guru</p>
                 <p className="text-xl font-bold text-emerald-700">{formatRp(g.total_saldo)}</p>
                 <p className="text-xs text-gray-500 mt-1">{g.jumlah_santri} santri aktif</p>
               </div>
