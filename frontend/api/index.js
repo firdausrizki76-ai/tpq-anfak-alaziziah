@@ -421,7 +421,7 @@ app.get('/api/pembayaran', async (req, res) => {
   try {
     const { bulan, tahun, status, santri_id } = req.query;
     let q = supabase.from('pembayaran')
-      .select('*, santri:santri_id(nama_lengkap, nomor_induk, kelas:kelas_id(nama_kelas)), jenis:jenis_pembayaran_id(nama)');
+      .select('*, santri:santri_id(nama_lengkap, nomor_induk, no_hp_wali, no_hp_ayah, no_hp_ibu, kelas:kelas_id(nama_kelas)), jenis:jenis_pembayaran_id(nama)');
     if (bulan) q = q.eq('bulan', bulan);
     if (tahun) q = q.eq('tahun', tahun);
     if (status) q = q.eq('status', status);
