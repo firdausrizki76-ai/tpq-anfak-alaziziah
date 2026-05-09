@@ -120,11 +120,18 @@ app.post('/api/auth/change-password', async (req, res) => {
 // ==================== DASHBOARD ====================
 app.get('/api/dashboard/stats', async (req, res) => {
   try {
-    const [santriRes, hadirRes, tunggakanRes, tabunganRes] = await Promise.all([
+    const today = new Date().toISOString().split('T')[0];
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const [santriRes, hadirRes, tunggakanRes, tabunganRes, trendDataRes, kelasRes, santriDistRes] = await Promise.all([
       supabase.from('santri').select('id', { count: 'exact' }),
-      supabase.from('absensi').select('id', { count: 'exact' }).eq('tanggal', new Date().toISOString().split('T')[0]).eq('status', 'hadir').eq('tipe', 'santri'),
+      supabase.from('absensi').select('id', { count: 'exact' }).eq('tanggal', today).eq('status', 'hadir').eq('tipe', 'santri'),
       supabase.from('pembayaran').select('nominal').eq('status', 'belum'),
-      supabase.from('v_saldo_tabungan').select('saldo')
+      supabase.from('v_saldo_tabungan').select('saldo'),
+      supabase.from('absensi').select('tanggal').eq('tipe', 'santri').eq('status', 'hadir').gte('tanggal', thirtyDaysAgo.toISOString().split('T')[0]),
+      supabase.from('kelas').select('id, nama_kelas'),
+      supabase.from('santri').select('kelas_id')
     ]);
 
     const totalSantri = santriRes.count || 0;
@@ -132,7 +139,26 @@ app.get('/api/dashboard/stats', async (req, res) => {
     const tunggakan = (tunggakanRes.data || []).reduce((sum, p) => sum + (p.nominal || 0), 0);
     const totalTabungan = (tabunganRes.data || []).reduce((sum, t) => sum + (t.saldo || 0), 0);
 
-    ok(res, { totalSantri, hadirHariIni, tunggakan, totalTabungan });
+    // Process Trend
+    const trendMap = {};
+    (trendDataRes.data || []).forEach(a => {
+      trendMap[a.tanggal] = (trendMap[a.tanggal] || 0) + 1;
+    });
+    const kehadiranTrend = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      kehadiranTrend.push(trendMap[dateStr] || 0);
+    }
+
+    // Process Distribusi
+    const distribusiKelas = (kelasRes.data || []).map(k => {
+      const count = (santriDistRes.data || []).filter(s => s.kelas_id === k.id).length;
+      return { label: k.nama_kelas, value: count };
+    });
+
+    ok(res, { totalSantri, hadirHariIni, tunggakan, totalTabungan, kehadiranTrend, distribusiKelas });
   } catch (e) { fail(res, e.message, 500); }
 });
 

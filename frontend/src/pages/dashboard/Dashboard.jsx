@@ -90,23 +90,35 @@ const Dashboard = () => {
         <div className="card chart-card featured">
           <h3 className="card-title">Tren Kehadiran (30 Hari)</h3>
           <div className="mock-chart flex items-end justify-between mt-4">
-            {[40, 70, 85, 60, 90, 100, 80, 50, 90, 95].map((h, i) => (
-              <div key={i} className="chart-bar-wrapper">
-                <div className="chart-bar" style={{ height: `${h}%` }}></div>
-              </div>
-            ))}
+            {stats?.kehadiranTrend?.length > 0 ? stats.kehadiranTrend.map((h, i) => {
+              const maxVal = Math.max(...stats.kehadiranTrend, 1);
+              const height = (h / maxVal) * 100;
+              return (
+                <div key={i} className="chart-bar-wrapper">
+                  <div className="chart-bar" style={{ height: `${height}%` }} title={`${h} santri`}></div>
+                </div>
+              );
+            }) : (
+              <div className="w-full text-center py-10 text-gray-400">Belum ada data kehadiran</div>
+            )}
           </div>
         </div>
         
         <div className="card chart-card">
           <h3 className="card-title">Distribusi Santri per Kelas</h3>
-          <div className="mock-chart flex items-end justify-between mt-4">
-            {[30, 45, 60, 50, 75, 40].map((h, i) => (
-              <div key={i} className="chart-bar-wrapper">
-                <div className="chart-bar alt" style={{ height: `${h}%` }}></div>
-                <div className="text-xs mt-2 text-center" style={{ color: 'var(--color-outline)' }}>Kls {i+1}</div>
-              </div>
-            ))}
+          <div className="mock-chart flex items-end justify-around mt-4">
+            {stats?.distribusiKelas?.length > 0 ? stats.distribusiKelas.map((k, i) => {
+              const maxVal = Math.max(...stats.distribusiKelas.map(x => x.value), 1);
+              const height = (k.value / maxVal) * 100;
+              return (
+                <div key={i} className="chart-bar-wrapper" style={{ flex: 1 }}>
+                  <div className="chart-bar alt" style={{ height: `${height}%` }} title={`${k.value} santri`}></div>
+                  <div className="text-[10px] mt-2 text-center truncate" style={{ color: 'var(--color-outline)' }}>{k.label}</div>
+                </div>
+              );
+            }) : (
+              <div className="w-full text-center py-10 text-gray-400">Belum ada data kelas</div>
+            )}
           </div>
         </div>
       </div>
