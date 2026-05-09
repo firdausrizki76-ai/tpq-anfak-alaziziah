@@ -86,7 +86,7 @@ const TabunganPage = () => {
 
   return (
     <div className="flex-col gap-6 w-full">
-      <div className="page-header mb-6 flex justify-between items-center flex-wrap gap-4">
+      <div className="page-header mb-6 flex justify-between items-center flex-wrap gap-4 no-print">
         <div>
           <h1 className="page-title">Tabungan Santri</h1>
           <p className="page-subtitle">
@@ -105,7 +105,7 @@ const TabunganPage = () => {
       </div>
 
       {isAdmin && showSummary && (
-        <div className="grid grid-3-cols gap-6 mb-6">
+        <div className="grid grid-3-cols gap-6 mb-6 no-print">
           {guruSummary.map((g, idx) => (
             <div key={idx} className="card p-4 border-l-4 border-emerald-500">
               <div className="flex justify-between items-start mb-2">
@@ -125,7 +125,7 @@ const TabunganPage = () => {
         </div>
       )}
 
-      <div className="card w-full">
+      <div className="card w-full no-print">
         <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
           <div className="input-with-icon" style={{ maxWidth: '300px', width: '100%' }}>
             <Search className="icon" size={18} />
