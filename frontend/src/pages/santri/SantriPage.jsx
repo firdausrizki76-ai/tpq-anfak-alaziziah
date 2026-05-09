@@ -15,7 +15,7 @@ const SantriPage = () => {
   const [selectedSantri, setSelectedSantri] = useState(null);
   const [formData, setFormData] = useState({
     nomor_induk: '', nama_lengkap: '', nama_panggilan: '', kelas_id: '',
-    status: 'aktif', no_hp_wali: '', alamat: '', tempat_lahir: '', tanggal_lahir: '', jenis_kelamin: 'L',
+    no_hp_wali: '', no_hp_ayah: '', no_hp_ibu: '', alamat: '', tempat_lahir: '', tanggal_lahir: '', jenis_kelamin: 'L',
     anak_ke: '', jumlah_saudara: '', nik: '', rt: '', rw: '', desa: '', kecamatan: '', kabupaten: '',
     hobi: '', cita_cita: '', no_kk: '', nama_ayah: '', nik_ayah: '', pekerjaan_ayah: '', pendidikan_ayah: '',
     nama_ibu: '', nik_ibu: '', pekerjaan_ibu: '', pendidikan_ibu: '', nama_wali: '', pekerjaan_wali: '',
@@ -49,6 +49,8 @@ const SantriPage = () => {
         kelas_id: santri.kelas_id || '',
         status: santri.status || 'aktif',
         no_hp_wali: santri.no_hp_wali || '',
+        no_hp_ayah: santri.no_hp_ayah || '',
+        no_hp_ibu: santri.no_hp_ibu || '',
         alamat: santri.alamat || '',
         tempat_lahir: santri.tempat_lahir || '',
         tanggal_lahir: santri.tanggal_lahir || '',
@@ -82,7 +84,7 @@ const SantriPage = () => {
     } else {
       setFormData({
         nomor_induk: '', nama_lengkap: '', nama_panggilan: '', kelas_id: '',
-        status: 'aktif', no_hp_wali: '', alamat: '', tempat_lahir: '', tanggal_lahir: '', jenis_kelamin: 'L',
+        status: 'aktif', no_hp_wali: '', no_hp_ayah: '', no_hp_ibu: '', alamat: '', tempat_lahir: '', tanggal_lahir: '', jenis_kelamin: 'L',
         anak_ke: '', jumlah_saudara: '', nik: '', rt: '', rw: '', desa: '', kecamatan: '', kabupaten: '',
         hobi: '', cita_cita: '', no_kk: '', nama_ayah: '', nik_ayah: '', pekerjaan_ayah: '', pendidikan_ayah: '',
         nama_ibu: '', nik_ibu: '', pekerjaan_ibu: '', pendidikan_ibu: '', nama_wali: '', pekerjaan_wali: '',
@@ -361,6 +363,7 @@ const SantriPage = () => {
                     <div className="form-group"><label className="form-label">NIK Ayah</label><input type="text" name="nik_ayah" value={formData.nik_ayah} onChange={handleInputChange} className="input-field" /></div>
                     <div className="form-group"><label className="form-label">Pekerjaan Ayah</label><input type="text" name="pekerjaan_ayah" value={formData.pekerjaan_ayah} onChange={handleInputChange} className="input-field" /></div>
                     <div className="form-group"><label className="form-label">Pendidikan Ayah</label><input type="text" name="pendidikan_ayah" value={formData.pendidikan_ayah} onChange={handleInputChange} className="input-field" /></div>
+                    <div className="form-group col-span-2"><label className="form-label">No. HP Ayah</label><input type="text" name="no_hp_ayah" value={formData.no_hp_ayah} onChange={handleInputChange} className="input-field" placeholder="Contoh: 0812..." /></div>
                   </div>
                   
                   <div className="col-span-2 grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border border-gray-100 mt-2">
@@ -369,6 +372,7 @@ const SantriPage = () => {
                     <div className="form-group"><label className="form-label">NIK Ibu</label><input type="text" name="nik_ibu" value={formData.nik_ibu} onChange={handleInputChange} className="input-field" /></div>
                     <div className="form-group"><label className="form-label">Pekerjaan Ibu</label><input type="text" name="pekerjaan_ibu" value={formData.pekerjaan_ibu} onChange={handleInputChange} className="input-field" /></div>
                     <div className="form-group"><label className="form-label">Pendidikan Ibu</label><input type="text" name="pendidikan_ibu" value={formData.pendidikan_ibu} onChange={handleInputChange} className="input-field" /></div>
+                    <div className="form-group col-span-2"><label className="form-label">No. HP Ibu</label><input type="text" name="no_hp_ibu" value={formData.no_hp_ibu} onChange={handleInputChange} className="input-field" placeholder="Contoh: 0812..." /></div>
                   </div>
 
                   <div className="col-span-2 grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border border-gray-100 mt-2">
@@ -532,14 +536,16 @@ const SantriPage = () => {
                     <div>
                       <div className="font-medium">Ayah: {selectedSantri.nama_ayah || '-'}</div>
                       <div className="text-xs text-gray-500">NIK: {selectedSantri.nik_ayah || '-'}</div>
-                      <div className="text-xs text-gray-500">Kerja: {selectedSantri.pekerjaan_ayah || '-'}</div>
+                      <div className="text-xs text-gray-500">Pekerjaan: {selectedSantri.pekerjaan_ayah || '-'}</div>
                       <div className="text-xs text-gray-500">Pendidikan: {selectedSantri.pendidikan_ayah || '-'}</div>
+                      <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Phone size={10}/> {selectedSantri.no_hp_ayah || '-'}</div>
                     </div>
                     <div>
                       <div className="font-medium">Ibu: {selectedSantri.nama_ibu || '-'}</div>
                       <div className="text-xs text-gray-500">NIK: {selectedSantri.nik_ibu || '-'}</div>
                       <div className="text-xs text-gray-500">Kerja: {selectedSantri.pekerjaan_ibu || '-'}</div>
                       <div className="text-xs text-gray-500">Pendidikan: {selectedSantri.pendidikan_ibu || '-'}</div>
+                      <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Phone size={10}/> {selectedSantri.no_hp_ibu || '-'}</div>
                     </div>
                   </div>
                   {(selectedSantri.nama_wali || selectedSantri.no_hp_wali) && (

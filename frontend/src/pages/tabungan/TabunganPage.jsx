@@ -11,13 +11,27 @@ const TabunganPage = () => {
   const [selectedSantri, setSelectedSantri] = useState(null);
   const [riwayat, setRiwayat] = useState([]);
   const [loadingRiwayat, setLoadingRiwayat] = useState(false);
+  const [guruSummary, setGuruSummary] = useState([]);
+  const [showSummary, setShowSummary] = useState(false);
   const [formData, setFormData] = useState({ santri_id: '', nominal: '', tanggal: new Date().toISOString().split('T')[0], keterangan: '' });
+  
+  const user = JSON.parse(localStorage.getItem('tpq_user') || '{}');
+  const isAdmin = user.role === 'admin';
+  const isGuru = user.role === 'guru';
 
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     setLoading(true);
-    try { const data = await tabunganAPI.getAll(); setSantriData(data || []); } catch (e) { console.error(e); }
+    try { 
+      const params = isGuru ? { guru_id: user.id } : {};
+      const [data, summary] = await Promise.all([
+        tabunganAPI.getAll(params),
+        isAdmin ? tabunganAPI.getSummaryGuru() : Promise.resolve([])
+      ]);
+      setSantriData(data || []); 
+      setGuruSummary(summary || []);
+    } catch (e) { console.error(e); }
     setLoading(false);
   };
 
@@ -60,12 +74,43 @@ const TabunganPage = () => {
   return (
     <div className="flex-col gap-6 w-full">
       <div className="page-header mb-6 flex justify-between items-center flex-wrap gap-4">
-        <div><h1 className="page-title">Tabungan Santri</h1><p className="page-subtitle">Pencatatan setoran dan penarikan tabungan santri</p></div>
+        <div>
+          <h1 className="page-title">Tabungan Santri</h1>
+          <p className="page-subtitle">
+            {isGuru ? `Kelola tabungan santri kelas yang Anda ampu` : `Pencatatan setoran dan penarikan tabungan santri`}
+          </p>
+        </div>
         <div className="flex gap-2">
+          {isAdmin && (
+            <button className="btn-primary" style={{ backgroundColor: showSummary ? 'var(--color-primary-container)' : 'white', color: showSummary ? 'white' : 'var(--color-primary-container)', border: '1px solid var(--color-surface-container-highest)' }} onClick={() => setShowSummary(!showSummary)}>
+              <Users size={18} /> {showSummary ? 'Lihat List Santri' : 'Rekapan Per Guru'}
+            </button>
+          )}
           <button className="btn-primary" style={{ backgroundColor: 'white', color: 'var(--color-primary-container)', border: '1px solid var(--color-surface-container-highest)', borderBottom: '2px solid var(--color-gold)' }} onClick={() => openModal('tarik')}><ArrowUpCircle size={18} /> Tarik</button>
           <button className="btn-primary" onClick={() => openModal('setor')}><ArrowDownCircle size={18} /> Setor</button>
         </div>
       </div>
+
+      {isAdmin && showSummary && (
+        <div className="grid grid-3-cols gap-6 mb-6">
+          {guruSummary.map((g, idx) => (
+            <div key={idx} className="card p-4 border-l-4 border-emerald-500">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h3 className="font-bold text-gray-800">{g.nama_kelas}</h3>
+                  <p className="text-xs text-gray-500">Wali: {g.wali_nama}</p>
+                </div>
+                <div className="bg-emerald-50 p-2 rounded-lg text-emerald-600"><Users size={16} /></div>
+              </div>
+              <div className="mt-4">
+                <p className="text-xs text-gray-400 uppercase font-semibold">Total Saldo Kelas</p>
+                <p className="text-xl font-bold text-emerald-700">{formatRp(g.total_saldo)}</p>
+                <p className="text-xs text-gray-500 mt-1">{g.jumlah_santri} santri aktif</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="card w-full">
         <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">

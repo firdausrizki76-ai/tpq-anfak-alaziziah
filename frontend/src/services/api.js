@@ -118,7 +118,11 @@ export const pembayaranAPI = {
 
 // Tabungan
 export const tabunganAPI = {
-  getAll: () => request('/tabungan'),
+  getAll: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/tabungan${qs ? `?${qs}` : ''}`);
+  },
+  getSummaryGuru: () => request('/tabungan/summary-guru'),
   getRiwayat: (santriId) => request(`/tabungan/${santriId}/riwayat`),
   transact: (body) => request('/tabungan', { method: 'POST', body }),
 };

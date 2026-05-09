@@ -546,11 +546,22 @@ app.post('/api/pembayaran/generate', async (req, res) => {
 // ==================== TABUNGAN ====================
 app.get('/api/tabungan', async (req, res) => {
   try {
+    const { guru_id } = req.query;
+    
     // 1. Ambil data santri dasar dulu
-    const { data: santriList, error: errSantri } = await supabase.from('santri')
-      .select('id, nomor_induk, nama_lengkap, status, kelas:kelas_id(nama_kelas)')
-      .eq('status', 'aktif')
-      .order('nama_lengkap');
+    let q = supabase.from('santri')
+      .select('id, nomor_induk, nama_lengkap, status, kelas_id, kelas:kelas_id(id, nama_kelas, wali_kelas_id)')
+      .eq('status', 'aktif');
+    
+    if (guru_id) {
+      // Jika guru_id ada, filter santri yang kelasnya diampuni oleh guru tersebut
+      // Cari kelas yang wali_kelas_id = guru_id
+      const { data: classes } = await supabase.from('kelas').select('id').eq('wali_kelas_id', guru_id);
+      const classIds = (classes || []).map(c => c.id);
+      q = q.in('kelas_id', classIds);
+    }
+
+    const { data: santriList, error: errSantri } = await q.order('nama_lengkap');
     
     if (errSantri) {
       console.error('Error Santri:', errSantri);
@@ -568,6 +579,7 @@ app.get('/api/tabungan', async (req, res) => {
       id: s.id,
       nomor_induk: s.nomor_induk,
       nama_lengkap: s.nama_lengkap,
+      kelas: s.kelas,
       saldo: saldoMap[s.id] || 0
     }));
 
@@ -577,6 +589,32 @@ app.get('/api/tabungan', async (req, res) => {
     console.error('Catch Error Tabungan:', e.message);
     fail(res, e.message, 500); 
   }
+});
+
+app.get('/api/tabungan/summary-guru', async (req, res) => {
+  try {
+    // Ambil semua guru yang mengampu kelas
+    const { data: kelasList } = await supabase.from('kelas').select('id, nama_kelas, wali:wali_kelas_id(id, nama_lengkap)');
+    const { data: saldoData } = await supabase.from('v_saldo_tabungan').select('santri_id, saldo');
+    const { data: santriList } = await supabase.from('santri').select('id, kelas_id').eq('status', 'aktif');
+
+    const saldoMap = {};
+    (saldoData || []).forEach(s => { saldoMap[s.santri_id] = s.saldo; });
+
+    const summary = (kelasList || []).map(k => {
+      const santriInKelas = (santriList || []).filter(s => s.kelas_id === k.id);
+      const totalSaldo = santriInKelas.reduce((sum, s) => sum + (saldoMap[s.id] || 0), 0);
+      return {
+        kelas_id: k.id,
+        nama_kelas: k.nama_kelas,
+        wali_nama: k.wali?.nama_lengkap || 'Tanpa Wali',
+        total_saldo: totalSaldo,
+        jumlah_santri: santriInKelas.length
+      };
+    });
+
+    ok(res, summary);
+  } catch (e) { fail(res, e.message, 500); }
 });
 
 app.get('/api/tabungan/:santriId/riwayat', async (req, res) => {

@@ -130,8 +130,8 @@ const PembayaranPage = () => {
   };
 
   const handleWA = (p) => {
-    const hp = p.santri?.no_hp_wali;
-    if (!hp) { alert('Nomor HP wali santri tidak tersedia'); return; }
+    const hp = p.santri?.no_hp_wali || p.santri?.no_hp_ayah || p.santri?.no_hp_ibu;
+    if (!hp) { alert('Nomor HP (Wali/Ayah/Ibu) tidak tersedia'); return; }
     const cleanHp = hp.replace(/\D/g, '');
     const waNumber = cleanHp.startsWith('0') ? '62' + cleanHp.substring(1) : cleanHp;
     const nama_tagihan = p.jenis?.nama || p.jenis_pembayaran?.nama || 'Tagihan';
