@@ -250,3 +250,41 @@ a:hover {
 .cursor-wait {
   cursor: wait !important;
 }
+
+/* Print Utilities */
+@media print {
+  .no-print, 
+  .sidebar, 
+  .topbar, 
+  .running-text-container, 
+  .mobile-overlay, 
+  .mobile-close-btn,
+  .sidebar-header,
+  .sidebar-nav,
+  .sidebar-footer,
+  .topbar-left,
+  .topbar-profile,
+  .hamburger-btn,
+  .page-header,
+  .stat-card,
+  .btn-primary,
+  .modal-overlay {
+    display: none !important;
+  }
+  
+  body, 
+  .app-layout, 
+  .main-wrapper, 
+  .content-area, 
+  .content-container {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  .content-area {
+    padding: 0 !important;
+  }
+}
