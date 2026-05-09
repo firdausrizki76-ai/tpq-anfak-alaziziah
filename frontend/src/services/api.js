@@ -100,6 +100,7 @@ export const ujianAPI = {
   register: (body) => request('/ujian/register', { method: 'POST', body }),
   inputNilai: (body) => request('/ujian/nilai', { method: 'POST', body }),
   naikKelas: (body) => request('/ujian/naik-kelas', { method: 'POST', body }),
+  getHistory: (santriId) => request(`/ujian/history/${santriId}`),
 };
 
 // Pembayaran

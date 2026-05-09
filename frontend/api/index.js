@@ -802,6 +802,17 @@ app.post('/api/ujian/nilai', async (req, res) => {
   } catch (e) { fail(res, e.message, 500); }
 });
 
+app.get('/api/ujian/history/:santriId', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('riwayat_kelas')
+      .select('*, kelas_dari:kelas_dari_id(nama_kelas), kelas_ke:kelas_ke_id(nama_kelas)')
+      .eq('santri_id', req.params.santriId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    ok(res, data);
+  } catch (e) { fail(res, e.message, 500); }
+});
+
 app.post('/api/ujian/naik-kelas', async (req, res) => {
   try {
     const { santri_id, kelas_dari_id, kelas_ke_id } = req.body;
@@ -810,10 +821,26 @@ app.post('/api/ujian/naik-kelas', async (req, res) => {
     const { error: errSantri } = await supabase.from('santri').update({ kelas_id: kelas_ke_id }).eq('id', santri_id);
     if (errSantri) throw errSantri;
 
-    // 2. Tandai target_pencapaian lama sebagai selesai (opsional: delete atau update tanggal_selesai)
+    // 2. Update riwayat_kelas terbaru untuk santri ini
+    const { data: latestRiwayat } = await supabase.from('riwayat_kelas')
+      .select('id')
+      .eq('santri_id', santri_id)
+      .eq('kelas_dari_id', kelas_dari_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (latestRiwayat) {
+      await supabase.from('riwayat_kelas').update({ 
+        kelas_ke_id: kelas_ke_id || kelas_dari_id,
+        tanggal_naik: new Date().toISOString().split('T')[0] 
+      }).eq('id', latestRiwayat.id);
+    }
+
+    // 3. Tandai target_pencapaian lama sebagai selesai
     await supabase.from('target_pencapaian').delete().eq('santri_id', santri_id).eq('kelas_id', kelas_dari_id);
 
-    // 3. Buat target_pencapaian baru untuk jilid berikutnya
+    // 4. Buat target_pencapaian baru untuk jilid berikutnya
     if (kelas_ke_id) {
       await supabase.from('target_pencapaian').insert({
         santri_id,

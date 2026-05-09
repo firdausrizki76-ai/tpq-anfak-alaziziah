@@ -11,6 +11,8 @@ const UjianPage = () => {
   const [saving, setSaving] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
   const [selectedSantri, setSelectedSantri] = useState(null);
+  const [historyList, setHistoryList] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [printSantri, setPrintSantri] = useState(null);
   const [selectedSantriIds, setSelectedSantriIds] = useState([]);
   const [nextKelas, setNextKelas] = useState('');
@@ -98,6 +100,17 @@ const UjianPage = () => {
       await loadData(); closeModal();
     } catch (e) { alert(e.message); }
     setSaving(false);
+  };
+
+  const openHistory = async (santriId, santriNama) => {
+    setSelectedSantri({ santri_id: santriId, santri: { nama_lengkap: santriNama } });
+    setActiveModal('history');
+    setLoadingHistory(true);
+    try {
+      const data = await ujianAPI.getHistory(santriId);
+      setHistoryList(data || []);
+    } catch (e) { console.error(e); }
+    setLoadingHistory(false);
   };
 
   const handlePrintKartu = (item) => {
@@ -259,7 +272,7 @@ const UjianPage = () => {
 
         <div className="table-responsive">
           <table className="data-table w-full">
-            <thead><tr><th>No</th><th>Nama Santri</th><th>Kelas</th><th>Tanggal</th><th>Masa Tempuh</th><th>Status</th><th className="text-center">Aksi</th></tr></thead>
+            <thead><tr><th>No</th><th>Nama Santri</th><th>Kelas</th><th>Tanggal</th><th>Masa Tempuh</th><th>Status</th><th className="text-center">Aksi</th><th>Riwayat</th></tr></thead>
             <tbody>
               {loading && !activeModal ? <tr><td colSpan="7" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
               : filteredExam.length === 0 ? <tr><td colSpan="7" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data pencapaian</td></tr>
@@ -295,6 +308,9 @@ const UjianPage = () => {
                         )}
                         {status === 'Belajar' && <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Proses Belajar</span>}
                       </div>
+                    </td>
+                    <td className="text-center">
+                      <button className="p-1 px-3 text-xs bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 rounded font-medium" onClick={() => openHistory(item.santri_id, item.santri?.nama_lengkap)}>Riwayat</button>
                     </td>
                   </tr>
                 );
@@ -385,6 +401,57 @@ const UjianPage = () => {
             <button className="btn-primary" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={closeModal}>Nanti Saja</button>
             <button className="btn-primary" style={{ backgroundColor: '#10b981' }} onClick={handlePromotionConfirm} disabled={saving}>{saving ? 'Memproses...' : 'Ya, Naikkan Sekarang'}</button>
           </div>
+        </div></div>
+      )}
+
+      {activeModal === 'history' && selectedSantri && (
+        <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '600px' }}>
+          <div className="modal-header">
+            <div>
+              <h2 className="modal-title">Riwayat Pendidikan</h2>
+              <p className="text-xs text-gray-500">{selectedSantri.santri?.nama_lengkap}</p>
+            </div>
+            <X className="modal-close" onClick={closeModal} />
+          </div>
+          <div className="modal-body p-0">
+            {loadingHistory ? (
+              <div className="text-center py-12"><Loader2 size={32} className="animate-spin mx-auto text-blue-500" /></div>
+            ) : historyList.length === 0 ? (
+              <div className="text-center py-12 text-gray-400">Belum ada riwayat pendidikan</div>
+            ) : (
+              <div className="p-4">
+                <div className="space-y-4 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
+                  {historyList.map((h, idx) => (
+                    <div key={h.id} className="relative pl-10">
+                      <div className="absolute left-2 top-1 w-4 h-4 rounded-full bg-blue-500 border-4 border-white shadow-sm z-10"></div>
+                      <div className="card p-4 bg-gray-50 border-gray-100 hover:shadow-md transition-shadow">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{new Date(h.tanggal_naik || h.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                          <span className={`badge ${h.status_tes === 'lulus' ? 'badge-success' : 'badge-danger'}`}>{h.status_tes}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="font-bold text-gray-700">{h.kelas_dari?.nama_kelas}</span>
+                          <ArrowRight size={14} className="text-gray-400" />
+                          <span className="font-bold text-blue-600">{h.kelas_ke?.nama_kelas || h.kelas_dari?.nama_kelas}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-xs">
+                          <div>
+                            <p className="text-gray-400 mb-0.5">Nilai Ujian</p>
+                            <p className="font-bold text-gray-700">{h.nilai_tes || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400 mb-0.5">Catatan</p>
+                            <p className="italic text-gray-600">{h.catatan || '-'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="modal-footer"><button className="btn-primary" onClick={closeModal}>Tutup</button></div>
         </div></div>
       )}
       <style>{`
