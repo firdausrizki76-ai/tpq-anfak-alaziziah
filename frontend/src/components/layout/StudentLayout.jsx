@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, CalendarCheck, FileSignature, LogOut, Bell, PiggyBank } from 'lucide-react';
+import { LayoutDashboard, CalendarCheck, FileSignature, LogOut, Bell, Wallet } from 'lucide-react';
 import './StudentLayout.css';
 
 const StudentLayout = () => {
@@ -11,7 +11,7 @@ const StudentLayout = () => {
     { path: '/siswa/dashboard', icon: <LayoutDashboard size={24} />, label: 'Dashboard' },
     { path: '/siswa/absen', icon: <CalendarCheck size={24} />, label: 'Absen' },
     { path: '/siswa/izin', icon: <FileSignature size={24} />, label: 'Izin' },
-    { path: '/siswa/tabungan', icon: <PiggyBank size={24} />, label: 'Tabungan' }
+    { path: '/siswa/tabungan', icon: <Wallet size={24} />, label: 'Tabungan' }
   ];
 
   return (

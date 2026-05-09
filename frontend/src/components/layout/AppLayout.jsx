@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, BookOpen, GraduationCap, 
-  CalendarCheck, CreditCard, PiggyBank, FileBarChart, Settings, LogOut, Menu, X,
+  CalendarCheck, CreditCard, Wallet, FileBarChart, Settings, LogOut, Menu, X,
   Award
 } from 'lucide-react';
 import './AppLayout.css';
@@ -28,7 +28,7 @@ const AppLayout = () => {
     { path: '/absensi', icon: <CalendarCheck size={20} />, label: 'Absensi' },
     { path: '/ujian', icon: <Award size={20} />, label: 'Ujian & Kenaikan' },
     { path: '/pembayaran', icon: <CreditCard size={20} />, label: 'Pembayaran' },
-    { path: '/tabungan', icon: <PiggyBank size={20} />, label: 'Tabungan' },
+    { path: '/tabungan', icon: <Wallet size={20} />, label: 'Tabungan' },
     { path: '/laporan', icon: <FileBarChart size={20} />, label: 'Laporan' },
     { path: '/pengaturan', icon: <Settings size={20} />, label: 'Pengaturan' }
   ];

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserCheck, AlertCircle, PiggyBank, TrendingUp, Loader2 } from 'lucide-react';
+import { Users, UserCheck, AlertCircle, Wallet, TrendingUp, Loader2 } from 'lucide-react';
 import { dashboardAPI } from '../../services/api';
 import './Dashboard.css';
 
@@ -80,7 +80,7 @@ const Dashboard = () => {
           title="Total Tabungan" 
           value={stats ? formatRp(stats.totalTabungan) : '—'} 
           subtext="Total saldo seluruh santri" 
-          icon={PiggyBank} 
+          icon={Wallet} 
           trend={true}
           loading={loading}
         />
