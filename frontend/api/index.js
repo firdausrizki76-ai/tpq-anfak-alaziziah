@@ -697,6 +697,7 @@ app.get('/api/ujian', async (req, res) => {
   try {
     const { data, error } = await supabase.from('target_pencapaian')
       .select('*, santri:santri_id(id, nama_lengkap, nomor_induk, kelas:kelas_id(id, nama_kelas, urutan, wali:wali_kelas_id(nama_lengkap))), kelas:kelas_id(nama_kelas)')
+      .is('tanggal_selesai', null)
       .order('created_at', { ascending: false });
     
     if (error) throw error;
@@ -723,7 +724,7 @@ app.post('/api/ujian/register', async (req, res) => {
 
       // Cek apakah sudah ada di target_pencapaian
       const { data: existing } = await supabase.from('target_pencapaian')
-        .select('id').eq('santri_id', sid).eq('kelas_id', santri.kelas_id).single();
+        .select('id').eq('santri_id', sid).eq('kelas_id', santri.kelas_id).is('tanggal_selesai', null).maybeSingle();
 
       if (existing) {
         // Jika ada, paksa jadi "Siap Ujian" dengan menyamakan aktual_hari ke target_hari
