@@ -142,6 +142,11 @@ export const laporanAPI = {
     const qs = new URLSearchParams(params).toString();
     return request(`/laporan/absensi${qs ? `?${qs}` : ''}`);
   },
+  getTabungan: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/laporan/tabungan${qs ? `?${qs}` : ''}`);
+  },
+  getAkademik: () => request('/laporan/akademik'),
 };
 
 // Pengaturan

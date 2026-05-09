@@ -658,26 +658,72 @@ app.post('/api/tabungan', async (req, res) => {
 // ==================== LAPORAN ====================
 app.get('/api/laporan/keuangan', async (req, res) => {
   try {
-    const { periode } = req.query;
-    const { data } = await supabase.from('pembayaran').select('nominal, status, bulan, tahun, created_at');
+    const { bulan, tahun } = req.query;
+    let q = supabase.from('pembayaran')
+      .select('*, santri:santri_id(nama_lengkap, nomor_induk), jenis:jenis_pembayaran_id(nama)');
+    
+    if (bulan) q = q.eq('bulan', bulan);
+    if (tahun) q = q.eq('tahun', tahun);
+
+    const { data, error } = await q.order('created_at', { ascending: false });
+    if (error) throw error;
+
     const totalMasuk = (data || []).filter(p => p.status === 'lunas').reduce((s, p) => s + p.nominal, 0);
     const totalTunggakan = (data || []).filter(p => p.status === 'belum').reduce((s, p) => s + p.nominal, 0);
-    ok(res, { totalMasuk, totalTunggakan, totalTransaksi: (data || []).length });
+    
+    ok(res, { totalMasuk, totalTunggakan, totalTransaksi: (data || []).length, data });
   } catch (e) { fail(res, e.message, 500); }
 });
 
 app.get('/api/laporan/absensi', async (req, res) => {
   try {
-    const { dari, sampai } = req.query;
-    let q = supabase.from('absensi').select('status, tanggal').eq('tipe', 'santri');
+    const { dari, sampai, kelas_id } = req.query;
+    let q = supabase.from('absensi')
+      .select('*, santri:santri_id(nama_lengkap, nomor_induk, kelas:kelas_id(nama_kelas))')
+      .eq('tipe', 'santri');
+    
     if (dari) q = q.gte('tanggal', dari);
     if (sampai) q = q.lte('tanggal', sampai);
-    const { data } = await q;
+    
+    const { data, error } = await q.order('tanggal', { ascending: false });
+    if (error) throw error;
+
     const hadir = (data || []).filter(a => a.status === 'hadir').length;
     const sakit = (data || []).filter(a => a.status === 'sakit').length;
     const izin = (data || []).filter(a => a.status === 'izin').length;
     const alfa = (data || []).filter(a => a.status === 'alfa').length;
-    ok(res, { hadir, sakit, izin, alfa, total: (data || []).length });
+
+    ok(res, { hadir, sakit, izin, alfa, total: (data || []).length, data });
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+app.get('/api/laporan/tabungan', async (req, res) => {
+  try {
+    const { dari, sampai } = req.query;
+    let q = supabase.from('tabungan_santri')
+      .select('*, santri:santri_id(nama_lengkap, nomor_induk, kelas:kelas_id(nama_kelas))');
+    
+    if (dari) q = q.gte('tanggal', dari);
+    if (sampai) q = q.lte('tanggal', sampai);
+
+    const { data, error } = await q.order('tanggal', { ascending: false });
+    if (error) throw error;
+
+    const totalSetor = (data || []).filter(t => t.jenis === 'setor').reduce((s, t) => s + t.nominal, 0);
+    const totalTarik = (data || []).filter(t => t.jenis === 'tarik').reduce((s, t) => s + t.nominal, 0);
+
+    ok(res, { totalSetor, totalTarik, data });
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+app.get('/api/laporan/akademik', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('riwayat_kelas')
+      .select('*, santri:santri_id(nama_lengkap, nomor_induk), kelas_dari:kelas_dari_id(nama_kelas), kelas_ke:kelas_ke_id(nama_kelas)')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    ok(res, { data });
   } catch (e) { fail(res, e.message, 500); }
 });
 

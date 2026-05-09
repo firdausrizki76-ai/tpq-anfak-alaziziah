@@ -1,26 +1,134 @@
 import React, { useState, useEffect } from 'react';
-import { Download, FileText, Calendar, Wallet, GraduationCap, CheckCircle2, Loader2 } from 'lucide-react';
+import { Download, FileText, Calendar, Wallet, GraduationCap, CheckCircle2, Loader2, X } from 'lucide-react';
 import { laporanAPI } from '../../services/api';
+import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 import '../dashboard/Dashboard.css';
 
 const LaporanPage = () => {
   const [loading, setLoading] = useState({});
   const [keuanganData, setKeuanganData] = useState(null);
   const [absensiData, setAbsensiData] = useState(null);
+  const [tabunganData, setTabunganData] = useState(null);
 
   useEffect(() => { loadSummary(); }, []);
 
   const loadSummary = async () => {
     try {
-      const [keu, abs] = await Promise.all([laporanAPI.getKeuangan().catch(() => null), laporanAPI.getAbsensi().catch(() => null)]);
-      setKeuanganData(keu); setAbsensiData(abs);
+      const [keu, abs, tab] = await Promise.all([
+        laporanAPI.getKeuangan().catch(() => null), 
+        laporanAPI.getAbsensi().catch(() => null),
+        laporanAPI.getTabungan().catch(() => null)
+      ]);
+      setKeuanganData(keu); 
+      setAbsensiData(abs);
+      setTabunganData(tab);
     } catch (e) { console.error(e); }
   };
 
-  const handleDownload = (type, format) => {
+  const flattenData = (type, data) => {
+    if (type === 'keuangan') {
+      return data.map(p => ({
+        'Tanggal': new Date(p.created_at).toLocaleDateString('id-ID'),
+        'Nama Santri': p.santri?.nama_lengkap || '-',
+        'NIS': p.santri?.nomor_induk || '-',
+        'Jenis': p.jenis?.nama || '-',
+        'Bulan': p.bulan || '-',
+        'Tahun': p.tahun || '-',
+        'Nominal': p.nominal,
+        'Status': p.status === 'lunas' ? 'Lunas' : 'Belum Lunas'
+      }));
+    }
+    if (type === 'absensi') {
+      return data.map(a => ({
+        'Tanggal': a.tanggal,
+        'Nama Santri': a.santri?.nama_lengkap || '-',
+        'NIS': a.santri?.nomor_induk || '-',
+        'Kelas': a.santri?.kelas?.nama_kelas || '-',
+        'Status': a.status.toUpperCase(),
+        'Keterangan': a.keterangan || '-'
+      }));
+    }
+    if (type === 'tabungan') {
+      return data.map(t => ({
+        'Tanggal': t.tanggal,
+        'Nama Santri': t.santri?.nama_lengkap || '-',
+        'Kelas': t.santri?.kelas?.nama_kelas || '-',
+        'Jenis': t.jenis === 'setor' ? 'Setoran' : 'Penarikan',
+        'Nominal': t.nominal,
+        'Saldo Akhir': t.saldo_setelah,
+        'Keterangan': t.keterangan || '-'
+      }));
+    }
+    if (type === 'santri') {
+      return data.map(h => ({
+        'Tanggal': h.tanggal_naik || h.created_at,
+        'Nama Santri': h.santri?.nama_lengkap || '-',
+        'NIS': h.santri?.nomor_induk || '-',
+        'Dari Kelas': h.kelas_dari?.nama_kelas || '-',
+        'Ke Kelas': h.kelas_ke?.nama_kelas || '-',
+        'Nilai': h.nilai_tes || '-',
+        'Status': h.status_tes || '-',
+        'Catatan': h.catatan || '-'
+      }));
+    }
+    return data;
+  };
+
+  const getColumns = (type) => {
+    if (type === 'keuangan') return ['Tanggal', 'Santri', 'Jenis', 'Periode', 'Nominal', 'Status'];
+    if (type === 'absensi') return ['Tanggal', 'Santri', 'Kelas', 'Status', 'Ket'];
+    if (type === 'tabungan') return ['Tanggal', 'Santri', 'Jenis', 'Nominal', 'Saldo', 'Ket'];
+    if (type === 'santri') return ['Tanggal', 'Santri', 'Dari', 'Ke', 'Nilai', 'Status'];
+    return [];
+  };
+
+  const getRow = (type, item) => {
+    if (type === 'keuangan') return [new Date(item.created_at).toLocaleDateString('id-ID'), item.santri?.nama_lengkap, item.jenis?.nama, `${item.bulan}/${item.tahun}`, formatRp(item.nominal), item.status];
+    if (type === 'absensi') return [item.tanggal, item.santri?.nama_lengkap, item.santri?.kelas?.nama_kelas, item.status, item.keterangan || '-'];
+    if (type === 'tabungan') return [item.tanggal, item.santri?.nama_lengkap, item.jenis, formatRp(item.nominal), formatRp(item.saldo_setelah), item.keterangan || '-'];
+    if (type === 'santri') return [item.tanggal_naik || '-', item.santri?.nama_lengkap, item.kelas_dari?.nama_kelas, item.kelas_ke?.nama_kelas, item.nilai_tes, item.status_tes];
+    return [];
+  };
+
+  const handleDownload = async (type, format) => {
     const key = `${type}_${format}`;
     setLoading(prev => ({ ...prev, [key]: true }));
-    setTimeout(() => { setLoading(prev => ({ ...prev, [key]: false })); alert(`Laporan ${type} (${format}) sedang diunduh...`); }, 2000);
+    try {
+      let result;
+      if (type === 'keuangan') result = await laporanAPI.getKeuangan();
+      else if (type === 'absensi') result = await laporanAPI.getAbsensi();
+      else if (type === 'tabungan') result = await laporanAPI.getTabungan();
+      else if (type === 'santri') result = await laporanAPI.getAkademik();
+
+      if (!result || !result.data) throw new Error('Data tidak ditemukan');
+
+      if (format === 'Excel') {
+        const ws = XLSX.utils.json_to_sheet(flattenData(type, result.data));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Laporan");
+        XLSX.writeFile(wb, `Laporan_${type}_${new Date().getTime()}.xlsx`);
+      } else {
+        const doc = new jsPDF();
+        doc.setFontSize(18);
+        doc.text(`LAPORAN ${type.toUpperCase()}`, 14, 15);
+        doc.setFontSize(10);
+        doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 22);
+        
+        doc.autoTable({
+          startY: 30,
+          head: [getColumns(type)],
+          body: result.data.map(item => getRow(type, item)),
+          theme: 'grid',
+          headStyles: { fillGray: [44, 62, 80], textColor: [255, 255, 255] },
+        });
+        doc.save(`Laporan_${type}_${new Date().getTime()}.pdf`);
+      }
+    } catch (e) {
+      alert('Gagal mengunduh laporan: ' + e.message);
+    }
+    setLoading(prev => ({ ...prev, [key]: false }));
   };
 
   const formatRp = (n) => `Rp ${(n||0).toLocaleString('id-ID')}`;
@@ -38,15 +146,17 @@ const LaporanPage = () => {
       <div className="flex gap-2 items-center">
         <Calendar size={16} className="text-gray-400" />
         <select className="input-field" style={{ flex: 1 }}>
-          <option>Bulan Ini (Mei 2026)</option><option>Bulan Lalu</option><option>Semester Ini</option><option>Tahun Ajaran</option>
+          <option>Seluruh Periode</option>
+          <option>Bulan Ini</option>
+          <option>Bulan Lalu</option>
         </select>
       </div>
       <div className="grid grid-cols-2 gap-2 mt-2">
         <button className="btn-primary justify-center bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-50" onClick={() => handleDownload(type, 'Excel')} disabled={loading[`${type}_Excel`]}>
-          {loading[`${type}_Excel`] ? <div className="w-4 h-4 border-2 border-emerald-600/30 border-t-emerald-600 rounded-full animate-spin"></div> : <><Download size={16} /> Excel</>}
+          {loading[`${type}_Excel`] ? <Loader2 size={16} className="animate-spin" /> : <><Download size={16} /> Excel</>}
         </button>
         <button className="btn-primary justify-center" onClick={() => handleDownload(type, 'PDF')} disabled={loading[`${type}_PDF`]}>
-          {loading[`${type}_PDF`] ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><FileText size={16} /> PDF</>}
+          {loading[`${type}_PDF`] ? <Loader2 size={16} className="animate-spin" /> : <><FileText size={16} /> PDF</>}
         </button>
       </div>
     </div>
@@ -60,7 +170,8 @@ const LaporanPage = () => {
           summary={keuanganData ? `Total masuk: ${formatRp(keuanganData.totalMasuk)} | Tunggakan: ${formatRp(keuanganData.totalTunggakan)}` : null} />
         <ReportCard type="absensi" title="Laporan Absensi" description="Rekapitulasi kehadiran santri." icon={CheckCircle2} colorClass="bg-blue-100 text-blue-600"
           summary={absensiData ? `Hadir: ${absensiData.hadir} | Sakit: ${absensiData.sakit} | Izin: ${absensiData.izin} | Alfa: ${absensiData.alfa}` : null} />
-        <ReportCard type="tabungan" title="Laporan Tabungan" description="Rekap setoran dan penarikan tabungan." icon={FileText} colorClass="bg-orange-100 text-orange-600" />
+        <ReportCard type="tabungan" title="Laporan Tabungan" description="Rekap setoran dan penarikan tabungan." icon={FileText} colorClass="bg-orange-100 text-orange-600" 
+          summary={tabunganData ? `Total Setor: ${formatRp(tabunganData.totalSetor)} | Total Tarik: ${formatRp(tabunganData.totalTarik)}` : null} />
         <ReportCard type="santri" title="Laporan Akademik" description="Perkembangan hafalan dan nilai santri." icon={GraduationCap} colorClass="bg-purple-100 text-purple-600" />
       </div>
     </div>
