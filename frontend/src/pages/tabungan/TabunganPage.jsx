@@ -14,6 +14,7 @@ const TabunganPage = () => {
   const [guruSummary, setGuruSummary] = useState([]);
   const [showSummary, setShowSummary] = useState(false);
   const [riwayatFilter, setRiwayatFilter] = useState({ month: new Date().getMonth() + 1, year: new Date().getFullYear() });
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({ santri_id: '', nominal: '', tanggal: new Date().toISOString().split('T')[0], keterangan: '' });
   
   const user = JSON.parse(localStorage.getItem('tpq_user') || '{}');
@@ -84,6 +85,11 @@ const TabunganPage = () => {
   const formatRp = (n) => `Rp ${(n||0).toLocaleString('id-ID')}`;
   const totalSaldo = santriData.reduce((s, d) => s + (d.saldo || 0), 0);
 
+  const filteredData = santriData.filter(s => 
+    s.nama_lengkap.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    s.nomor_induk.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="flex-col gap-6 w-full">
       <div className="page-header mb-6 flex justify-between items-center flex-wrap gap-4 no-print">
@@ -129,7 +135,13 @@ const TabunganPage = () => {
         <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
           <div className="input-with-icon" style={{ maxWidth: '300px', width: '100%' }}>
             <Search className="icon" size={18} />
-            <input type="text" className="input-field" placeholder="Cari nama santri..." />
+            <input 
+              type="text" 
+              className="input-field" 
+              placeholder="Cari nama santri..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
           <div className="font-semibold text-lg text-[var(--color-primary-container)] bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-100 flex items-center gap-2">
             <Wallet className="text-emerald-600" size={20} />
@@ -142,8 +154,8 @@ const TabunganPage = () => {
             <thead><tr><th>No</th><th>NIS</th><th>Nama</th><th>Kelas</th><th>Saldo</th><th className="text-center">Aksi</th></tr></thead>
             <tbody>
               {loading ? <tr><td colSpan="6" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
-              : santriData.length === 0 ? <tr><td colSpan="6" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data tabungan</td></tr>
-              : santriData.map((s, i) => (
+              : filteredData.length === 0 ? <tr><td colSpan="6" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data tabungan</td></tr>
+              : filteredData.map((s, i) => (
                 <tr key={s.id}>
                   <td>{i+1}</td><td>{s.nomor_induk}</td><td className="font-medium">{s.nama_lengkap}</td>
                   <td>{s.kelas?.nama_kelas || '-'}</td>
