@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, QrCode, BookOpen, CheckCircle, Loader2 } from 'lucide-react';
-import { absensiAPI, kelasAPI } from '../../services/api';
+import { Users, QrCode, BookOpen, CheckCircle, Loader2, Lock, X, Save } from 'lucide-react';
+import { absensiAPI, kelasAPI, authAPI } from '../../services/api';
 import '../student/StudentDashboard.css';
 
 const TeacherDashboard = () => {
@@ -9,6 +9,9 @@ const TeacherDashboard = () => {
   const [guru, setGuru] = useState(null);
   const [stats, setStats] = useState({ hadir: 0, total: 0 });
   const [loading, setLoading] = useState(true);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  const [savingPassword, setSavingPassword] = useState(false);
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('tpq_user'));
@@ -38,6 +41,30 @@ const TeacherDashboard = () => {
       console.error('Error loading teacher stats:', e);
     }
     setLoading(false);
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      alert('Konfirmasi password baru tidak cocok');
+      return;
+    }
+    
+    setSavingPassword(true);
+    try {
+      await authAPI.changePassword({
+        role: 'guru',
+        id: guru.id,
+        oldPassword: passwordForm.oldPassword,
+        newPassword: passwordForm.newPassword
+      });
+      alert('Password berhasil diperbarui');
+      setShowPasswordModal(false);
+      setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (e) {
+      alert(e.message);
+    }
+    setSavingPassword(false);
   };
 
   if (!guru) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto" /></div>;
@@ -96,6 +123,63 @@ const TeacherDashboard = () => {
         </div>
       </div>
 
+      <div className="flex-col gap-4 mb-8">
+        <button className="btn-primary w-full justify-center bg-white text-gray-600 border-gray-200" onClick={() => setShowPasswordModal(true)}>
+          <Lock size={18} /> Ganti Password
+        </button>
+      </div>
+
+      {showPasswordModal && (
+        <div className="modal-overlay">
+          <div className="modal-container" style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h2 className="modal-title text-lg">Ganti Password</h2>
+              <X className="modal-close" onClick={() => setShowPasswordModal(false)} />
+            </div>
+            <form onSubmit={handlePasswordChange}>
+              <div className="modal-body space-y-4">
+                <div className="form-group">
+                  <label className="form-label text-sm">Password Lama</label>
+                  <input 
+                    type="password" 
+                    className="input-field" 
+                    value={passwordForm.oldPassword} 
+                    onChange={(e) => setPasswordForm({...passwordForm, oldPassword: e.target.value})} 
+                    required 
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label text-sm">Password Baru</label>
+                  <input 
+                    type="password" 
+                    className="input-field" 
+                    value={passwordForm.newPassword} 
+                    onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})} 
+                    minLength={6}
+                    required 
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label text-sm">Konfirmasi Password Baru</label>
+                  <input 
+                    type="password" 
+                    className="input-field" 
+                    value={passwordForm.confirmPassword} 
+                    onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} 
+                    required 
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn-primary flex-1 bg-gray-100 text-gray-600 border-none" onClick={() => setShowPasswordModal(false)}>Batal</button>
+                <button type="submit" className="btn-primary flex-1" disabled={savingPassword}>
+                  {savingPassword ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> Simpan</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

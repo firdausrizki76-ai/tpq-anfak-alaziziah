@@ -45,7 +45,8 @@ export const authAPI = {
     localStorage.removeItem('tpq_token');
     localStorage.removeItem('tpq_user');
     window.location.href = '/login';
-  }
+  },
+  changePassword: (body) => request('/auth/change-password', { method: 'POST', body }),
 };
 
 // Dashboard

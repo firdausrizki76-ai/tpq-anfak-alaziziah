@@ -87,6 +87,36 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+app.post('/api/auth/change-password', async (req, res) => {
+  try {
+    const { role, id, oldPassword, newPassword } = req.body;
+    let table = role === 'guru' ? 'guru' : 'santri';
+
+    // 1. Verifikasi password lama
+    const { data, error } = await supabase.from(table)
+      .select('id, password')
+      .eq('id', id)
+      .eq('password', oldPassword)
+      .single();
+
+    if (error || !data) {
+      return fail(res, 'Password lama salah', 401);
+    }
+
+    // 2. Update password baru
+    const { error: updateError } = await supabase.from(table)
+      .update({ password: newPassword })
+      .eq('id', id);
+
+    if (updateError) throw updateError;
+
+    // 3. Update di Supabase Auth (jika email tersedia)
+    // Untuk mempermudah, kita fokus di database table dulu karena login utama pakai database table
+    
+    ok(res, null, 'Password berhasil diperbarui');
+  } catch (e) { fail(res, e.message, 500); }
+});
+
 // ==================== DASHBOARD ====================
 app.get('/api/dashboard/stats', async (req, res) => {
   try {
