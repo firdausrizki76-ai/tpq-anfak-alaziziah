@@ -20,6 +20,7 @@ import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import ScannerPage from './pages/absensi/ScannerPage';
 import ClassListPage from './pages/teacher/ClassListPage';
 import StudentTabunganPage from './pages/student/StudentTabunganPage';
+import StudentTagihanPage from './pages/student/StudentTagihanPage';
 
 const ProtectedRoute = ({ children, allowedRole }) => {
   const token = localStorage.getItem('tpq_token');
@@ -79,6 +80,7 @@ function App() {
           <Route path="/siswa/absen" element={<div className="p-4 text-center mt-10"><h2>Scan Absensi</h2><p>Arahkan kamera ke QR Code</p></div>} />
           <Route path="/siswa/izin" element={<div className="p-4 text-center mt-10"><h2>Pengajuan Izin</h2><p>Form izin tidak hadir</p></div>} />
           <Route path="/siswa/tabungan" element={<StudentTabunganPage />} />
+          <Route path="/siswa/tagihan" element={<StudentTagihanPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

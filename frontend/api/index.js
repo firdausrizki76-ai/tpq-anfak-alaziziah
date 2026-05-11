@@ -561,6 +561,14 @@ app.post('/api/pembayaran/generate', async (req, res) => {
   } catch (e) { fail(res, e.message, 500); }
 });
 
+app.delete('/api/pembayaran/:id', async (req, res) => {
+  try {
+    const { error } = await supabase.from('pembayaran').delete().eq('id', req.params.id);
+    if (error) throw error;
+    ok(res, null, 'Data pembayaran berhasil dihapus');
+  } catch (e) { fail(res, e.message, 500); }
+});
+
 // ==================== TABUNGAN ====================
 app.get('/api/tabungan', async (req, res) => {
   try {

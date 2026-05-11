@@ -14,9 +14,6 @@ const StudentTabunganPage = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // API ini harus sudah menyesuaikan user yang sedang login di sisi backend
-      // atau mengambil profile dulu. Karena di frontend API belum diubah untuk siswa,
-      // kita asumsikan siswa bisa lihat tabungannya.
       const userStr = localStorage.getItem('tpq_user');
       const user = userStr ? JSON.parse(userStr) : null;
       
@@ -24,13 +21,10 @@ const StudentTabunganPage = () => {
         const data = await tabunganAPI.getRiwayat(user.id).catch(() => []);
         setRiwayat(data || []);
         
-        // Calculate saldo based on riwayat if API doesn't provide it
-        let currentSaldo = 0;
-        data.forEach(t => {
-          if (t.jenis === 'setor') currentSaldo += t.nominal;
-          else if (t.jenis === 'tarik') currentSaldo -= t.nominal;
-        });
-        setSaldo(currentSaldo);
+        // Use saldo_setelah from latest transaction for accuracy
+        if (data && data.length > 0) {
+          setSaldo(data[0].saldo_setelah || 0);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -65,18 +59,22 @@ const StudentTabunganPage = () => {
         ) : (
           <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
             {riwayat.map((trx, idx) => (
-              <div key={idx} className="flex items-center justify-between border-b border-gray-50 pb-3 last:border-0">
+              <div key={trx.id || idx} className="flex items-center justify-between border-b border-gray-50 pb-3 last:border-0">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center \${trx.jenis === 'setor' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'}`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${trx.jenis === 'setor' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'}`}>
                     {trx.jenis === 'setor' ? <ArrowDownCircle size={20} /> : <ArrowUpCircle size={20} />}
                   </div>
                   <div>
                     <p className="font-medium text-gray-800">{trx.jenis === 'setor' ? 'Setoran' : 'Penarikan'}</p>
                     <p className="text-xs text-gray-400">{new Date(trx.tanggal || trx.created_at).toLocaleDateString('id-ID')}</p>
+                    {trx.keterangan && <p className="text-[10px] text-gray-400 mt-0.5 italic">{trx.keterangan}</p>}
                   </div>
                 </div>
-                <div className={`font-bold \${trx.jenis === 'setor' ? 'text-emerald-600' : 'text-orange-600'}`}>
-                  {trx.jenis === 'setor' ? '+' : '-'}{formatRp(trx.nominal)}
+                <div className="text-right">
+                  <div className={`font-bold ${trx.jenis === 'setor' ? 'text-emerald-600' : 'text-orange-600'}`}>
+                    {trx.jenis === 'setor' ? '+' : '-'}{formatRp(trx.nominal)}
+                  </div>
+                  <p className="text-[10px] text-gray-400">Saldo: {formatRp(trx.saldo_setelah)}</p>
                 </div>
               </div>
             ))}

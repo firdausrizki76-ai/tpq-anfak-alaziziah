@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, Printer, CheckCircle, AlertCircle, X, Save, Receipt, CreditCard, Calendar, Users, Settings, Loader2, MessageCircle } from 'lucide-react';
+import { Search, Filter, Plus, Printer, CheckCircle, AlertCircle, X, Save, Receipt, CreditCard, Calendar, Users, Settings, Loader2, MessageCircle, Trash2 } from 'lucide-react';
 import { pembayaranAPI, santriAPI, jenisPembayaranAPI, kelasAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 
@@ -14,6 +14,8 @@ const PembayaranPage = () => {
   const [activeModal, setActiveModal] = useState(null);
   const [selectedJenis, setSelectedJenis] = useState(null);
   const [unpaidBills, setUnpaidBills] = useState([]);
+  const [filterBulan, setFilterBulan] = useState(new Date().getMonth() + 1);
+  const [filterTahun, setFilterTahun] = useState(new Date().getFullYear());
   const [loadingBills, setLoadingBills] = useState(false);
   const [selectedBillId, setSelectedBillId] = useState('');
   const [selectedSantri, setSelectedSantri] = useState(null);
@@ -23,11 +25,13 @@ const PembayaranPage = () => {
 
   useEffect(() => { loadData(); }, []);
 
-  const loadData = async () => {
+  const loadData = async (bulan, tahun) => {
+    const b = bulan || filterBulan;
+    const t = tahun || filterTahun;
     setLoading(true);
     try {
       const [p, s, st, j, k] = await Promise.all([
-        pembayaranAPI.getAll().catch(() => []), pembayaranAPI.getStats().catch(() => null),
+        pembayaranAPI.getAll({ bulan: b, tahun: t }).catch(() => []), pembayaranAPI.getStats({ bulan: b, tahun: t }).catch(() => null),
         santriAPI.getAll().catch(() => []), jenisPembayaranAPI.getAll().catch(() => []), kelasAPI.getAll().catch(() => [])
       ]);
       setPayments(p || []); setStats(s); setSantriList(st || []); setJenisList(j || []); setKelasList(k || []);
@@ -122,6 +126,23 @@ const PembayaranPage = () => {
     try { await jenisPembayaranAPI.delete(id); await loadData(); } catch (e) { alert(e.message); }
   };
 
+  const handleDeletePayment = async (id) => {
+    if (!window.confirm('Hapus data pembayaran ini? Tindakan ini tidak bisa dibatalkan.')) return;
+    try { await pembayaranAPI.delete(id); await loadData(); } catch (e) { alert(e.message); }
+  };
+
+  const handleFilterBulan = (e) => {
+    const val = parseInt(e.target.value);
+    setFilterBulan(val);
+    loadData(val, filterTahun);
+  };
+
+  const handleFilterTahun = (e) => {
+    const val = parseInt(e.target.value);
+    setFilterTahun(val);
+    loadData(filterBulan, val);
+  };
+
   const handlePrint = (p) => {
     setSelectedSantri(p);
     setTimeout(() => {
@@ -187,6 +208,15 @@ const PembayaranPage = () => {
       </div>
 
       <div className="card w-full no-print">
+        <div className="flex items-center gap-3 mb-4 flex-wrap">
+          <span className="text-sm font-semibold text-gray-600">Filter:</span>
+          <select className="input-field py-1.5 px-3 text-sm" style={{ width: '140px' }} value={filterBulan} onChange={handleFilterBulan}>
+            {['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
+          </select>
+          <select className="input-field py-1.5 px-3 text-sm" style={{ width: '100px' }} value={filterTahun} onChange={handleFilterTahun}>
+            {[2024,2025,2026,2027].map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
         <div className="table-responsive">
           <table className="data-table w-full">
             <thead><tr><th>No</th><th>Tanggal</th><th>Nama Santri</th><th>Jenis</th><th>Periode</th><th>Nominal</th><th>Status</th><th className="text-center">Aksi</th></tr></thead>
@@ -214,6 +244,7 @@ const PembayaranPage = () => {
                         <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.187-2.59-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793 0-.852.448-1.271.607-1.445.159-.175.348-.218.463-.218.116 0 .232.001.334.005.109.004.256-.041.401.31.145.352.493 1.203.536 1.29.044.087.073.188.014.305-.058.116-.088.188-.174.289-.087.101-.182.227-.261.306-.087.087-.179.181-.077.357.102.176.454.748.975 1.211.672.596 1.24.782 1.416.869.176.087.278.073.381-.044.102-.116.448-.522.568-.7.12-.179.24-.15.405-.09.165.06 1.044.493 1.223.583.179.09.298.135.342.21.044.075.044.434-.1.839zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22c-5.523 0-10-4.477-10-10S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
                       </svg>
                     </button>
+                    <button className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Hapus" onClick={() => handleDeletePayment(p.id)}><Trash2 size={18} /></button>
                   </td>
                 </tr>
               ))}

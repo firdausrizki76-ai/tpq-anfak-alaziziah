@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, ArrowDownCircle, ArrowUpCircle, X, Save, Users, CreditCard, Calendar, Wallet, Loader2 } from 'lucide-react';
+import { Search, Filter, ArrowDownCircle, ArrowUpCircle, X, Save, Users, CreditCard, Calendar, Wallet, Loader2, Send } from 'lucide-react';
 import { tabunganAPI, santriAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 
@@ -105,6 +105,11 @@ const TabunganPage = () => {
               <Users size={18} /> {showSummary ? 'Lihat List Santri' : 'Rekapan Per Guru'}
             </button>
           )}
+        {isGuru && (
+          <button className="btn-primary" style={{ backgroundColor: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }} onClick={() => openModal('setor_admin')}>
+            <Send size={18} /> Setor ke Admin
+          </button>
+        )}
           <button className="btn-primary" style={{ backgroundColor: 'white', color: 'var(--color-primary-container)', border: '1px solid var(--color-surface-container-highest)', borderBottom: '2px solid var(--color-gold)' }} onClick={() => openModal('tarik')}><ArrowUpCircle size={18} /> Tarik</button>
           <button className="btn-primary" onClick={() => openModal('setor')}><ArrowDownCircle size={18} /> Setor</button>
         </div>
@@ -269,6 +274,43 @@ const TabunganPage = () => {
             </div>
           </div>
           <div className="modal-footer no-print"><button className="btn-primary" onClick={closeModal}>Tutup</button></div>
+        </div></div>
+      )}
+
+      {activeModal === 'setor_admin' && (
+        <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '500px' }}>
+          <div className="modal-header">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><Send size={24} /></div>
+              <div><h2 className="modal-title">Setor ke Admin</h2><p className="text-xs text-gray-500">Rekap tabungan kelas Anda</p></div>
+            </div>
+            <X className="modal-close" onClick={closeModal} />
+          </div>
+          <div className="modal-body">
+            <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100 mb-4">
+              <p className="text-sm text-emerald-800 font-semibold">Total Saldo Seluruh Santri</p>
+              <p className="text-2xl font-bold text-emerald-700">{formatRp(totalSaldo)}</p>
+              <p className="text-xs text-emerald-600 mt-1">{filteredData.length} santri</p>
+            </div>
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              {filteredData.filter(s => s.saldo > 0).map(s => (
+                <div key={s.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">{s.nama_lengkap}</p>
+                    <p className="text-[10px] text-gray-500">{s.nomor_induk}</p>
+                  </div>
+                  <span className="font-bold text-emerald-700 text-sm">{formatRp(s.saldo)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-100">
+              <p className="text-xs text-amber-800">Silakan serahkan uang tabungan sebesar <strong>{formatRp(totalSaldo)}</strong> ke bendahara/admin TPQ. Cetak halaman ini sebagai bukti serah terima.</p>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn-primary" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={closeModal}>Tutup</button>
+            <button className="btn-primary" onClick={() => window.print()}><CreditCard size={18} /> Cetak Rekap</button>
+          </div>
         </div></div>
       )}
 

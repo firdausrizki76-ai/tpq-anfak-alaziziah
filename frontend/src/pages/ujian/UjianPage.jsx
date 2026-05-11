@@ -20,7 +20,8 @@ const UjianPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [regSearchQuery, setRegSearchQuery] = useState('');
   const [regFilterKelas, setRegFilterKelas] = useState('');
-  const [formData, setFormData] = useState({ nilai: '', keterangan: '', tanggal: new Date().toISOString().split('T')[0], hasil: 'lulus' });
+  const [formData, setFormData] = useState({ nilai: '', keterangan: '', tanggal: new Date().toISOString().split('T')[0], hasil: 'lulus', tanggal_tes: '', tanggal_naik: '' });
+  const [regFormData, setRegFormData] = useState({ nomor_tes: '', tanggal_mulai: new Date().toISOString().split('T')[0], tanggal_selesai: '', masa_tempuh: '' });
 
   useEffect(() => { loadData(); }, []);
 
@@ -57,7 +58,8 @@ const UjianPage = () => {
     setSelectedSantri(null); 
     setSelectedSantriIds([]);
     setNextKelas(''); 
-    setFormData({ nilai: '', keterangan: '', tanggal: new Date().toISOString().split('T')[0], hasil: 'lulus' }); 
+    setFormData({ nilai: '', keterangan: '', tanggal: new Date().toISOString().split('T')[0], hasil: 'lulus', tanggal_tes: '', tanggal_naik: '' }); 
+    setRegFormData({ nomor_tes: '', tanggal_mulai: new Date().toISOString().split('T')[0], tanggal_selesai: '', masa_tempuh: '' });
   };
 
   const handleInputChange = (e) => { setFormData(prev => ({ ...prev, [e.target.name]: e.target.value })); };
@@ -70,7 +72,7 @@ const UjianPage = () => {
     if (selectedSantriIds.length === 0) return;
     setSaving(true);
     try {
-      await ujianAPI.register({ santri_ids: selectedSantriIds });
+      await ujianAPI.register({ santri_ids: selectedSantriIds, ...regFormData });
       await loadData();
       closeModal();
     } catch (e) { alert(e.message); }
@@ -80,7 +82,7 @@ const UjianPage = () => {
   const handleSubmitScore = async (e) => {
     e.preventDefault(); setSaving(true);
     try {
-      await ujianAPI.inputNilai({ santri_id: selectedSantri.santri_id, kelas_dari_id: selectedSantri.kelas_id, nilai_tes: parseInt(formData.nilai), status_tes: formData.hasil, catatan: formData.keterangan });
+      await ujianAPI.inputNilai({ santri_id: selectedSantri.santri_id, kelas_dari_id: selectedSantri.kelas_id, nilai_tes: parseInt(formData.nilai), status_tes: formData.hasil, catatan: formData.keterangan, tanggal_tes: formData.tanggal_tes, tanggal_naik: formData.tanggal_naik });
       await loadData(); 
       
       // Jika lulus, langsung tawarkan naik kelas
@@ -259,7 +261,7 @@ const UjianPage = () => {
 
       <div className="page-header mb-6 flex justify-between items-center no-print">
         <div><h1 className="page-title">Ujian & Kenaikan Kelas</h1><p className="page-subtitle">Kelola evaluasi akhir jilid dan kenaikan tingkat santri</p></div>
-        <button className="btn-primary" onClick={() => openModal('register_exam')}><Plus size={18} /> Daftarkan Ujian</button>
+        <button className="btn-primary" onClick={() => openModal('register_exam')}><Plus size={18} /> Daftarkan Tes</button>
       </div>
 
       <div className="card w-full">
@@ -321,9 +323,29 @@ const UjianPage = () => {
       </div>
 
       {activeModal === 'register_exam' && (
-        <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '600px' }}>
-          <div className="modal-header"><h2 className="modal-title">Daftarkan Peserta Ujian</h2><X className="modal-close" onClick={closeModal} /></div>
+        <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '650px' }}>
+          <div className="modal-header"><h2 className="modal-title">Daftarkan Peserta Tes</h2><X className="modal-close" onClick={closeModal} /></div>
           <div className="modal-body">
+            {/* Form Data Tes */}
+            <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+              <div className="form-group">
+                <label className="form-label text-xs">Nomor Tes</label>
+                <input type="text" className="input-field text-sm" placeholder="Contoh: TES/26/05/001" value={regFormData.nomor_tes} onChange={(e) => setRegFormData({...regFormData, nomor_tes: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label text-xs">Masa Tempuh (Hari)</label>
+                <input type="number" className="input-field text-sm" placeholder="60" value={regFormData.masa_tempuh} onChange={(e) => setRegFormData({...regFormData, masa_tempuh: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label text-xs">Tanggal Mulai</label>
+                <input type="date" className="input-field text-sm" value={regFormData.tanggal_mulai} onChange={(e) => setRegFormData({...regFormData, tanggal_mulai: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label text-xs">Tanggal Selesai</label>
+                <input type="date" className="input-field text-sm" value={regFormData.tanggal_selesai} onChange={(e) => setRegFormData({...regFormData, tanggal_selesai: e.target.value})} />
+              </div>
+            </div>
+
             <div className="flex gap-2 mb-4">
               <div className="input-with-icon flex-1">
                 <Search className="icon" size={16} />
@@ -334,7 +356,7 @@ const UjianPage = () => {
                 {kelasList.map(k => <option key={k.id} value={k.id}>{k.nama_kelas}</option>)}
               </select>
             </div>
-            <div className="max-h-80 overflow-y-auto border border-gray-100 rounded-xl">
+            <div className="max-h-64 overflow-y-auto border border-gray-100 rounded-xl">
               <table className="data-table w-full text-sm">
                 <thead className="sticky top-0 bg-white shadow-sm"><tr><th width="40">Pilih</th><th>Nama Santri</th><th>Kelas</th></tr></thead>
                 <tbody>
@@ -351,7 +373,7 @@ const UjianPage = () => {
               </table>
             </div>
             <div className="mt-4 p-3 bg-blue-50 rounded-lg text-blue-700 text-xs flex items-center gap-2">
-              <CheckCircle2 size={16} /> <span>{selectedSantriIds.length} santri terpilih untuk didaftarkan ujian.</span>
+              <CheckCircle2 size={16} /> <span>{selectedSantriIds.length} santri terpilih untuk didaftarkan tes.</span>
             </div>
           </div>
           <div className="modal-footer">
@@ -373,6 +395,10 @@ const UjianPage = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="form-group"><label className="form-label">Skor Ujian (0-100)</label><input type="number" name="nilai" className="input-field" value={formData.nilai} onChange={handleInputChange} required /></div>
                 <div className="form-group"><label className="form-label">Hasil</label><select name="hasil" className="input-field" value={formData.hasil} onChange={handleInputChange}><option value="lulus">Lulus</option><option value="remidi">Remedi</option></select></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="form-group"><label className="form-label">Tanggal Tes</label><input type="date" name="tanggal_tes" className="input-field" value={formData.tanggal_tes} onChange={handleInputChange} /></div>
+                <div className="form-group"><label className="form-label">Tanggal Naik</label><input type="date" name="tanggal_naik" className="input-field" value={formData.tanggal_naik} onChange={handleInputChange} /></div>
               </div>
               <div className="form-group"><label className="form-label">Catatan</label><textarea name="keterangan" className="input-field" rows="3" style={{ resize: 'none' }} value={formData.keterangan} onChange={handleInputChange}></textarea></div>
             </div>
@@ -434,10 +460,14 @@ const UjianPage = () => {
                           <ArrowRight size={14} className="text-gray-400" />
                           <span className="font-bold text-blue-600">{h.kelas_ke?.nama_kelas || h.kelas_dari?.nama_kelas}</span>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 text-xs">
+                        <div className="grid grid-cols-3 gap-4 text-xs">
                           <div>
                             <p className="text-gray-400 mb-0.5">Nilai Ujian</p>
                             <p className="font-bold text-gray-700">{h.nilai_tes || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400 mb-0.5">Masa Tempuh</p>
+                            <p className="font-bold text-gray-700">{h.masa_tempuh ? `${h.masa_tempuh} Hari` : '-'}</p>
                           </div>
                           <div>
                             <p className="text-gray-400 mb-0.5">Catatan</p>

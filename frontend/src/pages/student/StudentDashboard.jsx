@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { QrCode, BookOpen, Clock, AlertCircle, Lock, X, Save, Loader2 } from 'lucide-react';
-import { authAPI } from '../../services/api';
+import { QrCode, BookOpen, Clock, AlertCircle, Lock, X, Save, Loader2, Wallet, Receipt, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { authAPI, tabunganAPI, pembayaranAPI } from '../../services/api';
 import './StudentDashboard.css';
 
 const StudentDashboard = () => {
+  const navigate = useNavigate();
   const [student, setStudent] = useState(null);
+  const [saldo, setSaldo] = useState(0);
+  const [tagihan, setTagihan] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
   const [savingPassword, setSavingPassword] = useState(false);
@@ -12,7 +17,29 @@ const StudentDashboard = () => {
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('tpq_user'));
     setStudent(userData);
+    if (userData) loadStudentData(userData);
   }, []);
+
+  const loadStudentData = async (user) => {
+    setLoadingData(true);
+    try {
+      // Fetch saldo from tabungan API
+      const riwayat = await tabunganAPI.getRiwayat(user.id).catch(() => []);
+      if (riwayat && riwayat.length > 0) {
+        // Use saldo_setelah from latest transaction
+        setSaldo(riwayat[0].saldo_setelah || 0);
+      }
+
+      // Fetch unpaid bills
+      const bills = await pembayaranAPI.getAll({ santri_id: user.id, status: 'belum' }).catch(() => []);
+      setTagihan(bills || []);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoadingData(false);
+  };
+
+  const formatRp = (n) => `Rp ${(n||0).toLocaleString('id-ID')}`;
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -55,18 +82,31 @@ const StudentDashboard = () => {
         <p className="text-[var(--color-on-surface-variant)] text-sm">NIS: {student.nomor_induk} • Kelas: {student.kelas?.nama_kelas || '-'}</p>
       </div>
 
+      {/* Saldo Tabungan Card */}
+      <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl p-5 text-white shadow-lg mb-4 relative overflow-hidden cursor-pointer" onClick={() => navigate('/siswa/tabungan')}>
+        <div className="absolute top-0 right-0 p-3 opacity-20">
+          <Wallet size={60} />
+        </div>
+        <p className="text-emerald-100 font-medium text-xs mb-1">Saldo Tabungan</p>
+        <h3 className="text-2xl font-bold">{loadingData ? '...' : formatRp(saldo)}</h3>
+        <p className="text-xs text-emerald-200 mt-1">Tap untuk lihat riwayat →</p>
+      </div>
+
       <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="card p-4 flex-col items-center text-center">
+        <div className="card p-4 flex-col items-center text-center cursor-pointer hover:bg-emerald-50 transition-colors" onClick={() => navigate('/siswa/absen')}>
           <div className="p-3 bg-green-100 rounded-full text-[var(--color-primary-container)] mb-2">
             <QrCode size={24} />
           </div>
           <h3 className="text-sm font-semibold text-gray-600">Scan Absen</h3>
         </div>
-        <div className="card p-4 flex-col items-center text-center">
-          <div className="p-3 bg-blue-100 rounded-full text-blue-600 mb-2">
-            <BookOpen size={24} />
+        <div className="card p-4 flex-col items-center text-center cursor-pointer hover:bg-orange-50 transition-colors" onClick={() => navigate('/siswa/tagihan')}>
+          <div className="p-3 bg-orange-100 rounded-full text-orange-600 mb-2">
+            <Receipt size={24} />
           </div>
-          <h3 className="text-sm font-semibold text-gray-600">Pelajaran</h3>
+          <h3 className="text-sm font-semibold text-gray-600">Tagihan</h3>
+          {tagihan.length > 0 && (
+            <span className="text-[10px] mt-1 bg-red-500 text-white px-2 py-0.5 rounded-full font-bold">{tagihan.length} belum lunas</span>
+          )}
         </div>
       </div>
 
@@ -103,34 +143,15 @@ const StudentDashboard = () => {
               <div className="modal-body space-y-4">
                 <div className="form-group">
                   <label className="form-label text-sm">Password Lama</label>
-                  <input 
-                    type="password" 
-                    className="input-field" 
-                    value={passwordForm.oldPassword} 
-                    onChange={(e) => setPasswordForm({...passwordForm, oldPassword: e.target.value})} 
-                    required 
-                  />
+                  <input type="password" className="input-field" value={passwordForm.oldPassword} onChange={(e) => setPasswordForm({...passwordForm, oldPassword: e.target.value})} required />
                 </div>
                 <div className="form-group">
                   <label className="form-label text-sm">Password Baru</label>
-                  <input 
-                    type="password" 
-                    className="input-field" 
-                    value={passwordForm.newPassword} 
-                    onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})} 
-                    minLength={6}
-                    required 
-                  />
+                  <input type="password" className="input-field" value={passwordForm.newPassword} onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})} minLength={6} required />
                 </div>
                 <div className="form-group">
                   <label className="form-label text-sm">Konfirmasi Password Baru</label>
-                  <input 
-                    type="password" 
-                    className="input-field" 
-                    value={passwordForm.confirmPassword} 
-                    onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} 
-                    required 
-                  />
+                  <input type="password" className="input-field" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} required />
                 </div>
               </div>
               <div className="modal-footer">

@@ -116,6 +116,7 @@ export const pembayaranAPI = {
   create: (body) => request('/pembayaran', { method: 'POST', body }),
   update: (id, body) => request(`/pembayaran/${id}`, { method: 'PUT', body }),
   generate: (body) => request('/pembayaran/generate', { method: 'POST', body }),
+  delete: (id) => request(`/pembayaran/${id}`, { method: 'DELETE' }),
 };
 
 // Tabungan

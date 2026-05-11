@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Phone, MapPin, Loader2, ArrowLeft } from 'lucide-react';
+import { Users, Phone, Loader2, ArrowLeft, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { kelasAPI } from '../../services/api';
+import { kelasAPI, santriAPI, tabunganAPI } from '../../services/api';
 
 const ClassListPage = () => {
   const navigate = useNavigate();
@@ -12,23 +12,51 @@ const ClassListPage = () => {
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('tpq_user'));
     setGuru(userData);
-    if (userData && userData.kelas_id) {
-      loadSantri(userData.kelas_id);
+    if (userData) {
+      loadSantri(userData);
     } else {
       setLoading(false);
     }
   }, []);
 
-  const loadSantri = async (kelasId) => {
+  const loadSantri = async (userData) => {
     setLoading(true);
     try {
-      const data = await kelasAPI.getSantri(kelasId);
-      setSantriList(data || []);
+      // If guru has kelas_id, use it directly. Otherwise look up via kelas wali_kelas_id
+      let kelasId = userData.kelas_id;
+      
+      if (!kelasId) {
+        // Fetch kelas list and find one where wali_kelas_id = guru.id
+        const kelasList = await kelasAPI.getAll();
+        const myKelas = (kelasList || []).find(k => k.wali_kelas_id === userData.id || k.wali_kelas?.id === userData.id);
+        if (myKelas) kelasId = myKelas.id;
+      }
+
+      if (kelasId) {
+        const data = await kelasAPI.getSantri(kelasId);
+        
+        // Fetch saldo for each santri
+        const tabunganData = await tabunganAPI.getAll({ guru_id: userData.id }).catch(() => []);
+        const saldoMap = {};
+        (tabunganData || []).forEach(s => { saldoMap[s.id] = s.saldo || 0; });
+
+        const enriched = (data || []).map(s => ({
+          ...s,
+          saldo: saldoMap[s.id] || 0
+        }));
+        
+        setSantriList(enriched);
+      }
     } catch (e) {
       console.error('Error loading class santri:', e);
     }
     setLoading(false);
   };
+
+  const formatRp = (n) => `Rp ${(n||0).toLocaleString('id-ID')}`;
+
+  // Resolve kelas name from guru data
+  const kelasName = guru?.kelas?.nama_kelas || guru?.nama_kelas || '-';
 
   return (
     <div className="flex flex-col gap-4 p-4 min-h-screen bg-gray-50 pb-24">
@@ -38,7 +66,7 @@ const ClassListPage = () => {
         </button>
         <div>
           <h2 className="text-xl font-bold text-[var(--color-primary-container)]">Daftar Santri</h2>
-          <p className="text-xs text-gray-500">Kelas: {guru?.kelas?.nama_kelas || '-'}</p>
+          <p className="text-xs text-gray-500">Kelas: {kelasName} • {santriList.length} santri</p>
         </div>
       </div>
 
@@ -64,8 +92,13 @@ const ClassListPage = () => {
                 <p className="text-xs text-gray-500">{santri.nomor_induk}</p>
                 <div className="flex gap-3 mt-2">
                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${santri.status === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                    {santri.status.toUpperCase()}
+                    {(santri.status || 'aktif').toUpperCase()}
                   </span>
+                  {santri.saldo > 0 && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-50 text-emerald-600 flex items-center gap-1">
+                      <Wallet size={10} /> {formatRp(santri.saldo)}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col gap-2">
