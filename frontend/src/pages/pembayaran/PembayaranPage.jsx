@@ -16,6 +16,7 @@ const PembayaranPage = () => {
   const [unpaidBills, setUnpaidBills] = useState([]);
   const [filterBulan, setFilterBulan] = useState(new Date().getMonth() + 1);
   const [filterTahun, setFilterTahun] = useState(new Date().getFullYear());
+  const [filterJenis, setFilterJenis] = useState('');
   const [loadingBills, setLoadingBills] = useState(false);
   const [selectedBillId, setSelectedBillId] = useState('');
   const [selectedSantri, setSelectedSantri] = useState(null);
@@ -25,16 +26,23 @@ const PembayaranPage = () => {
 
   useEffect(() => { loadData(); }, []);
 
-  const loadData = async (bulan, tahun) => {
+  const loadData = async (bulan, tahun, jenis) => {
     const b = bulan || filterBulan;
     const t = tahun || filterTahun;
+    const j = jenis !== undefined ? jenis : filterJenis;
     setLoading(true);
     try {
-      const [p, s, st, j, k] = await Promise.all([
-        pembayaranAPI.getAll({ bulan: b, tahun: t }).catch(() => []), pembayaranAPI.getStats({ bulan: b, tahun: t }).catch(() => null),
-        santriAPI.getAll().catch(() => []), jenisPembayaranAPI.getAll().catch(() => []), kelasAPI.getAll().catch(() => [])
+      const queryParams = { bulan: b, tahun: t };
+      if (j) queryParams.jenis_pembayaran_id = j;
+
+      const [p, s, st, jt, k] = await Promise.all([
+        pembayaranAPI.getAll(queryParams).catch(() => []), 
+        pembayaranAPI.getStats({ bulan: b, tahun: t }).catch(() => null),
+        santriAPI.getAll().catch(() => []), 
+        jenisPembayaranAPI.getAll().catch(() => []), 
+        kelasAPI.getAll().catch(() => [])
       ]);
-      setPayments(p || []); setStats(s); setSantriList(st || []); setJenisList(j || []); setKelasList(k || []);
+      setPayments(p || []); setStats(s); setSantriList(st || []); setJenisList(jt || []); setKelasList(k || []);
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -140,7 +148,13 @@ const PembayaranPage = () => {
   const handleFilterTahun = (e) => {
     const val = parseInt(e.target.value);
     setFilterTahun(val);
-    loadData(filterBulan, val);
+    loadData(filterBulan, val, filterJenis);
+  };
+
+  const handleFilterJenis = (e) => {
+    const val = e.target.value;
+    setFilterJenis(val);
+    loadData(filterBulan, filterTahun, val);
   };
 
   const handlePrint = (p) => {
@@ -215,6 +229,10 @@ const PembayaranPage = () => {
           </select>
           <select className="input-field py-1.5 px-3 text-sm" style={{ width: '100px' }} value={filterTahun} onChange={handleFilterTahun}>
             {[2024,2025,2026,2027].map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+          <select className="input-field py-1.5 px-3 text-sm" style={{ width: '180px' }} value={filterJenis} onChange={handleFilterJenis}>
+            <option value="">Semua Jenis</option>
+            {jenisList.map(j => <option key={j.id} value={j.id}>{j.nama}</option>)}
           </select>
         </div>
         <div className="table-responsive">
