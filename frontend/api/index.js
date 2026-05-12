@@ -887,22 +887,24 @@ app.post('/api/ujian/register', async (req, res) => {
         .select('id').eq('santri_id', sid).eq('kelas_id', santri.kelas_id).is('tanggal_selesai', null).maybeSingle();
 
       const payload = {
-        nomor_tes,
-        tanggal_mulai,
-        tanggal_selesai,
+        nomor_tes: nomor_tes || null,
+        tanggal_mulai: tanggal_mulai || null,
+        tanggal_selesai: tanggal_selesai || null,
         target_hari: target,
         aktual_hari: target // Langsung set siap ujian
       };
 
       if (existing) {
-        const { data } = await supabase.from('target_pencapaian').update(payload).eq('id', existing.id).select().single();
+        const { data, error } = await supabase.from('target_pencapaian').update(payload).eq('id', existing.id).select().single();
+        if (error) console.error('Update Error:', error);
         results.push(data);
       } else {
-        const { data } = await supabase.from('target_pencapaian').insert({
+        const { data, error } = await supabase.from('target_pencapaian').insert({
           santri_id: sid,
           kelas_id: santri.kelas_id,
           ...payload
         }).select().single();
+        if (error) console.error('Insert Error:', error);
         results.push(data);
       }
     }
@@ -920,20 +922,31 @@ app.delete('/api/ujian/:id', async (req, res) => {
 
 app.post('/api/ujian/nilai', async (req, res) => {
   try {
-    const { santri_id, kelas_dari_id, nilai_tes, status_tes, catatan } = req.body;
+    const { santri_id, kelas_dari_id, nilai_tes, status_tes, catatan, tanggal_tes, tanggal_naik } = req.body;
     
-    // Simpan ke riwayat_kelas (sebagai record nilai)
-    const { data, error } = await supabase.from('riwayat_kelas').insert({
+    const payload = {
       santri_id, 
       kelas_dari_id,
-      kelas_ke_id: kelas_dari_id, // Sementara tetap di kelas yg sama sampai tombol naik diklik
+      kelas_ke_id: kelas_dari_id,
       nilai_tes,
       status_tes,
-      catatan,
-      tanggal_naik: new Date().toISOString().split('T')[0]
-    }).select().single();
+      catatan: catatan || null,
+      tanggal_naik: tanggal_naik || tanggal_tes || new Date().toISOString().split('T')[0]
+    };
+
+    const { data, error } = await supabase.from('riwayat_kelas').insert(payload).select().single();
 
     if (error) throw error;
+
+    // Jika lulus, update target_pencapaian agar selesai
+    if (status_tes === 'lulus') {
+       await supabase.from('target_pencapaian')
+        .update({ tanggal_selesai: tanggal_tes || new Date().toISOString().split('T')[0] })
+        .eq('santri_id', santri_id)
+        .eq('kelas_id', kelas_dari_id)
+        .is('tanggal_selesai', null);
+    }
+
     ok(res, data, 'Nilai ujian berhasil disimpan');
   } catch (e) { fail(res, e.message, 500); }
 });
