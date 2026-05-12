@@ -851,8 +851,7 @@ app.get('/api/ujian', async (req, res) => {
   try {
     const { kelas } = req.query;
     let query = supabase.from('target_pencapaian')
-      .select('*, santri:santri_id(id, nama_lengkap, nomor_induk, kelas:kelas_id(id, nama_kelas, urutan, wali:wali_kelas_id(nama_lengkap))), kelas:kelas_id(nama_kelas)')
-      .is('tanggal_selesai', null);
+      .select('*, santri:santri_id(id, nama_lengkap, nomor_induk, kelas:kelas_id(id, nama_kelas, urutan, wali:wali_kelas_id(nama_lengkap))), kelas:kelas_id(nama_kelas)');
     
     if (kelas) query = query.eq('kelas_id', kelas);
     
@@ -903,7 +902,7 @@ app.post('/api/ujian/register', async (req, res) => {
       const payload = {
         nomor_tes: nomor_tes || null,
         tanggal_mulai: tanggal_mulai || null,
-        tanggal_selesai: null, // Pendaftaran ujian = belum selesai
+        tanggal_selesai: tanggal_selesai || null,
         target_hari: target,
         aktual_hari: target // Langsung set siap ujian
       };
