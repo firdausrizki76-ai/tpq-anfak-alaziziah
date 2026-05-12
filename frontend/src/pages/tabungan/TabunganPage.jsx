@@ -118,7 +118,7 @@ const TabunganPage = () => {
         </div>
         <div className="flex gap-2">
           {isGuru && (
-            <button className="btn-primary" style={{ backgroundColor: '#10b981' }} onClick={() => {
+            <button className="btn-primary" style={{ backgroundColor: '#059669', boxShadow: '0 4px 12px rgba(5, 150, 105, 0.2)' }} onClick={() => {
               setFormData({ ...formData, nominal: myRekap.saldo_di_guru, keterangan: `Setoran tabungan santri ${new Date().toLocaleDateString('id-ID')}` });
               setActiveModal('setor_admin_proses');
             }}>
@@ -276,7 +276,7 @@ const TabunganPage = () => {
           </div></div>
           <div className="modal-footer">
             <button type="button" className="btn-primary" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={closeModal}>Batal</button>
-            <button type="submit" className="btn-primary" style={{ backgroundColor: activeModal === 'setor' ? '#10b981' : activeModal === 'tarik' ? '#f59e0b' : '#3b82f6' }} disabled={saving || (activeModal === 'tarik' && selectedSantri && parseInt(formData.nominal) > (selectedSantri.saldo||0))}>
+            <button type="submit" className="btn-primary" style={{ backgroundColor: activeModal === 'setor' ? '#059669' : activeModal === 'tarik' ? '#f59e0b' : '#3b82f6' }} disabled={saving || (activeModal === 'tarik' && selectedSantri && parseInt(formData.nominal) > (selectedSantri.saldo||0))}>
               {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Konfirmasi {activeModal === 'setor_admin_proses' ? 'Setoran' : ''}
             </button>
           </div></form>
