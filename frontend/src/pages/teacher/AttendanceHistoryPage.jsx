@@ -83,20 +83,19 @@ const AttendanceHistoryPage = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 min-h-screen bg-gray-50 pb-24 font-sans">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', minHeight: '100vh', backgroundColor: '#f8fafc', paddingBottom: '96px', fontFamily: 'var(--font-family-body, sans-serif)' }}>
       {/* Clean White Header Section */}
-      <div className="bg-white -mx-4 -mt-4 p-6 pt-10 pb-6 rounded-b-[32px] shadow-sm border-b border-gray-100 relative overflow-hidden">
-        <div className="flex items-center gap-4 relative z-10">
+      <div style={{ backgroundColor: 'white', margin: '-16px -16px 0 -16px', padding: '40px 24px 24px 24px', borderBottomLeftRadius: '32px', borderBottomRightRadius: '32px', boxShadow: '0 2px 15px rgba(0,0,0,0.03)', borderBottom: '1px solid #f1f5f9', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', position: 'relative', zIndex: 10 }}>
           <button 
             onClick={() => navigate(-1)} 
-            className="w-10 h-10 flex items-center justify-center bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-600 transition-all active:scale-95"
-            style={{ border: 'none', cursor: 'pointer' }}
+            style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', borderRadius: '12px', color: '#475569', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}
           >
             <ArrowLeft size={20} />
           </button>
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-gray-800 m-0">Riwayat Absensi</h2>
-            <p className="text-xs text-gray-400 font-medium m-0">
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>Riwayat Absensi</h2>
+            <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500', margin: '4px 0 0 0' }}>
               {user.kelas?.nama_kelas || 'Semua Kelas'} • {new Date(filter.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
             </p>
           </div>
@@ -104,23 +103,23 @@ const AttendanceHistoryPage = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-2 mt-0 relative z-20 px-2">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginTop: '-12px', position: 'relative', zIndex: 20, padding: '0 8px' }}>
         {[
-          { label: 'Hadir', val: stats.hadir, color: 'bg-green-500', text: 'text-green-600', hex: '#10b981' },
-          { label: 'Sakit', val: stats.sakit, color: 'bg-blue-500', text: 'text-blue-600', hex: '#3b82f6' },
-          { label: 'Izin', val: stats.izin, color: 'bg-amber-500', text: 'text-amber-600', hex: '#f59e0b' },
-          { label: 'Alfa', val: stats.alfa, color: 'bg-red-500', text: 'text-red-600', hex: '#ef4444' }
+          { label: 'Hadir', val: stats.hadir, hex: '#10b981' },
+          { label: 'Sakit', val: stats.sakit, hex: '#3b82f6' },
+          { label: 'Izin', val: stats.izin, hex: '#f59e0b' },
+          { label: 'Alfa', val: stats.alfa, hex: '#ef4444' }
         ].map((item, idx) => (
-          <div key={idx} className="bg-white rounded-2xl p-3 shadow-sm flex flex-col items-center border border-gray-100">
-            <span className={`text-[10px] font-black uppercase tracking-tighter ${item.text}`} style={{ color: item.hex }}>{item.label}</span>
-            <span className="text-lg font-black text-gray-800">{item.val}</span>
-            <div className={`w-4 h-1 rounded-full mt-1 ${item.color} opacity-30`} style={{ backgroundColor: item.hex, opacity: 0.3 }}></div>
+          <div key={idx} style={{ backgroundColor: 'white', borderRadius: '16px', padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+            <span style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '-0.5px', color: item.hex }}>{item.label}</span>
+            <span style={{ fontSize: '18px', fontWeight: '900', color: '#1e293b', marginTop: '4px' }}>{item.val}</span>
+            <div style={{ width: '16px', height: '4px', borderRadius: '4px', marginTop: '4px', backgroundColor: item.hex, opacity: 0.3 }}></div>
           </div>
         ))}
       </div>
 
-      {/* Filter Section - Using Inline Styles for Robustness */}
-      <div className="mt-4 px-1">
+      {/* Filter Section */}
+      <div style={{ marginTop: '16px', padding: '0 4px' }}>
         <div style={inputContainerStyle}>
           <Calendar size={18} style={iconStyle} />
           <input 
@@ -144,44 +143,44 @@ const AttendanceHistoryPage = () => {
       </div>
 
       {/* Results List */}
-      <div className="flex flex-col gap-3">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-12 h-12 border-4 border-gray-100 border-t-emerald-600 rounded-full animate-spin mb-4" style={{ borderColor: '#f1f5f9', borderTopColor: '#059669' }}></div>
-            <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Sinkronisasi...</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
+            <Loader2 size={40} color="#059669" className="loading-spinner" style={{ marginBottom: '16px' }} />
+            <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '2px' }}>Sinkronisasi...</p>
           </div>
         ) : filteredAbsensi.length === 0 ? (
-          <div className="bg-white p-12 text-center rounded-[32px] border border-gray-100 shadow-sm flex flex-col items-center">
-            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-200 mb-4">
+          <div style={{ backgroundColor: 'white', padding: '48px', textAlign: 'center', borderRadius: '32px', border: '1px solid #f1f5f9', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ width: '64px', height: '64px', backgroundColor: '#f8fafc', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1', marginBottom: '16px' }}>
               <Clock size={40} />
             </div>
-            <p className="text-gray-600 font-bold m-0">Tidak Ada Data</p>
-            <p className="text-xs text-gray-400 mt-2 m-0 max-w-[200px] leading-relaxed">Belum ada absensi yang tercatat untuk kriteria ini.</p>
+            <p style={{ color: '#475569', fontWeight: 'bold', margin: 0 }}>Tidak Ada Data</p>
+            <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '8px', margin: 0, maxWidth: '200px', lineHeight: 1.5 }}>Belum ada absensi yang tercatat untuk kriteria ini.</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-1">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <p style={{ fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px', padding: '0 8px', margin: '0 0 4px 0' }}>
               Ditemukan {filteredAbsensi.length} Santri
             </p>
             {filteredAbsensi.map((a) => (
-              <div key={a.id} className="bg-white p-4 rounded-[24px] shadow-sm border border-gray-50 flex items-center gap-4">
-                <div className="w-11 h-11 bg-gray-50 rounded-2xl flex items-center justify-center text-[#064e3b] font-black text-lg border border-white">
+              <div key={a.id} style={{ backgroundColor: 'white', padding: '16px', borderRadius: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', border: '1px solid #f8fafc', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ width: '44px', height: '44px', backgroundColor: '#f8fafc', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#064e3b', fontWeight: '900', fontSize: '18px', border: '1px solid white' }}>
                   {a.santri?.nama_lengkap?.charAt(0) || <User size={20} />}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-gray-800 text-sm truncate m-0">{a.santri?.nama_lengkap}</h3>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] text-gray-400 font-bold">{a.santri?.nomor_induk}</span>
-                    <span className="text-[10px] text-gray-400">•</span>
-                    <span className="text-[10px] text-gray-400 font-bold">{new Date(a.waktu_scan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>{a.santri?.nama_lengkap}</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                    <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold' }}>{a.santri?.nomor_induk}</span>
+                    <span style={{ fontSize: '10px', color: '#94a3b8' }}>•</span>
+                    <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold' }}>{new Date(a.waktu_scan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span>
                   </div>
                 </div>
-                <div className="flex flex-col items-end">
-                  <span className={`text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-wider ${
-                    a.status === 'hadir' ? 'bg-green-100 text-green-700' :
-                    a.status === 'sakit' ? 'bg-blue-100 text-blue-700' :
-                    a.status === 'izin' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
-                  }`}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                  <span style={{ 
+                    fontSize: '10px', padding: '4px 12px', borderRadius: '20px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px',
+                    backgroundColor: a.status === 'hadir' ? '#dcfce7' : a.status === 'sakit' ? '#dbeafe' : a.status === 'izin' ? '#fef3c7' : '#fee2e2',
+                    color: a.status === 'hadir' ? '#15803d' : a.status === 'sakit' ? '#1d4ed8' : a.status === 'izin' ? '#b45309' : '#b91c1c'
+                  }}>
                     {a.status}
                   </span>
                 </div>
@@ -193,14 +192,14 @@ const AttendanceHistoryPage = () => {
 
       {/* Info Panel */}
       {!loading && (
-        <div className="mt-4 p-5 bg-white rounded-[24px] border border-blue-50 shadow-sm flex items-start gap-4">
-          <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 flex-shrink-0">
+        <div style={{ marginTop: '16px', padding: '20px', backgroundColor: 'white', borderRadius: '24px', border: '1px solid #eff6ff', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+          <div style={{ width: '36px', height: '36px', backgroundColor: '#eff6ff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', flexShrink: 0 }}>
             <AlertCircle size={20} />
           </div>
-          <div className="flex-1">
-            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Informasi</h4>
-            <p className="text-[11px] text-gray-500 leading-relaxed font-medium m-0">
-              Data ini adalah rekapan resmi santri kelas <span className="text-blue-600 font-bold">{user.kelas?.nama_kelas || 'Anda'}</span>.
+          <div style={{ flex: 1 }}>
+            <h4 style={{ fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 4px 0' }}>Informasi</h4>
+            <p style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.5, fontWeight: '500', margin: 0 }}>
+              Data ini adalah rekapan resmi santri kelas <span style={{ color: '#2563eb', fontWeight: 'bold' }}>{user.kelas?.nama_kelas || 'Anda'}</span>.
             </p>
           </div>
         </div>
