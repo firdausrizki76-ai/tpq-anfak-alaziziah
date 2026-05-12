@@ -432,6 +432,22 @@ app.get('/api/absensi', async (req, res) => {
 
 app.post('/api/absensi', async (req, res) => {
   try {
+    const { santri_id, tanggal, tipe } = req.body;
+    
+    // Cek apakah sudah absen hari ini
+    if (santri_id && tanggal && tipe === 'santri') {
+      const { data: existing } = await supabase
+        .from('absensi')
+        .select('id')
+        .eq('santri_id', santri_id)
+        .eq('tanggal', tanggal)
+        .maybeSingle();
+      
+      if (existing) {
+        return fail(res, 'Santri sudah absen hari ini', 400);
+      }
+    }
+
     const { data, error } = await supabase.from('absensi').insert(req.body).select().single();
     if (error) throw error;
     ok(res, data, 'Absensi berhasil dicatat');
