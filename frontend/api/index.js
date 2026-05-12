@@ -879,8 +879,8 @@ app.post('/api/ujian/register', async (req, res) => {
 
     for (const sid of santri_ids) {
       // Ambil data santri untuk tahu kelasnya sekarang
-      const { data: santri } = await supabase.from('santri').select('kelas_id').eq('id', sid).single();
-      if (!santri) continue;
+      const { data: santri, error: sError } = await supabase.from('santri').select('kelas_id').eq('id', sid).single();
+      if (sError || !santri) continue;
 
       // Cek apakah sudah ada di target_pencapaian
       const { data: existing } = await supabase.from('target_pencapaian')
@@ -889,14 +889,14 @@ app.post('/api/ujian/register', async (req, res) => {
       const payload = {
         nomor_tes: nomor_tes || null,
         tanggal_mulai: tanggal_mulai || null,
-        tanggal_selesai: tanggal_selesai || null,
+        tanggal_selesai: null, // Pendaftaran ujian = belum selesai
         target_hari: target,
         aktual_hari: target // Langsung set siap ujian
       };
 
       if (existing) {
         const { data, error } = await supabase.from('target_pencapaian').update(payload).eq('id', existing.id).select().single();
-        if (error) console.error('Update Error:', error);
+        if (error) throw error;
         results.push(data);
       } else {
         const { data, error } = await supabase.from('target_pencapaian').insert({
@@ -904,12 +904,15 @@ app.post('/api/ujian/register', async (req, res) => {
           kelas_id: santri.kelas_id,
           ...payload
         }).select().single();
-        if (error) console.error('Insert Error:', error);
+        if (error) throw error;
         results.push(data);
       }
     }
     ok(res, results, `${results.length} santri berhasil didaftarkan ujian`);
-  } catch (e) { fail(res, e.message, 500); }
+  } catch (e) { 
+    console.error('Ujian Register Error:', e.message);
+    fail(res, e.message, 500); 
+  }
 });
 
 app.delete('/api/ujian/:id', async (req, res) => {

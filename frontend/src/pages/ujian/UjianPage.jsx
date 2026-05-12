@@ -365,10 +365,6 @@ const UjianPage = () => {
                 <label className="form-label text-xs">Tanggal Mulai</label>
                 <input type="date" className="input-field text-sm" value={regFormData.tanggal_mulai} onChange={(e) => setRegFormData({...regFormData, tanggal_mulai: e.target.value})} />
               </div>
-              <div className="form-group">
-                <label className="form-label text-xs">Tanggal Selesai</label>
-                <input type="date" className="input-field text-sm" value={regFormData.tanggal_selesai} onChange={(e) => setRegFormData({...regFormData, tanggal_selesai: e.target.value})} />
-              </div>
             </div>
 
             <div className="flex gap-2 mb-4">
