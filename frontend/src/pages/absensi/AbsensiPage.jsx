@@ -10,7 +10,7 @@ const AbsensiPage = () => {
   const [activeModal, setActiveModal] = useState(null);
   const [selectedKelas, setSelectedKelas] = useState('');
   const [filterTanggal, setFilterTanggal] = useState(new Date().toISOString().split('T')[0]);
-  const [activeTab, setActiveTab] = useState('santri'); // 'santri' or 'guru'
+  const [activeTab, setActiveTab] = useState('santri'); // 'santri', 'guru', or 'pusat'
   const [searchQuery, setSearchQuery] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [qrResults, setQrResults] = useState([]);
@@ -88,20 +88,24 @@ const AbsensiPage = () => {
       </div>
 
       <div className="card w-full">
-        <div className="flex items-center gap-6 mb-6 border-b border-gray-100 pb-2">
+        <div className="flex items-center gap-3 mb-8">
           <button 
-            className={`pb-2 px-1 font-semibold text-sm transition-all relative ${activeTab === 'santri' ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-full border-2 transition-all font-bold text-sm ${activeTab === 'santri' ? 'bg-[#f0fff4] border-[#059669] text-[#059669]' : 'bg-white border-gray-100 text-gray-500 hover:border-gray-200'}`}
             onClick={() => setActiveTab('santri')}
           >
-            <div className="flex items-center gap-2"><Users size={18} /> Absensi Santri</div>
-            {activeTab === 'santri' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-600 rounded-full" />}
+            <Users size={18} /> Data Santri
           </button>
           <button 
-            className={`pb-2 px-1 font-semibold text-sm transition-all relative ${activeTab === 'guru' ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-full border-2 transition-all font-bold text-sm ${activeTab === 'guru' ? 'bg-[#f0fff4] border-[#059669] text-[#059669]' : 'bg-white border-gray-100 text-gray-500 hover:border-gray-200'}`}
             onClick={() => setActiveTab('guru')}
           >
-            <div className="flex items-center gap-2"><Users size={18} /> Absensi Guru</div>
-            {activeTab === 'guru' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-600 rounded-full" />}
+            <FileText size={18} /> Rekap Guru
+          </button>
+          <button 
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-full border-2 transition-all font-bold text-sm ${activeTab === 'pusat' ? 'bg-[#f0fff4] border-[#059669] text-[#059669]' : 'bg-white border-gray-100 text-gray-500 hover:border-gray-200'}`}
+            onClick={() => setActiveTab('pusat')}
+          >
+            <QrCode size={18} /> Rekap Pusat
           </button>
         </div>
 
@@ -116,7 +120,7 @@ const AbsensiPage = () => {
               <input 
                 type="text" 
                 className="input-field" 
-                placeholder={`Cari nama ${activeTab === 'santri' ? 'santri' : 'guru'}...`} 
+                placeholder={`Cari nama ${activeTab === 'santri' ? 'santri' : (activeTab === 'guru' ? 'guru' : 'data')}...`} 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
