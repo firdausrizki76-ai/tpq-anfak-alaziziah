@@ -280,7 +280,7 @@ const TabunganPage = () => {
           </div></div>
           <div className="modal-footer">
             <button type="button" className="btn-primary" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={closeModal}>Batal</button>
-            <button type="submit" className="btn-primary" style={{ backgroundColor: activeModal === 'setor' ? '#059669' : activeModal === 'tarik' ? '#f59e0b' : '#3b82f6' }} disabled={saving || (activeModal === 'tarik' && selectedSantri && parseInt(formData.nominal) > (selectedSantri.saldo||0))}>
+            <button type="submit" className="btn-primary" style={{ backgroundColor: (activeModal === 'setor' || activeModal === 'setor_admin_proses') ? '#059669' : '#f59e0b' }} disabled={saving || (activeModal === 'tarik' && selectedSantri && parseInt(formData.nominal) > (selectedSantri.saldo||0))}>
               {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Konfirmasi {activeModal === 'setor_admin_proses' ? 'Setoran' : ''}
             </button>
           </div></form>

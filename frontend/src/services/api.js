@@ -131,7 +131,7 @@ export const tabunganAPI = {
     const qs = new URLSearchParams(params).toString();
     return request(`/tabungan/${santriId}/riwayat${qs ? `?${qs}` : ''}`);
   },
-  setorKeAdmin: (body) => request('/tabungan/setor-ke-admin', { method: 'POST', body }),
+  setorKeAdmin: (body) => request('/tabungan/setor-admin', { method: 'POST', body }),
   getRekapAdmin: () => request('/tabungan/rekap-admin'),
   getRekapGuru: () => request('/tabungan/rekap-guru'),
   transact: (body) => request('/tabungan', { method: 'POST', body }),
