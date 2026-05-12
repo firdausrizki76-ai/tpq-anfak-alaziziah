@@ -106,14 +106,16 @@ const Dashboard = () => {
         
         <div className="card chart-card">
           <h3 className="card-title">Distribusi Santri per Kelas</h3>
-          <div className="mock-chart flex items-end justify-around mt-4">
+          <div className="mock-chart flex items-end mt-4" style={{ overflowX: 'auto', overflowY: 'hidden', paddingBottom: '16px', gap: '12px', height: '240px' }}>
             {stats?.distribusiKelas?.length > 0 ? stats.distribusiKelas.map((k, i) => {
               const maxVal = Math.max(...stats.distribusiKelas.map(x => x.value), 1);
               const height = (k.value / maxVal) * 100;
               return (
-                <div key={i} className="chart-bar-wrapper" style={{ flex: 1 }}>
-                  <div className="chart-bar alt" style={{ height: `${height}%` }} title={`${k.value} santri`}></div>
-                  <div className="text-[10px] mt-2 text-center truncate" style={{ color: 'var(--color-outline)' }}>{k.label}</div>
+                <div key={i} style={{ height: '100%', minWidth: '36px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center' }}>
+                  <div className="chart-bar alt" style={{ height: `${height}%`, width: '100%', minHeight: '4px' }} title={`${k.label}: ${k.value} santri`}></div>
+                  <div style={{ fontSize: '10px', marginTop: '8px', color: 'var(--color-outline)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center', fontWeight: 'bold' }}>
+                    {k.label.length > 5 ? k.label.substring(0, 5) + '..' : k.label}
+                  </div>
                 </div>
               );
             }) : (
