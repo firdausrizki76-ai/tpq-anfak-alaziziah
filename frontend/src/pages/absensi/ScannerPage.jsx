@@ -74,8 +74,22 @@ const ScannerPage = () => {
   };
 
   const playBeep = () => {
-    if (audioRef.current) {
-      audioRef.current.play().catch(e => console.warn('Audio play failed', e));
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime); 
+      gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.08); // Very short beep (80ms)
+    } catch (e) {
+      console.warn('Could not play synthetic beep', e);
     }
   };
 
@@ -118,16 +132,21 @@ const ScannerPage = () => {
 
       setNisInput('');
       
-      // If scan was successful, switch back to manual mode to "close" scanner as requested
-      if (mode === 'scan') {
-        setTimeout(() => {
-          setMode('manual');
-        }, 3000); // Wait for feedback overlay to show before switching
-      }
+      // Auto-reset for next scan after 2 seconds
+      setTimeout(() => {
+        setScanResult(null);
+        if (mode === 'scan') {
+          // If we are in scan mode, restart the scanner to allow next student
+          initScanner();
+        }
+      }, 2000);
 
     } catch (err) {
       setError(err.message || 'Gagal memproses absensi');
-      setTimeout(() => setError(null), 4000);
+      setTimeout(() => {
+        setError(null);
+        if (mode === 'scan') initScanner();
+      }, 2500);
     } finally {
       setLoading(false);
       isProcessing.current = false;
