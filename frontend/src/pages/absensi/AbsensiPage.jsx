@@ -39,22 +39,24 @@ const AbsensiPage = () => {
 
   const closeModal = () => { setActiveModal(null); setQrResults([]); setSelectedKelas(''); };
 
-  const handleApprove = async (id) => {
+  const handleApprove = async (a) => {
     try {
-      await absensiAPI.update(id, { status: 'izin' });
+      const newKeterangan = a.keterangan.replace('(MENUNGGU PERSETUJUAN) ', '');
+      await absensiAPI.update(a.id, { keterangan: newKeterangan });
       loadAbsensi();
     } catch (e) { alert(e.message); }
   };
 
   const handleReject = async (id) => {
-    if (!window.confirm('Tolak pengajuan izin ini?')) return;
+    if (!window.confirm('Hapus data ini?')) return;
     try {
       await absensiAPI.delete(id);
       loadAbsensi();
     } catch (e) { alert(e.message); }
   };
 
-  const statusBadge = (status) => {
+  const statusBadge = (status, keterangan = '') => {
+    const isPending = keterangan.includes('(MENUNGGU PERSETUJUAN)');
     const styles = { 
       hadir: 'badge-success', 
       sakit: { backgroundColor: '#fef08a', color: '#854d0e' }, 
@@ -63,7 +65,7 @@ const AbsensiPage = () => {
       alfa: { backgroundColor: '#fecaca', color: '#991b1b' } 
     };
     if (status === 'hadir') return <span className="badge badge-success">Hadir</span>;
-    if (status === 'pengajuan_izin') return <span className="badge" style={styles.pengajuan_izin}>Menunggu Persetujuan</span>;
+    if (isPending) return <span className="badge" style={styles.pengajuan_izin}>Menunggu Persetujuan</span>;
     return <span className="badge" style={styles[status] || {}}>{status}</span>;
   };
 
@@ -104,17 +106,16 @@ const AbsensiPage = () => {
                   <td>{a.waktu_scan ? new Date(a.waktu_scan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB' : '-'}</td>
                   <td className="font-medium">{a.santri?.nama_lengkap || '-'}</td>
                   <td>{a.santri?.kelas?.nama_kelas || '-'}</td>
-                  <td>{statusBadge(a.status)}</td>
+                  <td>{statusBadge(a.status, a.keterangan)}</td>
                   <td>{a.keterangan || '-'}</td>
                   <td>
                     <div className="flex gap-2">
-                      {a.status === 'pengajuan_izin' && (
+                      {a.keterangan?.includes('(MENUNGGU PERSETUJUAN)') && (
                         <>
-                          <button className="p-1 px-2 text-xs bg-emerald-500 text-white rounded hover:bg-emerald-600 font-bold" onClick={() => handleApprove(a.id)}>Setujui</button>
+                          <button className="p-1 px-2 text-xs bg-emerald-500 text-white rounded hover:bg-emerald-600 font-bold" onClick={() => handleApprove(a)}>Setujui</button>
                           <button className="p-1 px-2 text-xs bg-red-500 text-white rounded hover:bg-red-600 font-bold" onClick={() => handleReject(a.id)}>Tolak</button>
                         </>
                       )}
-                      <button className="p-1.5 text-red-500 hover:bg-red-50 rounded" onClick={() => handleReject(a.id)}><X size={16} /></button>
                     </div>
                   </td>
                 </tr>
