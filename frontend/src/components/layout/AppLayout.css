@@ -288,7 +288,7 @@
   }
 
   .topbar {
-    padding: 0 20px;
+    padding: 0 16px;
     height: 64px;
     justify-content: space-between;
     width: 100%;
@@ -299,6 +299,30 @@
   }
 
   .content-area {
-    padding: 20px;
+    padding: 24px 16px; /* Safe padding for mobile */
+    overflow-x: hidden; /* Prevent horizontal bleed */
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Force wrapping on common header actions to prevent overflow */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+
+  .page-header > div:last-child {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .page-header > div:last-child > button {
+    flex: 1;
+    min-width: 140px;
+    padding: 10px 12px;
+    font-size: 13px;
   }
 }

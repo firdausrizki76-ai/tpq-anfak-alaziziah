@@ -40,9 +40,18 @@
 .teacher-content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  overflow-x: hidden;
+  padding: 20px 16px;
   padding-bottom: 90px;
   max-width: 600px;
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .teacher-content {
+    padding: 24px 16px;
+    padding-bottom: 100px;
+  }
 }
