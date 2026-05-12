@@ -10,7 +10,7 @@ const AbsensiPage = () => {
   const [activeModal, setActiveModal] = useState(null);
   const [selectedKelas, setSelectedKelas] = useState('');
   const [filterTanggal, setFilterTanggal] = useState(new Date().toISOString().split('T')[0]);
-  const [activeTab, setActiveTab] = useState('santri'); // 'santri', 'guru', or 'pusat'
+  const [activeTab, setActiveTab] = useState('santri'); // 'santri' or 'guru'
   const [searchQuery, setSearchQuery] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [qrResults, setQrResults] = useState([]);
@@ -88,28 +88,46 @@ const AbsensiPage = () => {
       </div>
 
       <div className="card w-full">
-        <div className="flex items-center gap-3 mb-8">
+        <div className="flex items-center gap-4 mb-8 no-print">
           <button 
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-full border-2 transition-all font-bold text-sm ${activeTab === 'santri' ? 'bg-[#f0fff4] border-[#059669] text-[#059669]' : 'bg-white border-gray-100 text-gray-500 hover:border-gray-200'}`}
+            type="button"
+            className="flex items-center gap-2 transition-all duration-200"
+            style={{
+              padding: '10px 24px',
+              borderRadius: '100px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              border: activeTab === 'santri' ? '1.5px solid #10b981' : '1.5px solid #e5e7eb',
+              backgroundColor: activeTab === 'santri' ? '#f0fdf4' : '#ffffff',
+              color: activeTab === 'santri' ? '#047857' : '#6b7280',
+              boxShadow: activeTab === 'santri' ? '0 4px 6px -1px rgba(16, 185, 129, 0.1)' : 'none'
+            }}
             onClick={() => setActiveTab('santri')}
           >
-            <Users size={18} /> Data Santri
+            <Users size={18} /> Absensi Santri
           </button>
           <button 
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-full border-2 transition-all font-bold text-sm ${activeTab === 'guru' ? 'bg-[#f0fff4] border-[#059669] text-[#059669]' : 'bg-white border-gray-100 text-gray-500 hover:border-gray-200'}`}
+            type="button"
+            className="flex items-center gap-2 transition-all duration-200"
+            style={{
+              padding: '10px 24px',
+              borderRadius: '100px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              border: activeTab === 'guru' ? '1.5px solid #10b981' : '1.5px solid #e5e7eb',
+              backgroundColor: activeTab === 'guru' ? '#f0fdf4' : '#ffffff',
+              color: activeTab === 'guru' ? '#047857' : '#6b7280',
+              boxShadow: activeTab === 'guru' ? '0 4px 6px -1px rgba(16, 185, 129, 0.1)' : 'none'
+            }}
             onClick={() => setActiveTab('guru')}
           >
-            <FileText size={18} /> Rekap Guru
-          </button>
-          <button 
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-full border-2 transition-all font-bold text-sm ${activeTab === 'pusat' ? 'bg-[#f0fff4] border-[#059669] text-[#059669]' : 'bg-white border-gray-100 text-gray-500 hover:border-gray-200'}`}
-            onClick={() => setActiveTab('pusat')}
-          >
-            <QrCode size={18} /> Rekap Pusat
+            <FileText size={18} /> Absensi Guru
           </button>
         </div>
 
-        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
+        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap no-print">
           <div className="flex items-center gap-4 flex-1">
             <div className="input-with-icon" style={{ maxWidth: '200px', width: '100%' }}>
               <Calendar className="icon" size={18} />
@@ -120,7 +138,7 @@ const AbsensiPage = () => {
               <input 
                 type="text" 
                 className="input-field" 
-                placeholder={`Cari nama ${activeTab === 'santri' ? 'santri' : (activeTab === 'guru' ? 'guru' : 'data')}...`} 
+                placeholder={`Cari nama ${activeTab === 'santri' ? 'santri' : 'guru'}...`} 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
