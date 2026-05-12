@@ -10,11 +10,13 @@ const AbsensiPage = () => {
   const [activeModal, setActiveModal] = useState(null);
   const [selectedKelas, setSelectedKelas] = useState('');
   const [filterTanggal, setFilterTanggal] = useState(new Date().toISOString().split('T')[0]);
+  const [activeTab, setActiveTab] = useState('santri'); // 'santri' or 'guru'
+  const [searchQuery, setSearchQuery] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [qrResults, setQrResults] = useState([]);
 
   useEffect(() => { loadData(); }, []);
-  useEffect(() => { loadAbsensi(); }, [filterTanggal]);
+  useEffect(() => { loadAbsensi(); }, [filterTanggal, activeTab]);
 
   const loadData = async () => {
     try { const kelas = await kelasAPI.getAll(); setKelasList(kelas || []); } catch (e) { console.error(e); }
@@ -23,7 +25,13 @@ const AbsensiPage = () => {
 
   const loadAbsensi = async () => {
     setLoading(true);
-    try { const data = await absensiAPI.getAll({ tanggal: filterTanggal }); setAbsensiList(data || []); } catch (e) { console.error(e); }
+    try { 
+      const data = await absensiAPI.getAll({ 
+        tanggal: filterTanggal,
+        role: activeTab 
+      }); 
+      setAbsensiList(data || []); 
+    } catch (e) { console.error(e); }
     setLoading(false);
   };
 
@@ -80,6 +88,23 @@ const AbsensiPage = () => {
       </div>
 
       <div className="card w-full">
+        <div className="flex items-center gap-6 mb-6 border-b border-gray-100 pb-2">
+          <button 
+            className={`pb-2 px-1 font-semibold text-sm transition-all relative ${activeTab === 'santri' ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
+            onClick={() => setActiveTab('santri')}
+          >
+            <div className="flex items-center gap-2"><Users size={18} /> Absensi Santri</div>
+            {activeTab === 'santri' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-600 rounded-full" />}
+          </button>
+          <button 
+            className={`pb-2 px-1 font-semibold text-sm transition-all relative ${activeTab === 'guru' ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
+            onClick={() => setActiveTab('guru')}
+          >
+            <div className="flex items-center gap-2"><Users size={18} /> Absensi Guru</div>
+            {activeTab === 'guru' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-600 rounded-full" />}
+          </button>
+        </div>
+
         <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
           <div className="flex items-center gap-4 flex-1">
             <div className="input-with-icon" style={{ maxWidth: '200px', width: '100%' }}>
@@ -88,24 +113,48 @@ const AbsensiPage = () => {
             </div>
             <div className="input-with-icon" style={{ maxWidth: '300px', width: '100%' }}>
               <Search className="icon" size={18} />
-              <input type="text" className="input-field" placeholder="Cari nama santri..." />
+              <input 
+                type="text" 
+                className="input-field" 
+                placeholder={`Cari nama ${activeTab === 'santri' ? 'santri' : 'guru'}...`} 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
           </div>
         </div>
 
         <div className="table-responsive">
           <table className="data-table w-full">
-            <thead><tr><th>No</th><th>Tanggal</th><th>Waktu Scan</th><th>Nama Santri</th><th>Kelas</th><th>Status</th><th>Keterangan</th><th width="150">Aksi</th></tr></thead>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Tanggal</th>
+                <th>Waktu Scan</th>
+                <th>Nama {activeTab === 'santri' ? 'Santri' : 'Guru'}</th>
+                {activeTab === 'santri' && <th>Kelas</th>}
+                <th>Status</th>
+                <th>Keterangan</th>
+                <th width="150">Aksi</th>
+              </tr>
+            </thead>
             <tbody>
-              {loading ? <tr><td colSpan="8" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
-              : absensiList.length === 0 ? <tr><td colSpan="8" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data absensi untuk tanggal ini</td></tr>
-              : absensiList.map((a, i) => (
+              {loading ? <tr><td colSpan={activeTab === 'santri' ? 8 : 7} className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
+              : absensiList.length === 0 ? <tr><td colSpan={activeTab === 'santri' ? 8 : 7} className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data absensi {activeTab === 'santri' ? 'santri' : 'guru'} untuk tanggal ini</td></tr>
+              : absensiList
+                  .filter(a => {
+                    const name = activeTab === 'santri' ? a.santri?.nama_lengkap : a.guru?.nama_lengkap;
+                    return name?.toLowerCase().includes(searchQuery.toLowerCase());
+                  })
+                  .map((a, i) => (
                 <tr key={a.id}>
                   <td>{i+1}</td>
                   <td>{a.tanggal ? new Date(a.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
                   <td>{a.waktu_scan ? new Date(a.waktu_scan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB' : '-'}</td>
-                  <td className="font-medium">{a.santri?.nama_lengkap || '-'}</td>
-                  <td>{a.santri?.kelas?.nama_kelas || '-'}</td>
+                  <td className="font-medium">
+                    {activeTab === 'santri' ? (a.santri?.nama_lengkap || '-') : (a.guru?.nama_lengkap || '-')}
+                  </td>
+                  {activeTab === 'santri' && <td>{a.santri?.kelas?.nama_kelas || '-'}</td>}
                   <td>{statusBadge(a.status, a.keterangan)}</td>
                   <td>{a.keterangan || '-'}</td>
                   <td className="text-center">
