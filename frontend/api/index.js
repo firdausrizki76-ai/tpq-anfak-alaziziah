@@ -860,9 +860,23 @@ app.get('/api/ujian', async (req, res) => {
     
     if (error) throw error;
 
-    const result = (data || []).map(item => ({
-      ...item,
-      syahriyah_nominal: 0
+    // Fetch latest riwayat for each santri to check lulus status
+    const result = await Promise.all((data || []).map(async item => {
+      const { data: latest } = await supabase.from('riwayat_kelas')
+        .select('status_tes')
+        .eq('santri_id', item.santri_id)
+        .eq('kelas_dari_id', item.kelas_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      return {
+        ...item,
+        santri: {
+          ...item.santri,
+          latest_riwayat: latest || null
+        }
+      };
     }));
 
     ok(res, result);
@@ -940,16 +954,6 @@ app.post('/api/ujian/nilai', async (req, res) => {
     const { data, error } = await supabase.from('riwayat_kelas').insert(payload).select().single();
 
     if (error) throw error;
-
-    // Jika lulus, update target_pencapaian agar selesai
-    if (status_tes === 'lulus') {
-       await supabase.from('target_pencapaian')
-        .update({ tanggal_selesai: tanggal_tes || new Date().toISOString().split('T')[0] })
-        .eq('santri_id', santri_id)
-        .eq('kelas_id', kelas_dari_id)
-        .is('tanggal_selesai', null);
-    }
-
     ok(res, data, 'Nilai ujian berhasil disimpan');
   } catch (e) { fail(res, e.message, 500); }
 });
