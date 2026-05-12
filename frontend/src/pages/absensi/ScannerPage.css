@@ -214,6 +214,57 @@
   border: 2px solid var(--color-surface-container-highest);
   background-color: #000;
   margin-top: 10px;
+  position: relative;
+}
+
+/* Styling internal html5-qrcode elements */
+#reader {
+  border: none !important;
+}
+
+#reader button {
+  background: linear-gradient(135deg, var(--color-primary-container), #065f46) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: var(--radius-md) !important;
+  padding: 10px 20px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  margin: 10px 0 !important;
+  text-transform: uppercase !important;
+  font-size: 12px !important;
+  letter-spacing: 1px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+  border-bottom: 3px solid var(--color-secondary-container) !important;
+}
+
+#reader button:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+#reader a {
+  color: #80bea6 !important; /* Soft emerald from design system */
+  text-decoration: none !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  margin-top: 10px !important;
+  display: inline-block !important;
+  opacity: 0.8;
+}
+
+#reader a:hover {
+  color: white !important;
+  opacity: 1;
+}
+
+#reader img {
+  filter: invert(1); /* If there are dark icons, make them light */
+}
+
+#reader__status_span {
+  color: white !important;
+  font-size: 12px !important;
 }
 
 .feedback-overlay {
