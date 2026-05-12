@@ -79,8 +79,11 @@ const ScannerPage = () => {
     }
   };
 
+  const isProcessing = useRef(false);
+
   const processAttendance = async (nomorInduk) => {
-    if (loading) return;
+    if (isProcessing.current || loading) return;
+    isProcessing.current = true;
     setLoading(true);
     setScanResult(null);
     setError(null);
@@ -114,17 +117,29 @@ const ScannerPage = () => {
       });
 
       setNisInput('');
-      setTimeout(() => setScanResult(null), 3000);
+      
+      // If scan was successful, switch back to manual mode to "close" scanner as requested
+      if (mode === 'scan') {
+        setTimeout(() => {
+          setMode('manual');
+        }, 3000); // Wait for feedback overlay to show before switching
+      }
+
     } catch (err) {
       setError(err.message || 'Gagal memproses absensi');
       setTimeout(() => setError(null), 4000);
     } finally {
       setLoading(false);
+      isProcessing.current = false;
     }
   };
 
   const onScanSuccess = async (decodedText) => {
-    if (loading || scanResult) return;
+    if (isProcessing.current || loading || scanResult) return;
+    
+    // Stop scanner immediately to prevent spam
+    stopScanner();
+    
     await processAttendance(decodedText);
   };
 
