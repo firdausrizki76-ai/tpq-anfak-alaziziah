@@ -92,6 +92,8 @@ export const absensiAPI = {
     return request(`/absensi${qs ? `?${qs}` : ''}`);
   },
   create: (body) => request('/absensi', { method: 'POST', body }),
+  update: (id, body) => request(`/absensi/${id}`, { method: 'PUT', body }),
+  delete: (id) => request(`/absensi/${id}`, { method: 'DELETE' }),
 };
 
 // Ujian

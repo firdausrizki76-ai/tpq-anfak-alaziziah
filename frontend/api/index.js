@@ -458,6 +458,22 @@ app.post('/api/absensi', async (req, res) => {
   }
 });
 
+app.put('/api/absensi/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('absensi').update(req.body).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    ok(res, data, 'Absensi berhasil diperbarui');
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+app.delete('/api/absensi/:id', async (req, res) => {
+  try {
+    const { error } = await supabase.from('absensi').delete().eq('id', req.params.id);
+    if (error) throw error;
+    ok(res, null, 'Absensi berhasil dihapus');
+  } catch (e) { fail(res, e.message, 500); }
+});
+
 
 // ==================== PEMBAYARAN ====================
 app.get('/api/pembayaran', async (req, res) => {

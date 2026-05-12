@@ -39,9 +39,31 @@ const AbsensiPage = () => {
 
   const closeModal = () => { setActiveModal(null); setQrResults([]); setSelectedKelas(''); };
 
+  const handleApprove = async (id) => {
+    try {
+      await absensiAPI.update(id, { status: 'izin' });
+      loadAbsensi();
+    } catch (e) { alert(e.message); }
+  };
+
+  const handleReject = async (id) => {
+    if (!window.confirm('Tolak pengajuan izin ini?')) return;
+    try {
+      await absensiAPI.delete(id);
+      loadAbsensi();
+    } catch (e) { alert(e.message); }
+  };
+
   const statusBadge = (status) => {
-    const styles = { hadir: 'badge-success', sakit: { backgroundColor: '#fef08a', color: '#854d0e' }, izin: { backgroundColor: '#dbeafe', color: '#1e40af' }, alfa: { backgroundColor: '#fecaca', color: '#991b1b' } };
+    const styles = { 
+      hadir: 'badge-success', 
+      sakit: { backgroundColor: '#fef08a', color: '#854d0e' }, 
+      izin: { backgroundColor: '#dbeafe', color: '#1e40af' }, 
+      pengajuan_izin: { backgroundColor: '#ffedd5', color: '#9a3412', border: '1px solid #fed7aa' },
+      alfa: { backgroundColor: '#fecaca', color: '#991b1b' } 
+    };
     if (status === 'hadir') return <span className="badge badge-success">Hadir</span>;
+    if (status === 'pengajuan_izin') return <span className="badge" style={styles.pengajuan_izin}>Menunggu Persetujuan</span>;
     return <span className="badge" style={styles[status] || {}}>{status}</span>;
   };
 
@@ -71,10 +93,10 @@ const AbsensiPage = () => {
 
         <div className="table-responsive">
           <table className="data-table w-full">
-            <thead><tr><th>No</th><th>Tanggal</th><th>Waktu Scan</th><th>Nama Santri</th><th>Kelas</th><th>Status</th><th>Keterangan</th></tr></thead>
+            <thead><tr><th>No</th><th>Tanggal</th><th>Waktu Scan</th><th>Nama Santri</th><th>Kelas</th><th>Status</th><th>Keterangan</th><th width="150">Aksi</th></tr></thead>
             <tbody>
-              {loading ? <tr><td colSpan="7" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
-              : absensiList.length === 0 ? <tr><td colSpan="7" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data absensi untuk tanggal ini</td></tr>
+              {loading ? <tr><td colSpan="8" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
+              : absensiList.length === 0 ? <tr><td colSpan="8" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data absensi untuk tanggal ini</td></tr>
               : absensiList.map((a, i) => (
                 <tr key={a.id}>
                   <td>{i+1}</td>
@@ -84,6 +106,17 @@ const AbsensiPage = () => {
                   <td>{a.santri?.kelas?.nama_kelas || '-'}</td>
                   <td>{statusBadge(a.status)}</td>
                   <td>{a.keterangan || '-'}</td>
+                  <td>
+                    <div className="flex gap-2">
+                      {a.status === 'pengajuan_izin' && (
+                        <>
+                          <button className="p-1 px-2 text-xs bg-emerald-500 text-white rounded hover:bg-emerald-600 font-bold" onClick={() => handleApprove(a.id)}>Setujui</button>
+                          <button className="p-1 px-2 text-xs bg-red-500 text-white rounded hover:bg-red-600 font-bold" onClick={() => handleReject(a.id)}>Tolak</button>
+                        </>
+                      )}
+                      <button className="p-1.5 text-red-500 hover:bg-red-50 rounded" onClick={() => handleReject(a.id)}><X size={16} /></button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
