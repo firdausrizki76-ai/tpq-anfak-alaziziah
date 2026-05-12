@@ -17,6 +17,10 @@ const TabunganPage = () => {
   const [rekapGuru, setRekapGuru] = useState([]);
   const [activeTab, setActiveTab] = useState('santri'); // 'santri', 'rekap_guru', 'rekap_admin'
   const [searchTerm, setSearchTerm] = useState('');
+  const [riwayatFilter, setRiwayatFilter] = useState({ 
+    month: new Date().getMonth() + 1, 
+    year: new Date().getFullYear() 
+  });
   const [formData, setFormData] = useState({ santri_id: '', nominal: '', tanggal: new Date().toISOString().split('T')[0], keterangan: '' });
   
   const user = JSON.parse(localStorage.getItem('tpq_user') || '{}');
@@ -33,7 +37,7 @@ const TabunganPage = () => {
         tabunganAPI.getAll(params),
         isAdmin ? tabunganAPI.getSummaryGuru() : Promise.resolve([]),
         isAdmin ? tabunganAPI.getRekapAdmin() : Promise.resolve([]),
-        isAdmin ? tabunganAPI.getRekapGuru() : Promise.resolve([])
+        tabunganAPI.getRekapGuru() // Always fetch rekap guru so gurus can see their own balance
       ]);
       setSantriData(data || []); 
       setGuruSummary(summary || []);
@@ -118,14 +122,14 @@ const TabunganPage = () => {
         </div>
         <div className="flex gap-2">
           {isGuru && (
-            <button className="btn-primary" style={{ backgroundColor: '#059669', boxShadow: '0 4px 12px rgba(5, 150, 105, 0.2)' }} onClick={() => {
+            <button className="btn-primary" style={{ backgroundColor: 'var(--color-primary-container)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} onClick={() => {
               setFormData({ ...formData, nominal: myRekap.saldo_di_guru, keterangan: `Setoran tabungan santri ${new Date().toLocaleDateString('id-ID')}` });
               setActiveModal('setor_admin_proses');
             }}>
-              <Send size={18} /> Setor ke Admin ({formatRp(myRekap.saldo_di_guru)})
+              <Send size={18} /> Setor ke Pusat ({formatRp(myRekap.saldo_di_guru)})
             </button>
           )}
-          <button className="btn-primary" onClick={() => openModal('setor')}><ArrowDownCircle size={18} /> Setor</button>
+          <button className="btn-primary" onClick={() => openModal('setor')}><ArrowDownCircle size={18} /> Tabung</button>
           {isAdmin && (
             <button className="btn-primary" style={{ backgroundColor: 'white', color: 'var(--color-primary-container)', border: '1px solid var(--color-surface-container-highest)', borderBottom: '2px solid var(--color-gold)' }} onClick={() => openModal('tarik')}><ArrowUpCircle size={18} /> Tarik</button>
           )}
@@ -220,7 +224,7 @@ const TabunganPage = () => {
                     <td>
                       <div className="flex justify-center gap-2">
                         <button className="p-1 px-3 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 rounded" onClick={() => openRiwayat(s)}>Riwayat</button>
-                        <button className="p-1 px-3 text-xs bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100 rounded" onClick={() => openModal('setor', s)}>Setor</button>
+                        <button className="p-1 px-3 text-xs bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100 rounded" onClick={() => openModal('setor', s)}>Tabung</button>
                         {isAdmin && <button className="p-1 px-3 text-xs bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-100 rounded" onClick={() => openModal('tarik', s)}>Tarik</button>}
                       </div>
                     </td>
@@ -240,7 +244,7 @@ const TabunganPage = () => {
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${activeModal === 'setor' ? 'bg-emerald-100 text-emerald-600' : activeModal === 'tarik' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
                 {activeModal === 'setor' ? <ArrowDownCircle size={24} /> : activeModal === 'tarik' ? <ArrowUpCircle size={24} /> : <Send size={24} />}
               </div>
-              <h2 className="modal-title">{activeModal === 'setor' ? 'Setor Tabungan' : activeModal === 'tarik' ? 'Tarik Tabungan' : 'Setor ke Admin'}</h2>
+              <h2 className="modal-title">{activeModal === 'setor' ? 'Tabung Tabungan' : activeModal === 'tarik' ? 'Tarik Tabungan' : 'Setor ke Pusat'}</h2>
             </div>
             <X className="modal-close" onClick={closeModal} />
           </div>
