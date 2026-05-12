@@ -434,24 +434,30 @@ app.post('/api/absensi', async (req, res) => {
   try {
     const { santri_id, tanggal, tipe } = req.body;
     
-    // Cek apakah sudah absen hari ini
-    if (santri_id && tanggal && tipe === 'santri') {
-      const { data: existing } = await supabase
-        .from('absensi')
-        .select('id')
-        .eq('santri_id', santri_id)
-        .eq('tanggal', tanggal)
-        .maybeSingle();
-      
-      if (existing) {
-        return fail(res, 'Santri sudah absen hari ini', 400);
-      }
-    }
+    // Gunakan upsert dengan onConflict untuk memastikan tidak ada duplikat santri_id + tanggal
+    // Ini membutuhkan unique index di database untuk bekerja maksimal
+    const { data, error } = await supabase
+      .from('absensi')
+      .upsert(req.body, { 
+        onConflict: 'santri_id,tanggal',
+        ignoreDuplicates: true 
+      })
+      .select()
+      .single();
 
-    const { data, error } = await supabase.from('absensi').insert(req.body).select().single();
-    if (error) throw error;
+    if (error) {
+      // Jika gagal karena constraint, anggap saja sukses (karena datanya sudah ada)
+      if (error.code === '23505') {
+        return ok(res, null, 'Santri sudah diabsenkan hari ini');
+      }
+      throw error;
+    }
+    
     ok(res, data, 'Absensi berhasil dicatat');
-  } catch (e) { fail(res, e.message, 500); }
+  } catch (e) { 
+    console.error('Absensi Error:', e.message);
+    fail(res, e.message, 500); 
+  }
 });
 
 
