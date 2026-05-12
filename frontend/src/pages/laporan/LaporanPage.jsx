@@ -167,7 +167,24 @@ const LaporanPage = () => {
       <div className="page-header mb-6"><h1 className="page-title">Pusat Laporan</h1><p className="page-subtitle">Unduh rekapitulasi data TPQ untuk periode tertentu</p></div>
       <div className="grid grid-2-cols gap-6">
         <ReportCard type="keuangan" title="Laporan Keuangan" description="Rekap syahriah, pemasukan, dan pengeluaran." icon={Wallet} colorClass="bg-emerald-100 text-emerald-600"
-          summary={keuanganData ? `Total masuk: ${formatRp(keuanganData.totalMasuk)} | Tunggakan: ${formatRp(keuanganData.totalTunggakan)}` : null} />
+          summary={keuanganData ? (
+            <div className="space-y-2">
+              <div className="flex justify-between font-bold text-gray-800 border-b pb-1 mb-2">
+                <span>Total Dana Masuk</span>
+                <span>{formatRp(keuanganData.totalMasuk)}</span>
+              </div>
+              {Object.entries(keuanganData.perKategori || {}).map(([cat, vals]) => (
+                <div key={cat} className="flex justify-between text-xs">
+                  <span className="text-gray-500">{cat}</span>
+                  <span className="font-medium text-emerald-600">{formatRp(vals.masuk)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between text-xs pt-1 border-t mt-1 text-red-500">
+                <span>Tunggakan</span>
+                <span>{formatRp(keuanganData.totalTunggakan)}</span>
+              </div>
+            </div>
+          ) : null} />
         <ReportCard type="absensi" title="Laporan Absensi" description="Rekapitulasi kehadiran santri." icon={CheckCircle2} colorClass="bg-blue-100 text-blue-600"
           summary={absensiData ? `Hadir: ${absensiData.hadir} | Sakit: ${absensiData.sakit} | Izin: ${absensiData.izin} | Alfa: ${absensiData.alfa}` : null} />
         <ReportCard type="tabungan" title="Laporan Tabungan" description="Rekap setoran dan penarikan tabungan." icon={FileText} colorClass="bg-orange-100 text-orange-600" 

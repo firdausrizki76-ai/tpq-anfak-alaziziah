@@ -740,7 +740,16 @@ app.get('/api/laporan/keuangan', async (req, res) => {
     const totalMasuk = (data || []).filter(p => p.status === 'lunas').reduce((s, p) => s + p.nominal, 0);
     const totalTunggakan = (data || []).filter(p => p.status === 'belum').reduce((s, p) => s + p.nominal, 0);
     
-    ok(res, { totalMasuk, totalTunggakan, totalTransaksi: (data || []).length, data });
+    // Rekap per kategori
+    const perKategori = {};
+    (data || []).forEach(p => {
+      const catName = p.jenis?.nama || 'Lainnya';
+      if (!perKategori[catName]) perKategori[catName] = { masuk: 0, tunggakan: 0 };
+      if (p.status === 'lunas') perKategori[catName].masuk += p.nominal;
+      else perKategori[catName].tunggakan += p.nominal;
+    });
+    
+    ok(res, { totalMasuk, totalTunggakan, perKategori, totalTransaksi: (data || []).length, data });
   } catch (e) { fail(res, e.message, 500); }
 });
 
