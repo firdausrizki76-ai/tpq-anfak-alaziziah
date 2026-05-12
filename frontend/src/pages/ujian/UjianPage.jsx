@@ -316,27 +316,33 @@ const UjianPage = () => {
                         {status === 'Siap Ujian' && (
                           <>
                             <button className="p-1.5 text-orange-600 hover:bg-orange-50 rounded" title="Cetak Kartu Tes" onClick={() => handlePrintKartu(item)}><Printer size={18} /></button>
-                            <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded flex items-center gap-1 font-medium" title="Input Nilai" onClick={() => openModal('input_nilai', item)}><Award size={18} /> Nilai</button>
-                            {item.santri?.latest_riwayat?.status_tes === 'lulus' && (
-                              <button className="p-1 px-3 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded flex items-center gap-1 font-bold text-xs" title="Naikkan Kelas" onClick={() => openModal('promotion_confirm', item)}><Award size={14} /> Naikkan</button>
+                            {isAdmin && (
+                              <>
+                                <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded flex items-center gap-1 font-medium" title="Input Nilai" onClick={() => openModal('input_nilai', item)}><Award size={18} /> Nilai</button>
+                                {item.santri?.latest_riwayat?.status_tes === 'lulus' && (
+                                  <button className="p-1 px-3 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded flex items-center gap-1 font-bold text-xs" title="Naikkan Kelas" onClick={() => openModal('promotion_confirm', item)}><Award size={14} /> Naikkan</button>
+                                )}
+                              </>
                             )}
                           </>
                         )}
                         {status === 'Belajar' && <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Proses Belajar</span>}
-                        <button 
-                          className="p-1.5 text-red-500 hover:bg-red-50 rounded" 
-                          title="Hapus" 
-                          onClick={async () => {
-                            if (window.confirm('Hapus data pencapaian ini?')) {
-                              try {
-                                await ujianAPI.delete(item.id);
-                                loadData();
-                              } catch (e) { alert(e.message); }
-                            }
-                          }}
-                        >
-                          <X size={18} />
-                        </button>
+                        {isAdmin && (
+                          <button 
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded" 
+                            title="Hapus" 
+                            onClick={async () => {
+                              if (window.confirm('Hapus data pencapaian ini?')) {
+                                try {
+                                  await ujianAPI.delete(item.id);
+                                  loadData();
+                                } catch (e) { alert(e.message); }
+                              }
+                            }}
+                          >
+                            <X size={18} />
+                          </button>
+                        )}
                       </div>
                     </td>
                     <td className="text-center">
