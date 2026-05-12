@@ -23,12 +23,17 @@ const UjianPage = () => {
   const [formData, setFormData] = useState({ nilai: '', keterangan: '', tanggal: new Date().toISOString().split('T')[0], hasil: 'lulus', tanggal_tes: '', tanggal_naik: '' });
   const [regFormData, setRegFormData] = useState({ nomor_tes: '', tanggal_mulai: new Date().toISOString().split('T')[0], tanggal_selesai: '', masa_tempuh: '' });
 
+  const user = JSON.parse(localStorage.getItem('tpq_user') || '{}');
+  const isAdmin = user.role === 'admin';
+  const isGuru = user.role === 'guru';
+
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [ujian, kelas] = await Promise.all([ujianAPI.getAll().catch(() => []), kelasAPI.getAll().catch(() => [])]);
+      const params = isGuru ? { kelas: user.kelas_id } : {};
+      const [ujian, kelas] = await Promise.all([ujianAPI.getAll(params).catch(() => []), kelasAPI.getAll().catch(() => [])]);
       setExamData(ujian || []); setKelasList(kelas || []);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -276,8 +281,8 @@ const UjianPage = () => {
           <table className="data-table w-full">
             <thead><tr><th>No</th><th>Nama Santri</th><th>Kelas</th><th>Tanggal</th><th>Masa Tempuh</th><th>Status</th><th className="text-center">Aksi</th><th>Riwayat</th></tr></thead>
             <tbody>
-              {loading && !activeModal ? <tr><td colSpan="7" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
-              : filteredExam.length === 0 ? <tr><td colSpan="7" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data pencapaian</td></tr>
+              {loading && !activeModal ? <tr><td colSpan="8" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
+              : filteredExam.length === 0 ? <tr><td colSpan="8" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data pencapaian</td></tr>
               : filteredExam.map((item, i) => {
                 const status = getStatus(item);
                 const pct = item.target_hari > 0 ? Math.min((item.aktual_hari / item.target_hari) * 100, 100) : 0;
@@ -287,11 +292,11 @@ const UjianPage = () => {
                     <td className="font-medium">{item.santri?.nama_lengkap || '-'}</td>
                     <td><span className="badge" style={{ backgroundColor: '#f1f5f9', color: '#475569' }}>{item.santri?.kelas?.nama_kelas || item.kelas?.nama_kelas || '-'}</span></td>
                     <td className="text-xs text-gray-500">
-                      <div>Mulai: {item.tanggal_mulai ? new Date(item.tanggal_mulai).toLocaleDateString('id-ID') : '-'}</div>
+                      <div>Mulai: {item.tanggal_mulai ? new Date(item.tanggal_mulai).toLocaleDateString('id-ID') : (item.tanggal_masuk ? new Date(item.tanggal_masuk).toLocaleDateString('id-ID') : '-')}</div>
                       <div>Selesai: {item.tanggal_selesai ? new Date(item.tanggal_selesai).toLocaleDateString('id-ID') : '-'}</div>
                     </td>
                     <td>
-                      <span className="font-bold">{item.aktual_hari || 0} Hari / {item.target_hari || 60}</span>
+                      <span className="font-bold">{item.aktual_hari || 0} Hari</span>
                       <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
                         <div className={`h-full ${pct >= 100 ? 'bg-orange-500' : 'bg-blue-500'}`} style={{ width: `${pct}%` }}></div>
                       </div>
@@ -301,14 +306,28 @@ const UjianPage = () => {
                       {status === 'Belajar' && <span className="badge" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }}>Belajar</span>}
                     </td>
                     <td className="text-center">
-                      <div className="flex justify-center items-center h-full">
+                      <div className="flex justify-center items-center h-full gap-2">
                         {status === 'Siap Ujian' && (
-                          <div className="flex gap-2">
+                          <>
                             <button className="p-1.5 text-orange-600 hover:bg-orange-50 rounded" title="Cetak Kartu Tes" onClick={() => handlePrintKartu(item)}><Printer size={18} /></button>
                             <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded flex items-center gap-1 font-medium" title="Input Nilai" onClick={() => openModal('input_nilai', item)}><Award size={18} /> Nilai</button>
-                          </div>
+                          </>
                         )}
                         {status === 'Belajar' && <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Proses Belajar</span>}
+                        <button 
+                          className="p-1.5 text-red-500 hover:bg-red-50 rounded" 
+                          title="Hapus" 
+                          onClick={async () => {
+                            if (window.confirm('Hapus data pencapaian ini?')) {
+                              try {
+                                await ujianAPI.delete(item.id);
+                                loadData();
+                              } catch (e) { alert(e.message); }
+                            }
+                          }}
+                        >
+                          <X size={18} />
+                        </button>
                       </div>
                     </td>
                     <td className="text-center">

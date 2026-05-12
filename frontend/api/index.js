@@ -414,12 +414,17 @@ app.put('/api/kelas/:id', async (req, res) => {
 // ==================== ABSENSI ====================
 app.get('/api/absensi', async (req, res) => {
   try {
-    const { tanggal, kelas, search } = req.query;
+    const { tanggal, kelas, search, santri_id } = req.query;
     let q = supabase.from('absensi')
-      .select('*, santri:santri_id(nama_lengkap, nomor_induk, kelas:kelas_id(nama_kelas))')
+      .select('*, santri!inner(nama_lengkap, nomor_induk, kelas_id, kelas:kelas_id(nama_kelas))')
       .eq('tipe', 'santri');
+    
     if (tanggal) q = q.eq('tanggal', tanggal);
-    const { data, error } = await q.order('waktu_scan', { ascending: false });
+    if (kelas) q = q.eq('santri.kelas_id', kelas);
+    if (santri_id) q = q.eq('santri_id', santri_id);
+    if (search) q = q.ilike('santri.nama_lengkap', `%${search}%`);
+    
+    const { data, error } = await q.order('tanggal', { ascending: false }).order('waktu_scan', { ascending: false });
     if (error) throw error;
     ok(res, data);
   } catch (e) { fail(res, e.message, 500); }
@@ -674,7 +679,7 @@ app.get('/api/tabungan/:santriId/riwayat', async (req, res) => {
 
 app.post('/api/tabungan', async (req, res) => {
   try {
-    const { santri_id, jenis, nominal, keterangan, tanggal } = req.body;
+    const { santri_id, jenis, nominal, keterangan, tanggal, recorded_by } = req.body;
     // Get current saldo
     const { data: history } = await supabase.from('tabungan_santri').select('jenis, nominal').eq('santri_id', santri_id);
     let saldo = (history || []).reduce((s, t) => s + (t.jenis === 'setor' ? t.nominal : -t.nominal), 0);
@@ -682,10 +687,40 @@ app.post('/api/tabungan', async (req, res) => {
     saldo = jenis === 'setor' ? saldo + parseInt(nominal) : saldo - parseInt(nominal);
     const { data, error } = await supabase.from('tabungan_santri').insert({
       santri_id, jenis, nominal: parseInt(nominal), saldo_setelah: saldo,
-      keterangan, tanggal: tanggal || new Date().toISOString().split('T')[0]
+      keterangan, tanggal: tanggal || new Date().toISOString().split('T')[0],
+      recorded_by
     }).select().single();
     if (error) throw error;
     ok(res, data, `${jenis === 'setor' ? 'Setoran' : 'Penarikan'} berhasil`);
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+app.post('/api/tabungan/setor-admin', async (req, res) => {
+  try {
+    const { guru_id, nominal, keterangan } = req.body;
+    const { data, error } = await supabase.from('setoran_guru').insert({
+      guru_id, nominal, keterangan, status: 'diterima' // Otomatis diterima untuk saat ini sesuai request
+    }).select().single();
+    if (error) throw error;
+    ok(res, data, 'Setoran ke admin berhasil dicatat');
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+app.get('/api/tabungan/rekap-admin', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('setoran_guru')
+      .select('*, guru:guru_id(nama_lengkap)')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    ok(res, data);
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+app.get('/api/tabungan/rekap-guru', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('v_rekap_guru_tabungan').select('*');
+    if (error) throw error;
+    ok(res, data);
   } catch (e) { fail(res, e.message, 500); }
 });
 
@@ -785,10 +820,14 @@ app.put('/api/pengaturan', async (req, res) => {
 // ==================== UJIAN & KENAIKAN ====================
 app.get('/api/ujian', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('target_pencapaian')
+    const { kelas } = req.query;
+    let query = supabase.from('target_pencapaian')
       .select('*, santri:santri_id(id, nama_lengkap, nomor_induk, kelas:kelas_id(id, nama_kelas, urutan, wali:wali_kelas_id(nama_lengkap))), kelas:kelas_id(nama_kelas)')
-      .is('tanggal_selesai', null)
-      .order('created_at', { ascending: false });
+      .is('tanggal_selesai', null);
+    
+    if (kelas) query = query.eq('kelas_id', kelas);
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
     
     if (error) throw error;
 
@@ -803,10 +842,12 @@ app.get('/api/ujian', async (req, res) => {
 
 app.post('/api/ujian/register', async (req, res) => {
   try {
-    const { santri_ids } = req.body;
+    const { santri_ids, nomor_tes, tanggal_mulai, tanggal_selesai, masa_tempuh } = req.body;
     if (!santri_ids || !Array.isArray(santri_ids)) return fail(res, 'Santri tidak valid');
 
     const results = [];
+    const target = parseInt(masa_tempuh) || 60;
+
     for (const sid of santri_ids) {
       // Ambil data santri untuk tahu kelasnya sekarang
       const { data: santri } = await supabase.from('santri').select('kelas_id').eq('id', sid).single();
@@ -816,22 +857,35 @@ app.post('/api/ujian/register', async (req, res) => {
       const { data: existing } = await supabase.from('target_pencapaian')
         .select('id').eq('santri_id', sid).eq('kelas_id', santri.kelas_id).is('tanggal_selesai', null).maybeSingle();
 
+      const payload = {
+        nomor_tes,
+        tanggal_mulai,
+        tanggal_selesai,
+        target_hari: target,
+        aktual_hari: target // Langsung set siap ujian
+      };
+
       if (existing) {
-        // Jika ada, paksa jadi "Siap Ujian" dengan menyamakan aktual_hari ke target_hari
-        const { data } = await supabase.from('target_pencapaian').update({ aktual_hari: 60, target_hari: 60 }).eq('id', existing.id).select().single();
+        const { data } = await supabase.from('target_pencapaian').update(payload).eq('id', existing.id).select().single();
         results.push(data);
       } else {
-        // Jika belum ada, buat baru dengan status langsung siap ujian
         const { data } = await supabase.from('target_pencapaian').insert({
           santri_id: sid,
           kelas_id: santri.kelas_id,
-          target_hari: 60,
-          aktual_hari: 60
+          ...payload
         }).select().single();
         results.push(data);
       }
     }
     ok(res, results, `${results.length} santri berhasil didaftarkan ujian`);
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+app.delete('/api/ujian/:id', async (req, res) => {
+  try {
+    const { error } = await supabase.from('target_pencapaian').delete().eq('id', req.params.id);
+    if (error) throw error;
+    ok(res, null, 'Data ujian berhasil dihapus');
   } catch (e) { fail(res, e.message, 500); }
 });
 

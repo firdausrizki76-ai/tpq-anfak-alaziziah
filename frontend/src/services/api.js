@@ -101,6 +101,7 @@ export const ujianAPI = {
   inputNilai: (body) => request('/ujian/nilai', { method: 'POST', body }),
   naikKelas: (body) => request('/ujian/naik-kelas', { method: 'POST', body }),
   getHistory: (santriId) => request(`/ujian/history/${santriId}`),
+  delete: (id) => request(`/ujian/${id}`, { method: 'DELETE' }),
 };
 
 // Pembayaran
@@ -130,6 +131,9 @@ export const tabunganAPI = {
     const qs = new URLSearchParams(params).toString();
     return request(`/tabungan/${santriId}/riwayat${qs ? `?${qs}` : ''}`);
   },
+  setorKeAdmin: (body) => request('/tabungan/setor-admin', { method: 'POST', body }),
+  getRekapAdmin: () => request('/tabungan/rekap-admin'),
+  getRekapGuru: () => request('/tabungan/rekap-guru'),
   transact: (body) => request('/tabungan', { method: 'POST', body }),
 };
 

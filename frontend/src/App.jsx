@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/auth/Login';
+import AttendanceHistoryPage from './pages/teacher/AttendanceHistoryPage';
+
 import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/dashboard/Dashboard';
 import SantriPage from './pages/santri/SantriPage';
@@ -71,7 +73,9 @@ function App() {
           <Route path="/guru/dashboard" element={<TeacherDashboard />} />
           <Route path="/guru/kelas" element={<ClassListPage />} />
           <Route path="/guru/absen" element={<ScannerPage />} />
+          <Route path="/guru/absen/riwayat" element={<AttendanceHistoryPage />} />
           <Route path="/guru/tabungan" element={<TabunganPage />} />
+          <Route path="/guru/ujian" element={<UjianPage />} />
         </Route>
 
         {/* Student Routes */}

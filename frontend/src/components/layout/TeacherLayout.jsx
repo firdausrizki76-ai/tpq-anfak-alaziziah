@@ -11,7 +11,8 @@ const TeacherLayout = () => {
     { path: '/guru/dashboard', icon: <LayoutDashboard size={24} />, label: 'Beranda' },
     { path: '/guru/kelas', icon: <Users size={24} />, label: 'Kelas' },
     { path: '/guru/absen', icon: <CalendarCheck size={24} />, label: 'Absen' },
-    { path: '/guru/tabungan', icon: <Wallet size={24} />, label: 'Tabungan' }
+    { path: '/guru/tabungan', icon: <Wallet size={24} />, label: 'Tabungan' },
+    { path: '/guru/ujian', icon: <BookOpen size={24} />, label: 'Tes' }
   ];
 
   return (
