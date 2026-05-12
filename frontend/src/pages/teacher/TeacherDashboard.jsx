@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, QrCode, BookOpen, CheckCircle, Loader2, Lock, X, Save } from 'lucide-react';
 import { absensiAPI, kelasAPI, authAPI } from '../../services/api';
-import '../student/StudentDashboard.css';
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
@@ -24,7 +23,6 @@ const TeacherDashboard = () => {
   const loadStats = async (userData) => {
     setLoading(true);
     try {
-      // Get today's attendance for guru's class
       const today = new Date().toISOString().split('T')[0];
       const [absensiRes, kelasSantri] = await Promise.all([
         absensiAPI.getAll({ tanggal: today }),
@@ -67,112 +65,106 @@ const TeacherDashboard = () => {
     setSavingPassword(false);
   };
 
-  if (!guru) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto" /></div>;
+  if (!guru) return <div style={{ padding: '32px', textAlign: 'center' }}><Loader2 size={32} color="#059669" className="animate-spin" /></div>;
 
   return (
-    <div className="flex-col gap-4">
-      <div className="card text-center py-6 mb-4 relative overflow-hidden featured">
-        <div className="absolute inset-0 bg-pattern opacity-10 pointer-events-none"></div>
-        <div className="w-20 h-20 bg-white rounded-full mx-auto mb-4 border-4 border-white shadow flex items-center justify-center overflow-hidden">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', paddingBottom: '96px', minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'var(--font-family-body, sans-serif)' }}>
+      {/* Profile Card */}
+      <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '24px', textAlign: 'center', position: 'relative', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9' }}>
+        <div style={{ width: '100px', height: '100px', backgroundColor: '#f1f5f9', borderRadius: '50%', margin: '0 auto 16px auto', border: '4px solid white', boxShadow: '0 4px 15px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
            <img 
             src={guru.foto_url ? `https://lh3.googleusercontent.com/d/${guru.foto_url.split('id=')[1]}=s400` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${guru.nama_lengkap}`} 
             alt="Guru" 
-            className="w-full h-full object-cover" 
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
           />
         </div>
-        <h2 className="text-xl font-bold text-[var(--color-primary-container)]">{guru.nama_lengkap}</h2>
-        <p className="text-[var(--color-on-surface-variant)] text-sm">{guru.jabatan || 'Guru'} {guru.kelas?.nama_kelas ? `| Wali Kelas: ${guru.kelas.nama_kelas}` : ''}</p>
+        <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e293b', margin: '0 0 4px 0' }}>{guru.nama_lengkap}</h2>
+        <p style={{ fontSize: '13px', color: '#64748b', margin: 0, fontWeight: '500' }}>
+          {guru.jabatan || 'Guru'} {guru.kelas?.nama_kelas ? `• Wali Kelas: ` : ''}
+          {guru.kelas?.nama_kelas && <span style={{ color: '#059669', fontWeight: 'bold' }}>{guru.kelas.nama_kelas}</span>}
+        </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="card p-4 flex-col items-center text-center cursor-pointer hover:bg-emerald-50 transition-colors" onClick={() => navigate('/guru/absen')}>
-          <div className="p-3 bg-emerald-100 rounded-full text-[var(--color-primary-container)] mb-2">
-            <QrCode size={24} />
+      {/* Action Buttons Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+        <div 
+          onClick={() => navigate('/guru/absen')}
+          style={{ backgroundColor: 'white', borderRadius: '24px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9' }}
+        >
+          <div style={{ padding: '16px', backgroundColor: '#dcfce7', borderRadius: '50%', color: '#064e3b', marginBottom: '12px' }}>
+            <QrCode size={28} />
           </div>
-          <h3 className="text-sm font-semibold text-gray-600">Scan Santri</h3>
+          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#334155', margin: 0 }}>Scan Santri</h3>
         </div>
-        <div className="card p-4 flex-col items-center text-center cursor-pointer hover:bg-blue-50 transition-colors" onClick={() => navigate('/guru/kelas')}>
-          <div className="p-3 bg-blue-100 rounded-full text-blue-600 mb-2">
-            <Users size={24} />
+        <div 
+          onClick={() => navigate('/guru/kelas')}
+          style={{ backgroundColor: 'white', borderRadius: '24px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9' }}
+        >
+          <div style={{ padding: '16px', backgroundColor: '#dbeafe', borderRadius: '50%', color: '#1d4ed8', marginBottom: '12px' }}>
+            <Users size={28} />
           </div>
-          <h3 className="text-sm font-semibold text-gray-600">Daftar Kelas</h3>
+          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#334155', margin: 0 }}>Daftar Kelas</h3>
         </div>
       </div>
 
-      <div className="card p-4 mb-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-[var(--color-primary-container)]">Status Kelas Hari Ini</h3>
-        </div>
+      {/* Status Kelas Card */}
+      <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9' }}>
+        <h3 style={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '16px', fontSize: '16px' }}>Status Kelas Hari Ini</h3>
         
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
-          <div className="flex items-center gap-3">
-            <CheckCircle size={20} className="text-green-500" />
-            <span className="font-semibold text-sm">Kehadiran Kelas</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', backgroundColor: '#f8fafc', borderRadius: '16px', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <CheckCircle size={20} color="#22c55e" />
+            <span style={{ fontWeight: '600', fontSize: '14px', color: '#334155' }}>Kehadiran Kelas</span>
           </div>
-          <span className="font-bold text-lg text-[var(--color-primary-container)]">
+          <span style={{ fontWeight: '900', fontSize: '18px', color: '#064e3b' }}>
             {loading ? '...' : `${stats.hadir}/${stats.total}`}
           </span>
         </div>
         
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-          <div className="flex items-center gap-3">
-            <BookOpen size={20} className="text-blue-500" />
-            <span className="font-semibold text-sm">Target Pencapaian</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', backgroundColor: '#f8fafc', borderRadius: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <BookOpen size={20} color="#3b82f6" />
+            <span style={{ fontWeight: '600', fontSize: '14px', color: '#334155' }}>Target Pencapaian</span>
           </div>
-          <span className="font-bold text-lg text-[var(--color-primary-container)]">85%</span>
+          <span style={{ fontWeight: '900', fontSize: '18px', color: '#064e3b' }}>85%</span>
         </div>
       </div>
 
-      <div className="flex-col gap-4 mb-8">
-        <button className="btn-primary w-full justify-center bg-white text-gray-600 border-gray-200" onClick={() => setShowPasswordModal(true)}>
+      {/* Settings */}
+      <div style={{ marginTop: '8px' }}>
+        <button 
+          onClick={() => setShowPasswordModal(true)}
+          style={{ width: '100%', padding: '16px', backgroundColor: 'white', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: '20px', fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}
+        >
           <Lock size={18} /> Ganti Password
         </button>
       </div>
 
       {showPasswordModal && (
-        <div className="modal-overlay">
-          <div className="modal-container" style={{ maxWidth: '400px' }}>
-            <div className="modal-header">
-              <h2 className="modal-title text-lg">Ganti Password</h2>
-              <X className="modal-close" onClick={() => setShowPasswordModal(false)} />
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '24px', width: '100%', maxWidth: '400px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>Ganti Password</h2>
+              <X style={{ cursor: 'pointer', color: '#94a3b8' }} onClick={() => setShowPasswordModal(false)} />
             </div>
             <form onSubmit={handlePasswordChange}>
-              <div className="modal-body space-y-4">
-                <div className="form-group">
-                  <label className="form-label text-sm">Password Lama</label>
-                  <input 
-                    type="password" 
-                    className="input-field" 
-                    value={passwordForm.oldPassword} 
-                    onChange={(e) => setPasswordForm({...passwordForm, oldPassword: e.target.value})} 
-                    required 
-                  />
+              <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px' }}>Password Lama</label>
+                  <input type="password" style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} value={passwordForm.oldPassword} onChange={(e) => setPasswordForm({...passwordForm, oldPassword: e.target.value})} required />
                 </div>
-                <div className="form-group">
-                  <label className="form-label text-sm">Password Baru</label>
-                  <input 
-                    type="password" 
-                    className="input-field" 
-                    value={passwordForm.newPassword} 
-                    onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})} 
-                    minLength={6}
-                    required 
-                  />
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px' }}>Password Baru</label>
+                  <input type="password" style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} value={passwordForm.newPassword} onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})} minLength={6} required />
                 </div>
-                <div className="form-group">
-                  <label className="form-label text-sm">Konfirmasi Password Baru</label>
-                  <input 
-                    type="password" 
-                    className="input-field" 
-                    value={passwordForm.confirmPassword} 
-                    onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} 
-                    required 
-                  />
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px' }}>Konfirmasi Password Baru</label>
+                  <input type="password" style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} required />
                 </div>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn-primary flex-1 bg-gray-100 text-gray-600 border-none" onClick={() => setShowPasswordModal(false)}>Batal</button>
-                <button type="submit" className="btn-primary flex-1" disabled={savingPassword}>
+              <div style={{ padding: '20px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '12px' }}>
+                <button type="button" style={{ flex: 1, padding: '14px', borderRadius: '16px', border: 'none', backgroundColor: '#f1f5f9', color: '#64748b', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setShowPasswordModal(false)}>Batal</button>
+                <button type="submit" style={{ flex: 1, padding: '14px', borderRadius: '16px', border: 'none', backgroundColor: '#059669', color: 'white', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} disabled={savingPassword}>
                   {savingPassword ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> Simpan</>}
                 </button>
               </div>

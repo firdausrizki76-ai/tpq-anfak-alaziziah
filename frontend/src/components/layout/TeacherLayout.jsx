@@ -1,61 +1,127 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, CalendarCheck, LogOut, Bell, Wallet } from 'lucide-react';
-import './TeacherLayout.css';
+import { LayoutDashboard, Users, BookOpen, CalendarCheck, LogOut, Wallet } from 'lucide-react';
 
 const TeacherLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const menuItems = [
-    { path: '/guru/dashboard', icon: <LayoutDashboard size={24} />, label: 'Beranda' },
-    { path: '/guru/kelas', icon: <Users size={24} />, label: 'Kelas' },
-    { path: '/guru/absen', icon: <CalendarCheck size={24} />, label: 'Absen' },
-    { path: '/guru/tabungan', icon: <Wallet size={24} />, label: 'Tabungan' },
-    { path: '/guru/ujian', icon: <BookOpen size={24} />, label: 'Tes' }
+    { path: '/guru/dashboard', icon: LayoutDashboard, label: 'Beranda' },
+    { path: '/guru/kelas', icon: Users, label: 'Kelas' },
+    { path: '/guru/absen', icon: CalendarCheck, label: 'Absen' },
+    { path: '/guru/tabungan', icon: Wallet, label: 'Tabungan' },
+    { path: '/guru/ujian', icon: BookOpen, label: 'Tes' }
   ];
 
+  const handleLogout = () => {
+    localStorage.removeItem('tpq_token');
+    localStorage.removeItem('tpq_user');
+    navigate('/login');
+  };
+
   return (
-    <div className="teacher-layout">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#f8fafc', width: '100%', fontFamily: 'var(--font-family-body, sans-serif)' }}>
       {/* Top Header */}
-      <header className="teacher-header arch-container-bottom">
-        <div className="header-content flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <img src="/assets/logoapp.png" alt="Logo" className="teacher-logo" />
+      <header style={{ 
+        backgroundColor: '#064e3b', 
+        color: 'white', 
+        padding: '16px 20px', 
+        position: 'relative', 
+        zIndex: 10, 
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+        borderBottomLeftRadius: '24px',
+        borderBottomRightRadius: '24px'
+      }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <img src="/assets/logoapp.png" alt="Logo" style={{ height: '36px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))', borderRadius: '8px' }} />
             <div>
-              <h2 className="teacher-title">TPQ Anfak Al Azizah</h2>
-              <p className="teacher-subtitle">Portal Guru</p>
+              <h2 style={{ fontFamily: 'var(--font-family-display, serif)', fontSize: '15px', lineHeight: 1.2, color: '#D4AF37', margin: 0, fontWeight: 'bold' }}>TPQ Anfak Al Azizah</h2>
+              <p style={{ fontSize: '11px', color: '#a7f3d0', margin: 0, fontWeight: '500' }}>Portal Guru</p>
             </div>
           </div>
-          <button className="icon-btn">
-            <Bell size={20} />
-          </button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="teacher-content">
+      <main style={{ flex: 1, overflowY: 'auto', padding: '0', paddingBottom: '90px', maxWidth: '600px', margin: '0 auto', width: '100%' }}>
         <Outlet />
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="bottom-nav">
-        {menuItems.map(item => (
-          <button
-            key={item.path}
-            className={`bottom-nav-item ${location.pathname.startsWith(item.path) ? 'active' : ''}`}
-            onClick={() => navigate(item.path)}
-          >
-            <div className="nav-icon-wrapper">{item.icon}</div>
-            <span className="nav-label">{item.label}</span>
-          </button>
-        ))}
+      <nav style={{ 
+        position: 'fixed', 
+        bottom: 0, 
+        left: 0, 
+        right: 0, 
+        backgroundColor: 'rgba(255,255,255,0.97)', 
+        backdropFilter: 'blur(12px)', 
+        display: 'flex', 
+        justifyContent: 'space-around', 
+        padding: '8px 0 12px 0', 
+        boxShadow: '0 -4px 16px rgba(0,0,0,0.05)', 
+        borderTop: '1px solid #f1f5f9', 
+        zIndex: 100 
+      }}>
+        {menuItems.map(item => {
+          const isActive = location.pathname.startsWith(item.path);
+          const IconComponent = item.icon;
+          return (
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                gap: '2px', 
+                background: 'transparent', 
+                border: 'none', 
+                color: isActive ? '#064e3b' : '#94a3b8', 
+                fontFamily: 'var(--font-family-body, sans-serif)', 
+                fontSize: '10px', 
+                cursor: 'pointer', 
+                flex: 1,
+                fontWeight: isActive ? '700' : '500',
+                padding: '4px 0'
+              }}
+            >
+              <div style={{ 
+                padding: '6px 16px', 
+                borderRadius: '16px', 
+                transition: 'all 0.2s',
+                backgroundColor: isActive ? '#dcfce7' : 'transparent',
+                color: isActive ? '#064e3b' : '#94a3b8'
+              }}>
+                <IconComponent size={22} />
+              </div>
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
         <button
-          className="bottom-nav-item logout"
-          onClick={() => navigate('/login')}
+          onClick={handleLogout}
+          style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            gap: '2px', 
+            background: 'transparent', 
+            border: 'none', 
+            color: '#ef4444', 
+            fontFamily: 'var(--font-family-body, sans-serif)', 
+            fontSize: '10px', 
+            cursor: 'pointer', 
+            flex: 1,
+            fontWeight: '500',
+            padding: '4px 0'
+          }}
         >
-          <div className="nav-icon-wrapper"><LogOut size={24} /></div>
-          <span className="nav-label">Keluar</span>
+          <div style={{ padding: '6px 16px', borderRadius: '16px' }}>
+            <LogOut size={22} />
+          </div>
+          <span>Keluar</span>
         </button>
       </nav>
     </div>

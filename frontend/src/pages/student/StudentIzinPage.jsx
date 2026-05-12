@@ -27,10 +27,10 @@ const StudentIzinPage = () => {
 
       await absensiAPI.create({
         santri_id: user.id,
-        kelas_id: user.kelas_id || null,
         tanggal: formData.tanggal,
         status: 'izin',
-        keterangan: formData.keterangan
+        tipe: 'santri',
+        waktu_scan: new Date().toISOString()
       });
 
       setSuccess(true);
