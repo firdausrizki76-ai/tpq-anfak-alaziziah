@@ -136,29 +136,41 @@ const TabunganPage = () => {
         </div>
       </div>
 
-      {/* Admin Tabs */}
+      {/* Admin Tabs - Premium Capsule Style */}
       {isAdmin && (
-        <div className="flex border-b border-gray-100 mb-6 no-print">
-          <button className={`px-6 py-3 font-bold text-sm transition-all ${activeTab === 'santri' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-400'}`} onClick={() => setActiveTab('santri')}>Data Santri</button>
-          <button className={`px-6 py-3 font-bold text-sm transition-all ${activeTab === 'rekap_guru' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-400'}`} onClick={() => setActiveTab('rekap_guru')}>Rekap Guru</button>
-          <button className={`px-6 py-3 font-bold text-sm transition-all ${activeTab === 'rekap_admin' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-400'}`} onClick={() => setActiveTab('rekap_admin')}>Rekap Admin (Pusat)</button>
+        <div className="flex bg-gray-100/50 p-1 rounded-2xl mb-8 w-fit no-print border border-gray-200/50">
+          {[
+            { id: 'santri', label: 'Data Santri', icon: <Users size={16} /> },
+            { id: 'rekap_guru', label: 'Rekap Guru', icon: <Wallet size={16} /> },
+            { id: 'rekap_admin', label: 'Rekap Pusat', icon: <CreditCard size={16} /> }
+          ].map((tab) => (
+            <button 
+              key={tab.id}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-white text-emerald-700 shadow-md ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600'}`}
+              onClick={() => setActiveTab(tab.id)}
+              style={{ border: 'none', cursor: 'pointer' }}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
         </div>
       )}
 
       {isAdmin && activeTab === 'rekap_guru' && (
         <div className="grid grid-3-cols gap-6 mb-6 no-print">
           {rekapGuru.map((g, idx) => (
-            <div key={idx} className="card p-4 border-l-4 border-amber-500 bg-white">
+            <div key={idx} className="card p-4 border-l-4 border-amber-500 bg-white shadow-sm hover:shadow-md transition-all rounded-2xl">
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <h3 className="font-bold text-gray-800">{g.nama_guru}</h3>
-                  <p className="text-xs text-gray-500">Saldo Belum Disetor</p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Saldo Belum Disetor</p>
                 </div>
-                <div className="bg-amber-50 p-2 rounded-lg text-amber-600"><Wallet size={16} /></div>
+                <div className="bg-amber-50 p-2 rounded-xl text-amber-600"><Wallet size={18} /></div>
               </div>
               <div className="mt-4">
-                <p className="text-xl font-black text-amber-700">{formatRp(g.saldo_di_guru)}</p>
-                <div className="flex justify-between mt-2 text-[10px] text-gray-400 font-bold uppercase">
+                <p className="text-2xl font-black text-amber-700">{formatRp(g.saldo_di_guru)}</p>
+                <div className="flex justify-between mt-3 text-[10px] text-gray-400 font-bold uppercase border-t pt-2 border-gray-50">
                   <span>Koleksi: {formatRp(g.total_koleksi)}</span>
                   <span>Setor: {formatRp(g.total_setoran)}</span>
                 </div>
@@ -169,26 +181,26 @@ const TabunganPage = () => {
       )}
 
       {isAdmin && activeTab === 'rekap_admin' && (
-        <div className="card w-full no-print">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-800 flex items-center gap-2"><CreditCard size={20} className="text-blue-600" /> Riwayat Setoran Guru ke Admin</h3>
-            <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-100 font-bold text-blue-700">
-              Total Dana di Admin: {formatRp(rekapAdmin.reduce((s, r) => s + r.nominal, 0))}
+        <div className="card w-full no-print rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="flex justify-between items-center p-6 bg-gray-50/50 border-b border-gray-100">
+            <h3 className="font-bold text-gray-800 flex items-center gap-3"><CreditCard size={20} className="text-emerald-600" /> Riwayat Setoran Guru ke Pusat</h3>
+            <div className="bg-emerald-600 px-5 py-2.5 rounded-2xl font-black text-white shadow-lg shadow-emerald-200 text-sm">
+              Total Dana: {formatRp(rekapAdmin.reduce((s, r) => s + r.nominal, 0))}
             </div>
           </div>
-          <div className="table-responsive">
+          <div className="table-responsive p-2">
             <table className="data-table w-full">
               <thead><tr><th>No</th><th>Tanggal</th><th>Nama Guru</th><th>Nominal</th><th>Keterangan</th><th>Status</th></tr></thead>
               <tbody>
-                {rekapAdmin.length === 0 ? <tr><td colSpan="6" className="text-center py-8 text-gray-400">Belum ada data setoran</td></tr>
+                {rekapAdmin.length === 0 ? <tr><td colSpan="6" className="text-center py-12 text-gray-400 italic">Belum ada data setoran</td></tr>
                 : rekapAdmin.map((r, i) => (
                   <tr key={r.id}>
                     <td>{i+1}</td>
-                    <td>{new Date(r.tanggal).toLocaleDateString('id-ID')}</td>
-                    <td className="font-bold">{r.guru?.nama_lengkap}</td>
-                    <td className="font-bold text-emerald-600">{formatRp(r.nominal)}</td>
-                    <td className="text-xs text-gray-500">{r.keterangan || '-'}</td>
-                    <td><span className="badge badge-success">{r.status.toUpperCase()}</span></td>
+                    <td className="text-gray-500 font-medium">{new Date(r.tanggal).toLocaleDateString('id-ID')}</td>
+                    <td className="font-bold text-gray-700">{r.guru?.nama_lengkap}</td>
+                    <td className="font-black text-emerald-600">{formatRp(r.nominal)}</td>
+                    <td className="text-xs text-gray-400 italic">{r.keterangan || '-'}</td>
+                    <td><span className="badge badge-success" style={{ backgroundColor: '#ecfdf5', color: '#059669', border: '1px solid #d1fae5' }}>DITERIMA</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -198,34 +210,53 @@ const TabunganPage = () => {
       )}
 
       {activeTab === 'santri' && (
-        <div className="card w-full no-print">
-          <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
+        <div className="card w-full no-print rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="flex items-center justify-between p-6 bg-gray-50/50 border-b border-gray-100 gap-4 flex-wrap">
             <div className="input-with-icon" style={{ maxWidth: '300px', width: '100%' }}>
-              <Search className="icon" size={18} />
-              <input type="text" className="input-field" placeholder="Cari nama santri..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <Search className="icon text-gray-400" size={18} />
+              <input type="text" className="input-field bg-white border-gray-200 focus:border-emerald-500 rounded-2xl shadow-inner" placeholder="Cari nama santri..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
-            <div className="font-semibold text-lg text-[var(--color-primary-container)] bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-100 flex items-center gap-2">
-              <Wallet className="text-emerald-600" size={20} />
-              Total Saldo Santri: <span className="text-emerald-700">{formatRp(totalSaldo)}</span>
+            <div className="font-bold text-sm text-emerald-700 bg-emerald-50 px-5 py-3 rounded-2xl border border-emerald-100 flex items-center gap-3 shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-200"><Wallet size={16} /></div>
+              <span>Total Saldo Santri: <span className="text-lg font-black ml-1">{formatRp(totalSaldo)}</span></span>
             </div>
           </div>
 
-          <div className="table-responsive">
+          <div className="table-responsive p-2">
             <table className="data-table w-full">
               <thead><tr><th>No</th><th>NIS</th><th>Nama</th><th>Kelas</th><th>Saldo</th><th className="text-center">Aksi</th></tr></thead>
               <tbody>
-                {loading ? <tr><td colSpan="6" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
-                : filteredData.length === 0 ? <tr><td colSpan="6" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data tabungan</td></tr>
+                {loading ? <tr><td colSpan="6" className="text-center py-12"><Loader2 size={32} className="animate-spin text-emerald-600 mx-auto" /></td></tr>
+                : filteredData.length === 0 ? <tr><td colSpan="6" className="text-center py-12 text-gray-400 italic">Belum ada data tabungan</td></tr>
                 : filteredData.map((s, i) => (
-                  <tr key={s.id}>
-                    <td>{i+1}</td><td>{s.nomor_induk}</td><td className="font-medium">{s.nama_lengkap}</td>
-                    <td>{s.kelas?.nama_kelas || '-'}</td>
-                    <td className="font-bold text-emerald-700">{formatRp(s.saldo)}</td>
+                  <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="text-gray-400 text-xs font-bold">{i+1}</td>
+                    <td className="font-mono text-xs text-gray-500">{s.nomor_induk}</td>
+                    <td className="font-bold text-gray-800">{s.nama_lengkap}</td>
+                    <td><span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-black uppercase">{s.kelas?.nama_kelas || '-'}</span></td>
+                    <td className="font-black text-emerald-700">{formatRp(s.saldo)}</td>
                     <td>
                       <div className="flex justify-center gap-2">
-                        <button className="p-1 px-3 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 rounded" onClick={() => openRiwayat(s)}>Riwayat</button>
-                        <button className="p-1 px-3 text-xs bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100 rounded" onClick={() => openModal('setor', s)}>Tabung</button>
-                        {isAdmin && <button className="p-1 px-3 text-xs bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-100 rounded" onClick={() => openModal('tarik', s)}>Tarik</button>}
+                        <button 
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100 rounded-xl text-[10px] font-black transition-all active:scale-95 shadow-sm"
+                          onClick={() => openRiwayat(s)}
+                        >
+                          <History size={12} /> RIWAYAT
+                        </button>
+                        <button 
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-100 rounded-xl text-[10px] font-black transition-all active:scale-95 shadow-sm"
+                          onClick={() => openModal('setor', s)}
+                        >
+                          <ArrowDownCircle size={12} /> TABUNG
+                        </button>
+                        {isAdmin && (
+                          <button 
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-100 rounded-xl text-[10px] font-black transition-all active:scale-95 shadow-sm"
+                            onClick={() => openModal('tarik', s)}
+                          >
+                            <ArrowUpCircle size={12} /> TARIK
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
