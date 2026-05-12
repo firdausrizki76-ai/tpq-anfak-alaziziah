@@ -151,7 +151,13 @@ const AbsensiPage = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-2 qr-grid-print">
                   {qrResults.map(s => (
                     <div key={s.id} className="border-2 border-dashed border-gray-200 rounded-xl p-4 flex flex-col items-center text-center bg-white qr-card">
-                      <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center mb-3"><QrCode size={48} className="text-gray-800" /></div>
+                      <div className="w-24 h-24 bg-white rounded-lg flex items-center justify-center mb-3 border border-gray-100">
+                        <img 
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${s.nomor_induk}`} 
+                          alt={`QR ${s.nomor_induk}`}
+                          className="w-20 h-20"
+                        />
+                      </div>
                       <p className="text-sm font-bold text-gray-800 truncate w-full">{s.nama_lengkap}</p>
                       <p className="text-[10px] text-gray-500">{s.nomor_induk}</p>
                     </div>

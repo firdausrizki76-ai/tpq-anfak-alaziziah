@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle, AlertCircle, X, Loader2, Keyboard, QrCode, History } from 'lucide-react';
 import { absensiAPI, santriAPI } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
+import './ScannerPage.css';
 
 const ScannerPage = () => {
   const navigate = useNavigate();
@@ -47,7 +48,6 @@ const ScannerPage = () => {
     try {
       const { Html5QrcodeScanner } = await import('html5-qrcode');
       
-      // Make sure the element exists
       const readerElement = document.getElementById('reader');
       if (!readerElement) return;
 
@@ -88,15 +88,14 @@ const ScannerPage = () => {
     try {
       const trimmedNIS = nomorInduk.trim().toUpperCase();
       
-      // First, find the santri
       const santris = await santriAPI.getAll({ search: trimmedNIS });
       const santri = (santris || []).find(s => 
         s.nomor_induk?.toUpperCase() === trimmedNIS || 
-        s.barcode_data === trimmedNIS // Support barcode data if available
+        s.barcode_data === trimmedNIS
       );
 
       if (!santri) {
-        throw new Error(`Santri dengan kode "${trimmedNIS}" tidak ditemukan`);
+        throw new Error(`Santri "${trimmedNIS}" tidak ditemukan`);
       }
 
       await absensiAPI.create({
@@ -115,8 +114,6 @@ const ScannerPage = () => {
       });
 
       setNisInput('');
-      
-      // Auto clear result after 3 seconds
       setTimeout(() => setScanResult(null), 3000);
     } catch (err) {
       setError(err.message || 'Gagal memproses absensi');
@@ -127,13 +124,12 @@ const ScannerPage = () => {
   };
 
   const onScanSuccess = async (decodedText) => {
-    if (loading || scanResult) return; // Prevent double scanning
+    if (loading || scanResult) return;
     await processAttendance(decodedText);
   };
 
   const onScanError = (err) => {
-    // Only log real errors, not "no QR code found" frames
-    if (typeof err === 'string' && !err.includes("No MultiFormat Readers were able to decode")) {
+    if (typeof err === 'string' && !err.includes("No MultiFormat Readers")) {
       console.warn('Scanner frame error:', err);
     }
   };
@@ -145,118 +141,125 @@ const ScannerPage = () => {
   };
 
   return (
-    <div className="flex flex-col items-center p-4 min-h-screen bg-gray-50 pb-20">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-        <div className="bg-[var(--color-primary-container)] p-6 text-white text-center relative">
+    <div className="scanner-container">
+      <div className="scanner-card">
+        <div className="scanner-header">
           <button 
             onClick={() => navigate('/guru/dashboard')}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 hover:bg-white/20 rounded-full transition-colors"
+            className="scanner-close-btn"
+            title="Tutup"
           >
             <X size={20} />
           </button>
-          <h2 className="text-xl font-bold">Absensi Santri</h2>
-          <p className="text-sm opacity-80">Portal Guru - TPQ Anfak Al Azizah</p>
+          <h2 className="scanner-title">Absensi Santri</h2>
+          <p className="scanner-subtitle">TPQ ANFAK AL AZIZIAH</p>
         </div>
 
-        {/* Mode Tabs */}
-        <div className="flex border-b border-gray-100">
+        {/* Mode Switcher */}
+        <div className="mode-selector">
           <button
-            className={`flex-1 py-4 text-sm font-semibold flex items-center justify-center gap-2 transition-all ${mode === 'manual' ? 'text-[var(--color-primary-container)] border-b-2 border-[var(--color-primary-container)] bg-blue-50/50' : 'text-gray-400 hover:text-gray-600'}`}
+            className={`mode-btn ${mode === 'manual' ? 'active' : ''}`}
             onClick={() => setMode('manual')}
           >
-            <Keyboard size={18} /> Manual
+            <Keyboard size={18} />
+            <span>Manual</span>
           </button>
           <button
-            className={`flex-1 py-4 text-sm font-semibold flex items-center justify-center gap-2 transition-all ${mode === 'scan' ? 'text-[var(--color-primary-container)] border-b-2 border-[var(--color-primary-container)] bg-blue-50/50' : 'text-gray-400 hover:text-gray-600'}`}
+            className={`mode-btn ${mode === 'scan' ? 'active' : ''}`}
             onClick={() => setMode('scan')}
           >
-            <QrCode size={18} /> Kamera
+            <QrCode size={18} />
+            <span>Kamera</span>
           </button>
         </div>
 
-        <div className="p-4 relative" style={{ minHeight: '300px' }}>
+        <div className="scanner-body">
           {mode === 'manual' ? (
-            <div className="flex flex-col items-center justify-center gap-4 py-8">
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-2">
+            <div className="manual-input-container">
+              <div className="manual-icon-wrapper">
                 <Keyboard size={40} />
               </div>
-              <form onSubmit={handleManualSubmit} className="w-full space-y-4 px-2">
-                <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase mb-2 block tracking-wider">Masukkan NIS Santri</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-2xl text-center text-2xl font-bold tracking-widest focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition-all"
-                    placeholder="S001"
-                    value={nisInput}
-                    onChange={(e) => setNisInput(e.target.value.toUpperCase())}
-                    autoFocus
-                    disabled={loading}
-                  />
+              <form onSubmit={handleManualSubmit} className="input-group">
+                <label className="input-label">Masukkan NIS Santri</label>
+                <input
+                  type="text"
+                  className="nis-input"
+                  placeholder="S001"
+                  value={nisInput}
+                  onChange={(e) => setNisInput(e.target.value.toUpperCase())}
+                  autoFocus
+                  disabled={loading}
+                />
+                <div style={{ marginTop: '24px' }}>
+                  <button
+                    type="submit"
+                    className="submit-btn"
+                    disabled={loading || !nisInput.trim()}
+                  >
+                    {loading ? <Loader2 size={24} className="loading-spinner" /> : <CheckCircle size={24} />}
+                    <span>{loading ? 'Memproses...' : 'Absenkan Sekarang'}</span>
+                  </button>
                 </div>
-                <button
-                  type="submit"
-                  className="w-full py-4 bg-[var(--color-primary-container)] text-white font-bold rounded-2xl shadow-lg shadow-blue-200 hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 text-lg"
-                  disabled={loading || !nisInput.trim()}
-                >
-                  {loading ? <Loader2 size={24} className="animate-spin" /> : <CheckCircle size={24} />}
-                  {loading ? 'Memproses...' : 'Absenkan'}
-                </button>
               </form>
             </div>
           ) : (
-            <div className="py-2">
-               <div id="reader" className="overflow-hidden rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50"></div>
+            <div className="reader-container">
+               <div id="reader"></div>
             </div>
           )}
 
-          {loading && (
-            <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 transition-all">
-              <div className="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4">
-                <Loader2 className="animate-spin text-[var(--color-primary-container)]" size={48} />
-                <p className="font-bold text-gray-700">Memproses...</p>
-              </div>
-            </div>
-          )}
-
+          {/* Feedback Overlay */}
           {scanResult && (
-            <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-20 animate-in fade-in zoom-in duration-300">
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-6 shadow-inner">
+            <div className="feedback-overlay animate-in fade-in zoom-in duration-300">
+              <div className="success-icon-wrapper">
                 <CheckCircle size={56} />
               </div>
-              <h3 className="text-2xl font-black text-gray-800 text-center px-6 leading-tight">{scanResult.nama}</h3>
-              <p className="text-gray-500 font-medium mt-1">{scanResult.nomor}</p>
-              <div className="mt-6 px-4 py-2 bg-green-50 text-green-700 rounded-full font-bold text-sm flex items-center gap-2">
-                <CheckCircle size={16} /> Absensi Berhasil
+              <h3 className="success-name">{scanResult.nama}</h3>
+              <p className="success-nis">{scanResult.nomor}</p>
+              <div className="success-badge">
+                <CheckCircle size={16} />
+                <span>Absensi Berhasil</span>
               </div>
-              <p className="text-xs text-gray-400 mt-4 font-medium">{scanResult.waktu} WIB</p>
+              <p style={{ marginTop: '16px', fontSize: '12px', color: '#94a3b8' }}>
+                {scanResult.waktu} WIB
+              </p>
             </div>
           )}
 
+          {/* Error Notification */}
           {error && (
-            <div className="absolute inset-x-4 bottom-4 bg-red-50 border-2 border-red-100 p-4 rounded-2xl flex items-center gap-4 text-red-700 z-30 shadow-xl animate-in slide-in-from-bottom duration-300">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex-shrink-0 flex items-center justify-center">
+            <div className="error-toast animate-in slide-in-from-bottom duration-300">
+              <div className="error-icon-wrapper">
                 <AlertCircle size={24} />
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold">Terjadi Kesalahan</p>
-                <p className="text-xs opacity-80">{error}</p>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: '14px', fontWeight: '800', color: '#991b1b' }}>Gagal</p>
+                <p style={{ fontSize: '12px', color: '#b91c1c' }}>{error}</p>
               </div>
-              <button onClick={() => setError(null)} className="p-1 hover:bg-red-100 rounded-full"><X size={18} /></button>
+              <button 
+                onClick={() => setError(null)}
+                style={{ background: 'transparent', border: 'none', color: '#fca5a5', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
             </div>
           )}
         </div>
 
-        <div className="p-6 bg-gray-50/50 border-t border-gray-100">
-          <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-200">
-            <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600 flex-shrink-0">
-              <AlertCircle size={24} />
+        {/* Footer Info */}
+        <div style={{ padding: '0 24px 24px' }}>
+          <div className="instruction-panel">
+            <div style={{ color: '#f59e0b', marginTop: '2px' }}>
+              <AlertCircle size={20} />
             </div>
             <div>
-              <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-0.5">Petunjuk</p>
-              <p className="text-xs text-gray-600 leading-relaxed">
+              <p style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>
+                Petunjuk
+              </p>
+              <p style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.5' }}>
                 {mode === 'manual'
-                  ? 'Masukkan NIS santri lalu klik tombol Absenkan. Pastikan NIS sudah benar.'
-                  : 'Arahkan kamera ke kode QR/Barcode santri. Pastikan pencahayaan cukup.'}
+                  ? 'Ketik NIS santri dan tekan tombol hijau untuk absensi manual.'
+                  : 'Arahkan kamera ke QR Code santri sampai terdengar bunyi beep.'}
               </p>
             </div>
           </div>
@@ -264,14 +267,16 @@ const ScannerPage = () => {
       </div>
 
       <button 
-        onClick={() => navigate('/guru/kelas')}
-        className="mt-8 flex items-center gap-2 px-6 py-3 bg-white text-gray-600 font-bold rounded-2xl shadow-sm border border-gray-100 hover:bg-gray-50 transition-all"
+        onClick={() => navigate('/guru/absen/riwayat')}
+        className="history-btn"
       >
-        <History size={18} />
-        Lihat Riwayat Absensi
+        <History size={20} />
+        <span>Lihat Riwayat Absensi</span>
       </button>
 
-      <p className="mt-8 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">TPQ Anfak Al Azizah</p>
+      <p style={{ marginTop: '32px', fontSize: '10px', fontWeight: '800', color: '#cbd5e1', letterSpacing: '3px', textTransform: 'uppercase' }}>
+        TPQ Anfak Al Azizah
+      </p>
     </div>
   );
 };

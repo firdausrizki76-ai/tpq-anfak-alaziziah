@@ -182,7 +182,13 @@ const UjianPage = () => {
                   </td>
                   <td style={{ width: '11.6%', textAlign: 'center', verticalAlign: 'top', fontSize: '9px', height: '35px' }}>IKL</td>
                   <td style={{ width: '11.6%', textAlign: 'center', verticalAlign: 'top', fontSize: '9px' }}>IA</td>
-                  <td style={{ width: '11.6%', textAlign: 'center', verticalAlign: 'top', fontSize: '9px' }}>SCAN</td>
+                  <td style={{ width: '11.6%', textAlign: 'center', verticalAlign: 'middle', fontSize: '9px', padding: '2px' }}>
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${printSantri.santri?.nomor_induk}`} 
+                      alt="QR"
+                      style={{ width: '35px', height: '35px', display: 'block', margin: '0 auto' }}
+                    />
+                  </td>
                 </tr>
                 <tr>
                   <td style={{ width: '150px' }}>Nomor Induk</td>
