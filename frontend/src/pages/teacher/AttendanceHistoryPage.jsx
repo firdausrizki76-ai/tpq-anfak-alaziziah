@@ -84,20 +84,19 @@ const AttendanceHistoryPage = () => {
 
   return (
     <div className="flex flex-col gap-4 p-4 min-h-screen bg-gray-50 pb-24 font-sans">
-      {/* Header Section */}
-      <div className="bg-[var(--color-primary-container)] -mx-4 -mt-4 p-6 pt-10 pb-12 rounded-b-[40px] shadow-lg relative overflow-hidden" style={{ backgroundColor: '#064e3b' }}>
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+      {/* Clean White Header Section */}
+      <div className="bg-white -mx-4 -mt-4 p-6 pt-10 pb-6 rounded-b-[32px] shadow-sm border-b border-gray-100 relative overflow-hidden">
         <div className="flex items-center gap-4 relative z-10">
           <button 
             onClick={() => navigate(-1)} 
-            className="w-10 h-10 flex items-center justify-center bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-white transition-all active:scale-95"
+            className="w-10 h-10 flex items-center justify-center bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-600 transition-all active:scale-95"
             style={{ border: 'none', cursor: 'pointer' }}
           >
             <ArrowLeft size={20} />
           </button>
           <div className="flex-1">
-            <h2 className="text-xl font-bold text-white m-0">Riwayat Absensi</h2>
-            <p className="text-xs text-white/70 font-medium m-0">
+            <h2 className="text-xl font-bold text-gray-800 m-0">Riwayat Absensi</h2>
+            <p className="text-xs text-gray-400 font-medium m-0">
               {user.kelas?.nama_kelas || 'Semua Kelas'} • {new Date(filter.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
             </p>
           </div>
@@ -105,14 +104,14 @@ const AttendanceHistoryPage = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-2 -mt-8 relative z-20 px-2">
+      <div className="grid grid-cols-4 gap-2 mt-0 relative z-20 px-2">
         {[
           { label: 'Hadir', val: stats.hadir, color: 'bg-green-500', text: 'text-green-600', hex: '#10b981' },
           { label: 'Sakit', val: stats.sakit, color: 'bg-blue-500', text: 'text-blue-600', hex: '#3b82f6' },
           { label: 'Izin', val: stats.izin, color: 'bg-amber-500', text: 'text-amber-600', hex: '#f59e0b' },
           { label: 'Alfa', val: stats.alfa, color: 'bg-red-500', text: 'text-red-600', hex: '#ef4444' }
         ].map((item, idx) => (
-          <div key={idx} className="bg-white rounded-2xl p-3 shadow-md flex flex-col items-center border border-gray-50">
+          <div key={idx} className="bg-white rounded-2xl p-3 shadow-sm flex flex-col items-center border border-gray-100">
             <span className={`text-[10px] font-black uppercase tracking-tighter ${item.text}`} style={{ color: item.hex }}>{item.label}</span>
             <span className="text-lg font-black text-gray-800">{item.val}</span>
             <div className={`w-4 h-1 rounded-full mt-1 ${item.color} opacity-30`} style={{ backgroundColor: item.hex, opacity: 0.3 }}></div>
