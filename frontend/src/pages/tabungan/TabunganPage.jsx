@@ -136,6 +136,44 @@ const TabunganPage = () => {
         </div>
       </div>
 
+      {/* Admin Financial Dashboard - New Feature */}
+      {isAdmin && (
+        <div className="grid grid-3-cols gap-6 mb-8 no-print">
+          <div className="card p-6 bg-gradient-to-br from-emerald-600 to-emerald-800 text-white rounded-3xl shadow-xl shadow-emerald-100 border-none relative overflow-hidden">
+            <div className="relative z-10">
+              <p className="text-[10px] font-black uppercase tracking-[2px] opacity-80 mb-1">Total Tabungan Santri</p>
+              <h2 className="text-3xl font-black">{formatRp(totalSaldo)}</h2>
+              <div className="mt-4 flex items-center gap-2 text-[10px] bg-white/10 w-fit px-3 py-1 rounded-full backdrop-blur-sm">
+                <Users size={12} /> {santriData.length} Santri Aktif
+              </div>
+            </div>
+            <Wallet className="absolute -right-4 -bottom-4 opacity-10" size={120} />
+          </div>
+
+          <div className="card p-6 bg-white rounded-3xl shadow-sm border border-orange-100 relative overflow-hidden group hover:shadow-md transition-all">
+            <p className="text-[10px] font-black uppercase tracking-[2px] text-orange-400 mb-1">Uang di Tangan Guru</p>
+            <h2 className="text-3xl font-black text-orange-600">
+              {formatRp(rekapGuru.reduce((s, g) => s + (g.saldo_di_guru || 0), 0))}
+            </h2>
+            <p className="mt-4 text-[10px] text-gray-400 font-bold">Total koleksi guru yang belum disetor</p>
+            <div className="absolute top-6 right-6 w-12 h-12 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <ArrowDownCircle size={24} />
+            </div>
+          </div>
+
+          <div className="card p-6 bg-white rounded-3xl shadow-sm border border-blue-100 relative overflow-hidden group hover:shadow-md transition-all">
+            <p className="text-[10px] font-black uppercase tracking-[2px] text-blue-400 mb-1">Uang di Kas Pusat</p>
+            <h2 className="text-3xl font-black text-blue-600">
+              {formatRp(totalSaldo - rekapGuru.reduce((s, g) => s + (g.saldo_di_guru || 0), 0))}
+            </h2>
+            <p className="mt-4 text-[10px] text-gray-400 font-bold">Total dana yang sudah aman di pusat</p>
+            <div className="absolute top-6 right-6 w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <CreditCard size={24} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Admin Tabs - Premium Capsule Style */}
       {isAdmin && (
         <div className="flex bg-gray-100/50 p-1 rounded-2xl mb-8 w-fit no-print border border-gray-200/50">
@@ -146,11 +184,11 @@ const TabunganPage = () => {
           ].map((tab) => (
             <button 
               key={tab.id}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-white text-emerald-700 shadow-md ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`flex items-center gap-3 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-white text-emerald-700 shadow-md ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600'}`}
               onClick={() => setActiveTab(tab.id)}
               style={{ border: 'none', cursor: 'pointer' }}
             >
-              {tab.icon}
+              <span className="flex items-center justify-center">{tab.icon}</span>
               {tab.label}
             </button>
           ))}
@@ -218,7 +256,7 @@ const TabunganPage = () => {
             </div>
             <div className="font-bold text-sm text-emerald-700 bg-emerald-50 px-5 py-3 rounded-2xl border border-emerald-100 flex items-center gap-3 shadow-sm">
               <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-200"><Wallet size={16} /></div>
-              <span>Total Saldo Santri: <span className="text-lg font-black ml-1">{formatRp(totalSaldo)}</span></span>
+              <span>Total Tabungan: <span className="text-lg font-black ml-1">{formatRp(totalSaldo)}</span></span>
             </div>
           </div>
 
