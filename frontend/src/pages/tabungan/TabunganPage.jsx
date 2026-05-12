@@ -138,77 +138,94 @@ const TabunganPage = () => {
 
       {/* Admin Financial Dashboard - New Feature */}
       {isAdmin && (
-        <div className="grid grid-3-cols gap-6 mb-8 no-print">
-          <div className="card p-6 bg-gradient-to-br from-emerald-600 to-emerald-800 text-white rounded-3xl shadow-xl shadow-emerald-100 border-none relative overflow-hidden">
-            <div className="relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-[2px] opacity-80 mb-1">Total Tabungan Santri</p>
-              <h2 className="text-3xl font-black">{formatRp(totalSaldo)}</h2>
-              <div className="mt-4 flex items-center gap-2 text-[10px] bg-white/10 w-fit px-3 py-1 rounded-full backdrop-blur-sm">
-                <Users size={12} /> {santriData.length} Santri Aktif
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '32px' }} className="no-print">
+          
+          <div className="card" style={{ padding: '24px', background: 'linear-gradient(135deg, #059669, #064e3b)', color: 'white', borderRadius: '16px', position: 'relative', overflow: 'hidden', border: 'none' }}>
+            <div style={{ position: 'relative', zIndex: 10 }}>
+              <p style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.8, margin: '0 0 8px 0' }}>Total Tabungan Santri</p>
+              <h2 style={{ fontSize: '32px', fontWeight: '900', margin: '0 0 16px 0' }}>{formatRp(totalSaldo)}</h2>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', background: 'rgba(255,255,255,0.2)', padding: '4px 12px', borderRadius: '20px' }}>
+                <Users size={14} /> {santriData.length} Santri Aktif
               </div>
             </div>
-            <Wallet className="absolute -right-4 -bottom-4 opacity-10" size={120} />
+            <Wallet style={{ position: 'absolute', right: '-20px', bottom: '-20px', opacity: 0.1 }} size={140} />
           </div>
 
-          <div className="card p-6 bg-white rounded-3xl shadow-sm border border-orange-100 relative overflow-hidden group hover:shadow-md transition-all">
-            <p className="text-[10px] font-black uppercase tracking-[2px] text-orange-400 mb-1">Uang di Tangan Guru</p>
-            <h2 className="text-3xl font-black text-orange-600">
+          <div className="card" style={{ padding: '24px', background: 'white', borderRadius: '16px', border: '1px solid #fed7aa', position: 'relative' }}>
+            <p style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', color: '#ea580c', margin: '0 0 8px 0' }}>Uang di Tangan Guru</p>
+            <h2 style={{ fontSize: '32px', fontWeight: '900', color: '#c2410c', margin: '0 0 16px 0' }}>
               {formatRp(rekapGuru.reduce((s, g) => s + (g.saldo_di_guru || 0), 0))}
             </h2>
-            <p className="mt-4 text-[10px] text-gray-400 font-bold">Total koleksi guru yang belum disetor</p>
-            <div className="absolute top-6 right-6 w-12 h-12 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+            <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0, fontWeight: 'bold' }}>Total koleksi guru yang belum disetor</p>
+            <div style={{ position: 'absolute', top: '24px', right: '24px', width: '48px', height: '48px', backgroundColor: '#fff7ed', color: '#f97316', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <ArrowDownCircle size={24} />
             </div>
           </div>
 
-          <div className="card p-6 bg-white rounded-3xl shadow-sm border border-blue-100 relative overflow-hidden group hover:shadow-md transition-all">
-            <p className="text-[10px] font-black uppercase tracking-[2px] text-blue-400 mb-1">Uang di Kas Pusat</p>
-            <h2 className="text-3xl font-black text-blue-600">
+          <div className="card" style={{ padding: '24px', background: 'white', borderRadius: '16px', border: '1px solid #bfdbfe', position: 'relative' }}>
+            <p style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', color: '#2563eb', margin: '0 0 8px 0' }}>Uang di Kas Pusat</p>
+            <h2 style={{ fontSize: '32px', fontWeight: '900', color: '#1d4ed8', margin: '0 0 16px 0' }}>
               {formatRp(totalSaldo - rekapGuru.reduce((s, g) => s + (g.saldo_di_guru || 0), 0))}
             </h2>
-            <p className="mt-4 text-[10px] text-gray-400 font-bold">Total dana yang sudah aman di pusat</p>
-            <div className="absolute top-6 right-6 w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+            <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0, fontWeight: 'bold' }}>Total dana yang sudah aman di pusat</p>
+            <div style={{ position: 'absolute', top: '24px', right: '24px', width: '48px', height: '48px', backgroundColor: '#eff6ff', color: '#3b82f6', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <CreditCard size={24} />
             </div>
           </div>
+
         </div>
       )}
 
-      {/* Admin Tabs - Premium Capsule Style */}
+      {/* Admin Tabs - Explicit Inline Styles */}
       {isAdmin && (
-        <div className="flex bg-gray-100/50 p-1 rounded-2xl mb-8 w-fit no-print border border-gray-200/50">
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }} className="no-print">
           {[
             { id: 'santri', label: 'Data Santri', icon: <Users size={16} /> },
             { id: 'rekap_guru', label: 'Rekap Guru', icon: <Wallet size={16} /> },
             { id: 'rekap_admin', label: 'Rekap Pusat', icon: <CreditCard size={16} /> }
-          ].map((tab) => (
-            <button 
-              key={tab.id}
-              className={`flex items-center gap-3 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-white text-emerald-700 shadow-md ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600'}`}
-              onClick={() => setActiveTab(tab.id)}
-              style={{ border: 'none', cursor: 'pointer' }}
-            >
-              <span className="flex items-center justify-center">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
+          ].map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button 
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  padding: '10px 20px', 
+                  borderRadius: '24px', 
+                  fontSize: '14px', 
+                  fontWeight: 'bold',
+                  border: isActive ? '1px solid #059669' : '1px solid #e2e8f0',
+                  backgroundColor: isActive ? '#ecfdf5' : 'white',
+                  color: isActive ? '#059669' : '#64748b',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            )
+          })}
         </div>
       )}
 
       {isAdmin && activeTab === 'rekap_guru' && (
-        <div className="grid grid-3-cols gap-6 mb-6 no-print">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '24px' }} className="no-print">
           {rekapGuru.map((g, idx) => (
-            <div key={idx} className="card p-4 border-l-4 border-amber-500 bg-white shadow-sm hover:shadow-md transition-all rounded-2xl">
-              <div className="flex justify-between items-start mb-2">
+            <div key={idx} className="card" style={{ padding: '20px', borderLeft: '4px solid #f59e0b', backgroundColor: 'white', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                 <div>
-                  <h3 className="font-bold text-gray-800">{g.nama_guru}</h3>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Saldo Belum Disetor</p>
+                  <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#1e293b' }}>{g.nama_guru}</h3>
+                  <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase' }}>Saldo Belum Disetor</p>
                 </div>
-                <div className="bg-amber-50 p-2 rounded-xl text-amber-600"><Wallet size={18} /></div>
+                <div style={{ backgroundColor: '#fffbeb', padding: '8px', borderRadius: '8px', color: '#d97706' }}><Wallet size={18} /></div>
               </div>
-              <div className="mt-4">
-                <p className="text-2xl font-black text-amber-700">{formatRp(g.saldo_di_guru)}</p>
-                <div className="flex justify-between mt-3 text-[10px] text-gray-400 font-bold uppercase border-t pt-2 border-gray-50">
+              <div style={{ marginTop: '16px' }}>
+                <p style={{ margin: '0 0 12px 0', fontSize: '24px', fontWeight: '900', color: '#b45309' }}>{formatRp(g.saldo_di_guru)}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
                   <span>Koleksi: {formatRp(g.total_koleksi)}</span>
                   <span>Setor: {formatRp(g.total_setoran)}</span>
                 </div>
@@ -219,26 +236,26 @@ const TabunganPage = () => {
       )}
 
       {isAdmin && activeTab === 'rekap_admin' && (
-        <div className="card w-full no-print rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="flex justify-between items-center p-6 bg-gray-50/50 border-b border-gray-100">
-            <h3 className="font-bold text-gray-800 flex items-center gap-3"><CreditCard size={20} className="text-emerald-600" /> Riwayat Setoran Guru ke Pusat</h3>
-            <div className="bg-emerald-600 px-5 py-2.5 rounded-2xl font-black text-white shadow-lg shadow-emerald-200 text-sm">
+        <div className="card w-full no-print" style={{ borderRadius: '12px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}><CreditCard size={20} color="#059669" /> Riwayat Setoran Guru ke Pusat</h3>
+            <div style={{ backgroundColor: '#059669', padding: '8px 16px', borderRadius: '8px', color: 'white', fontWeight: 'bold', fontSize: '14px' }}>
               Total Dana: {formatRp(rekapAdmin.reduce((s, r) => s + r.nominal, 0))}
             </div>
           </div>
-          <div className="table-responsive p-2">
+          <div className="table-responsive" style={{ padding: '12px' }}>
             <table className="data-table w-full">
               <thead><tr><th>No</th><th>Tanggal</th><th>Nama Guru</th><th>Nominal</th><th>Keterangan</th><th>Status</th></tr></thead>
               <tbody>
-                {rekapAdmin.length === 0 ? <tr><td colSpan="6" className="text-center py-12 text-gray-400 italic">Belum ada data setoran</td></tr>
+                {rekapAdmin.length === 0 ? <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', fontStyle: 'italic' }}>Belum ada data setoran</td></tr>
                 : rekapAdmin.map((r, i) => (
                   <tr key={r.id}>
                     <td>{i+1}</td>
-                    <td className="text-gray-500 font-medium">{new Date(r.tanggal).toLocaleDateString('id-ID')}</td>
-                    <td className="font-bold text-gray-700">{r.guru?.nama_lengkap}</td>
-                    <td className="font-black text-emerald-600">{formatRp(r.nominal)}</td>
-                    <td className="text-xs text-gray-400 italic">{r.keterangan || '-'}</td>
-                    <td><span className="badge badge-success" style={{ backgroundColor: '#ecfdf5', color: '#059669', border: '1px solid #d1fae5' }}>DITERIMA</span></td>
+                    <td style={{ color: '#64748b' }}>{new Date(r.tanggal).toLocaleDateString('id-ID')}</td>
+                    <td style={{ fontWeight: 'bold', color: '#334155' }}>{r.guru?.nama_lengkap}</td>
+                    <td style={{ fontWeight: '900', color: '#059669' }}>{formatRp(r.nominal)}</td>
+                    <td style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>{r.keterangan || '-'}</td>
+                    <td><span className="badge" style={{ backgroundColor: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0' }}>DITERIMA</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -248,49 +265,49 @@ const TabunganPage = () => {
       )}
 
       {activeTab === 'santri' && (
-        <div className="card w-full no-print rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="flex items-center justify-between p-6 bg-gray-50/50 border-b border-gray-100 gap-4 flex-wrap">
+        <div className="card w-full no-print" style={{ borderRadius: '12px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', gap: '16px', flexWrap: 'wrap' }}>
             <div className="input-with-icon" style={{ maxWidth: '300px', width: '100%' }}>
-              <Search className="icon text-gray-400" size={18} />
-              <input type="text" className="input-field bg-white border-gray-200 focus:border-emerald-500 rounded-2xl shadow-inner" placeholder="Cari nama santri..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <Search className="icon" size={18} color="#94a3b8" />
+              <input type="text" className="input-field" style={{ backgroundColor: 'white', borderRadius: '8px' }} placeholder="Cari nama santri..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
-            <div className="font-bold text-sm text-emerald-700 bg-emerald-50 px-5 py-3 rounded-2xl border border-emerald-100 flex items-center gap-3 shadow-sm">
-              <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-200"><Wallet size={16} /></div>
-              <span>Total Tabungan: <span className="text-lg font-black ml-1">{formatRp(totalSaldo)}</span></span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', color: '#047857', fontWeight: 'bold', fontSize: '14px' }}>
+              <Wallet size={18} />
+              Total Tabungan: <span style={{ fontSize: '16px', fontWeight: '900', marginLeft: '4px' }}>{formatRp(totalSaldo)}</span>
             </div>
           </div>
 
-          <div className="table-responsive p-2">
+          <div className="table-responsive" style={{ padding: '12px' }}>
             <table className="data-table w-full">
-              <thead><tr><th>No</th><th>NIS</th><th>Nama</th><th>Kelas</th><th>Saldo</th><th className="text-center">Aksi</th></tr></thead>
+              <thead><tr><th>No</th><th>NIS</th><th>Nama</th><th>Kelas</th><th>Saldo</th><th style={{ textAlign: 'center' }}>Aksi</th></tr></thead>
               <tbody>
-                {loading ? <tr><td colSpan="6" className="text-center py-12"><Loader2 size={32} className="animate-spin text-emerald-600 mx-auto" /></td></tr>
-                : filteredData.length === 0 ? <tr><td colSpan="6" className="text-center py-12 text-gray-400 italic">Belum ada data tabungan</td></tr>
+                {loading ? <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}><Loader2 size={32} className="animate-spin" color="#059669" style={{ margin: '0 auto' }} /></td></tr>
+                : filteredData.length === 0 ? <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', fontStyle: 'italic' }}>Belum ada data tabungan</td></tr>
                 : filteredData.map((s, i) => (
-                  <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="text-gray-400 text-xs font-bold">{i+1}</td>
-                    <td className="font-mono text-xs text-gray-500">{s.nomor_induk}</td>
-                    <td className="font-bold text-gray-800">{s.nama_lengkap}</td>
-                    <td><span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-black uppercase">{s.kelas?.nama_kelas || '-'}</span></td>
-                    <td className="font-black text-emerald-700">{formatRp(s.saldo)}</td>
+                  <tr key={s.id}>
+                    <td style={{ color: '#94a3b8', fontWeight: 'bold', fontSize: '12px' }}>{i+1}</td>
+                    <td style={{ fontFamily: 'monospace', color: '#64748b', fontSize: '12px' }}>{s.nomor_induk}</td>
+                    <td style={{ fontWeight: 'bold', color: '#1e293b' }}>{s.nama_lengkap}</td>
+                    <td><span style={{ padding: '4px 8px', backgroundColor: '#f1f5f9', color: '#475569', borderRadius: '4px', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase' }}>{s.kelas?.nama_kelas || '-'}</span></td>
+                    <td style={{ fontWeight: '900', color: '#047857' }}>{formatRp(s.saldo)}</td>
                     <td>
-                      <div className="flex justify-center gap-2">
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
                         <button 
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100 rounded-xl text-[10px] font-black transition-all active:scale-95 shadow-sm"
                           onClick={() => openRiwayat(s)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '6px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}
                         >
                           <History size={12} /> RIWAYAT
                         </button>
                         <button 
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-100 rounded-xl text-[10px] font-black transition-all active:scale-95 shadow-sm"
                           onClick={() => openModal('setor', s)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', borderRadius: '6px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}
                         >
                           <ArrowDownCircle size={12} /> TABUNG
                         </button>
                         {isAdmin && (
                           <button 
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-100 rounded-xl text-[10px] font-black transition-all active:scale-95 shadow-sm"
                             onClick={() => openModal('tarik', s)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', backgroundColor: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa', borderRadius: '6px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}
                           >
                             <ArrowUpCircle size={12} /> TARIK
                           </button>
