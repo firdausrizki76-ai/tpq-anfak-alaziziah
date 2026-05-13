@@ -182,7 +182,13 @@ const AbsensiPage = () => {
                 <tr key={a.id}>
                   <td>{i+1}</td>
                   <td>{a.tanggal ? new Date(a.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
-                  <td>{a.waktu_scan ? new Date(a.waktu_scan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB' : '-'}</td>
+                  <td>{a.waktu_scan ? new Date(a.waktu_scan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' ' + (() => {
+                    const offset = -(new Date().getTimezoneOffset() / 60);
+                    if (offset === 7) return 'WIB';
+                    if (offset === 8) return 'WITA';
+                    if (offset === 9) return 'WIT';
+                    return '';
+                  })() : '-'}</td>
                   <td className="font-medium">
                     {activeTab === 'santri' ? (a.santri?.nama_lengkap || '-') : (a.guru?.nama_lengkap || '-')}
                   </td>
