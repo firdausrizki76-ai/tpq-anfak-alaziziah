@@ -37,7 +37,7 @@ const PembayaranPage = () => {
 
       const [p, s, st, jt, k] = await Promise.all([
         pembayaranAPI.getAll(queryParams).catch(() => []), 
-        pembayaranAPI.getStats({ bulan: b, tahun: t }).catch(() => null),
+        pembayaranAPI.getStats(queryParams).catch(() => null),
         santriAPI.getAll().catch(() => []), 
         jenisPembayaranAPI.getAll().catch(() => []), 
         kelasAPI.getAll().catch(() => [])

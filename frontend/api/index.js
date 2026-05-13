@@ -495,13 +495,14 @@ app.delete('/api/absensi/:id', async (req, res) => {
 // ==================== PEMBAYARAN ====================
 app.get('/api/pembayaran', async (req, res) => {
   try {
-    const { bulan, tahun, status, santri_id } = req.query;
+    const { bulan, tahun, status, santri_id, jenis_pembayaran_id } = req.query;
     let q = supabase.from('pembayaran')
       .select('*, santri:santri_id(nama_lengkap, nomor_induk, no_hp_wali, no_hp_ayah, no_hp_ibu, kelas:kelas_id(nama_kelas)), jenis:jenis_pembayaran_id(nama)');
     if (bulan) q = q.eq('bulan', bulan);
     if (tahun) q = q.eq('tahun', tahun);
     if (status) q = q.eq('status', status);
     if (santri_id) q = q.eq('santri_id', santri_id);
+    if (jenis_pembayaran_id) q = q.eq('jenis_pembayaran_id', jenis_pembayaran_id);
     const { data, error } = await q.order('created_at', { ascending: false });
     if (error) throw error;
     ok(res, data);
@@ -560,11 +561,21 @@ app.put('/api/pembayaran/:id', async (req, res) => {
 
 app.get('/api/pembayaran/stats', async (req, res) => {
   try {
+    const { bulan, tahun, jenis_pembayaran_id } = req.query;
     const now = new Date();
-    const bulan = req.query.bulan || now.getMonth() + 1;
-    const tahun = req.query.tahun || now.getFullYear();
-    const { data: lunas } = await supabase.from('pembayaran').select('nominal').eq('bulan', bulan).eq('tahun', tahun).eq('status', 'lunas');
-    const { data: belum } = await supabase.from('pembayaran').select('nominal').eq('bulan', bulan).eq('tahun', tahun).eq('status', 'belum');
+    const b = bulan || now.getMonth() + 1;
+    const t = tahun || now.getFullYear();
+    
+    let qLunas = supabase.from('pembayaran').select('nominal').eq('bulan', b).eq('tahun', t).eq('status', 'lunas');
+    let qBelum = supabase.from('pembayaran').select('nominal').eq('bulan', b).eq('tahun', t).eq('status', 'belum');
+    
+    if (jenis_pembayaran_id) {
+      qLunas = qLunas.eq('jenis_pembayaran_id', jenis_pembayaran_id);
+      qBelum = qBelum.eq('jenis_pembayaran_id', jenis_pembayaran_id);
+    }
+    
+    const { data: lunas } = await qLunas;
+    const { data: belum } = await qBelum;
     const totalLunas = (lunas || []).reduce((s, p) => s + (p.nominal || 0), 0);
     const totalBelum = (belum || []).reduce((s, p) => s + (p.nominal || 0), 0);
     ok(res, { totalLunas, totalBelum, jumlahLunas: (lunas || []).length, jumlahBelum: (belum || []).length });
