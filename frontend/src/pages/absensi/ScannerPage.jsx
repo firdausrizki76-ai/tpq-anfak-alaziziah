@@ -269,7 +269,13 @@ const ScannerPage = () => {
                 <span>Absensi Berhasil</span>
               </div>
               <p style={{ marginTop: '16px', fontSize: '12px', color: '#94a3b8' }}>
-                {scanResult.waktu} WIB
+                {scanResult.waktu} {(() => {
+                  const offset = -(new Date().getTimezoneOffset() / 60);
+                  if (offset === 7) return 'WIB';
+                  if (offset === 8) return 'WITA';
+                  if (offset === 9) return 'WIT';
+                  return '';
+                })()}
               </p>
             </div>
           )}
