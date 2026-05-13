@@ -139,8 +139,8 @@ const ScannerPage = () => {
 
       playBeep();
       setScanResult({
-        nama: santri.nama_lengkap,
-        nomor: santri.nomor_induk,
+        nama: subject.nama_lengkap,
+        nomor: type === 'santri' ? subject.nomor_induk : subject.nip,
         waktu: new Date().toLocaleTimeString('id-ID')
       });
 
