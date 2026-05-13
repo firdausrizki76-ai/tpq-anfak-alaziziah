@@ -88,7 +88,7 @@ const AbsensiPage = () => {
       </div>
 
       <div className="card w-full">
-        <div className="flex items-center gap-4 mb-8 no-print">
+        <div className="flex items-center gap-4 mb-10 no-print">
           <button 
             type="button"
             className="flex items-center gap-2 transition-all duration-200"
@@ -127,7 +127,7 @@ const AbsensiPage = () => {
           </button>
         </div>
 
-        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap no-print">
+        <div className="flex items-center justify-between mb-8 gap-4 flex-wrap no-print">
           <div className="flex items-center gap-4 flex-1">
             <div className="input-with-icon" style={{ maxWidth: '200px', width: '100%' }}>
               <Calendar className="icon" size={18} />
