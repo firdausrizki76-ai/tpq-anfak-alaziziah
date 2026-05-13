@@ -25,7 +25,8 @@ INSERT INTO kelas (kode_kelas, nama_kelas, urutan, deskripsi) VALUES
   ('GHORIB', 'GHORIB', 16, 'Tahap Ghorib'),
   ('TAJWID', 'TAJWID', 17, 'Tahap Tajwid'),
   ('FINISHING', 'FINISHING', 18, 'Tahap Finishing / menuju khatam'),
-  ('KHOTAM', 'Khotam', 19, 'Kelas terakhir bagi siswa yg sudah lulus')
+  ('KHOTAM', 'Khotam', 19, 'Kelas terakhir bagi siswa yg sudah lulus'),
+  ('KELUAR', 'Siswa yang Keluar', 99, 'Siswa yang keluar sekolah dan tidak lulus')
 ON CONFLICT (kode_kelas) DO NOTHING;
 
 -- =====================
