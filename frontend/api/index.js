@@ -971,7 +971,7 @@ app.delete('/api/ujian/:id', async (req, res) => {
 
 app.post('/api/ujian/nilai', async (req, res) => {
   try {
-    const { santri_id, kelas_dari_id, nilai_tes, status_tes, catatan, tanggal_tes, tanggal_naik } = req.body;
+    const { santri_id, kelas_dari_id, nilai_tes, status_tes, catatan, tanggal_tes, tanggal_naik, tanggal_mulai, tanggal_selesai } = req.body;
     
     const payload = {
       santri_id, 
@@ -980,7 +980,9 @@ app.post('/api/ujian/nilai', async (req, res) => {
       nilai_tes,
       status_tes,
       catatan: catatan || null,
-      tanggal_naik: tanggal_naik || tanggal_tes || new Date().toISOString().split('T')[0]
+      tanggal_naik: tanggal_naik || tanggal_tes || new Date().toISOString().split('T')[0],
+      tanggal_mulai: tanggal_mulai || null,
+      tanggal_selesai: tanggal_selesai || null
     };
 
     const { data, error } = await supabase.from('riwayat_kelas').insert(payload).select().single();

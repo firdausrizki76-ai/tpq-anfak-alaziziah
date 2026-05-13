@@ -87,7 +87,17 @@ const UjianPage = () => {
   const handleSubmitScore = async (e) => {
     e.preventDefault(); setSaving(true);
     try {
-      await ujianAPI.inputNilai({ santri_id: selectedSantri.santri_id, kelas_dari_id: selectedSantri.kelas_id, nilai_tes: parseInt(formData.nilai), status_tes: formData.hasil, catatan: formData.keterangan, tanggal_tes: formData.tanggal_tes, tanggal_naik: formData.tanggal_naik });
+      await ujianAPI.inputNilai({ 
+        santri_id: selectedSantri.santri_id, 
+        kelas_dari_id: selectedSantri.kelas_id, 
+        nilai_tes: parseInt(formData.nilai), 
+        status_tes: formData.hasil, 
+        catatan: formData.keterangan, 
+        tanggal_tes: formData.tanggal_tes, 
+        tanggal_naik: formData.tanggal_naik,
+        tanggal_mulai: selectedSantri.tanggal_mulai,
+        tanggal_selesai: selectedSantri.tanggal_selesai
+      });
       await loadData(); 
       
       // Jika lulus, langsung tawarkan naik kelas
@@ -494,18 +504,30 @@ const UjianPage = () => {
                           <ArrowRight size={14} className="text-gray-400" />
                           <span className="font-bold text-blue-600">{h.kelas_ke?.nama_kelas || h.kelas_dari?.nama_kelas}</span>
                         </div>
-                        <div className="grid grid-cols-3 gap-4 text-xs">
+                        <div className="grid grid-cols-3 gap-4 text-xs mt-3">
                           <div>
-                            <p className="text-gray-400 mb-0.5">Nilai Ujian</p>
+                            <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Tgl Mulai</p>
+                            <p className="font-bold text-gray-700">{h.tanggal_mulai ? new Date(h.tanggal_mulai).toLocaleDateString('id-ID') : '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Tgl Selesai</p>
+                            <p className="font-bold text-gray-700">{h.tanggal_selesai ? new Date(h.tanggal_selesai).toLocaleDateString('id-ID') : '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Tgl Naik</p>
+                            <p className="font-bold text-blue-600">{h.tanggal_naik ? new Date(h.tanggal_naik).toLocaleDateString('id-ID') : '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Nilai Ujian</p>
                             <p className="font-bold text-gray-700">{h.nilai_tes || '-'}</p>
                           </div>
                           <div>
-                            <p className="text-gray-400 mb-0.5">Masa Tempuh</p>
+                            <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Masa Tempuh</p>
                             <p className="font-bold text-gray-700">{h.masa_tempuh ? `${h.masa_tempuh} Hari` : '-'}</p>
                           </div>
-                          <div>
-                            <p className="text-gray-400 mb-0.5">Catatan</p>
-                            <p className="italic text-gray-600">{h.catatan || '-'}</p>
+                          <div className="col-span-3 mt-1 pt-1 border-t border-gray-100">
+                            <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Catatan / Keterangan</p>
+                            <p className="italic text-gray-600 text-xs">{h.catatan || '-'}</p>
                           </div>
                         </div>
                       </div>
