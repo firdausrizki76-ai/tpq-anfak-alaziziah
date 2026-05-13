@@ -121,13 +121,7 @@ const TeacherDashboard = () => {
           </span>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', backgroundColor: '#f8fafc', borderRadius: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <BookOpen size={20} color="#3b82f6" />
-            <span style={{ fontWeight: '600', fontSize: '14px', color: '#334155' }}>Target Pencapaian</span>
-          </div>
-          <span style={{ fontWeight: '900', fontSize: '18px', color: '#064e3b' }}>85%</span>
-        </div>
+
       </div>
 
       {/* Settings */}
