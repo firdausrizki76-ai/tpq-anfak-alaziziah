@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle, AlertCircle, X, Loader2, Keyboard, QrCode, History } from 'lucide-react';
-import { absensiAPI, santriAPI } from '../../services/api';
+import { absensiAPI, santriAPI, guruAPI } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import './ScannerPage.css';
 
@@ -103,24 +103,38 @@ const ScannerPage = () => {
     setError(null);
 
     try {
-      const trimmedNIS = nomorInduk.trim().toUpperCase();
-      
-      const santris = await santriAPI.getAll({ search: trimmedNIS });
-      const santri = (santris || []).find(s => 
-        s.nomor_induk?.toUpperCase() === trimmedNIS || 
-        s.barcode_data === trimmedNIS
-      );
+      const trimmedInput = nomorInduk.trim().toUpperCase();
+      let subject = null;
+      let type = '';
 
-      if (!santri) {
-        throw new Error(`Santri "${trimmedNIS}" tidak ditemukan`);
+      // 1. Cek Santri
+      const santris = await santriAPI.getAll({ search: trimmedInput });
+      subject = (santris || []).find(s => 
+        s.nomor_induk?.toUpperCase() === trimmedInput || 
+        s.barcode_data === trimmedInput
+      );
+      
+      if (subject) {
+        type = 'santri';
+      } else {
+        // 2. Cek Guru jika Santri tidak ditemukan
+        const gurus = await guruAPI.getAll({ search: trimmedInput });
+        subject = (gurus || []).find(g => 
+          g.nip?.toUpperCase() === trimmedInput
+        );
+        if (subject) type = 'guru';
+      }
+
+      if (!subject) {
+        throw new Error(`Data "${trimmedInput}" tidak ditemukan sebagai Santri atau Guru`);
       }
 
       await absensiAPI.create({
-        santri_id: santri.id,
+        [type === 'santri' ? 'santri_id' : 'guru_id']: subject.id,
         tanggal: new Date().toISOString().split('T')[0],
-        tipe: 'santri',
+        tipe: type,
         status: 'hadir',
-        keterangan: mode === 'scan' ? 'Scan QR/Barcode' : 'Input Manual NIS'
+        keterangan: mode === 'scan' ? 'Scan QR/Barcode' : `Input Manual ${type === 'santri' ? 'NIS' : 'NIP'}`
       });
 
       playBeep();
@@ -185,8 +199,8 @@ const ScannerPage = () => {
           >
             <X size={20} />
           </button>
-          <h2 className="scanner-title">Absensi Santri</h2>
-          <p className="scanner-subtitle">TPQ ANFAK AL AZIZIAH</p>
+          <h2 className="scanner-title">Scan Absensi</h2>
+          <p className="scanner-subtitle">Santri & Guru • TPQ ANFAK AL AZIZIAH</p>
         </div>
 
         {/* Mode Switcher */}
@@ -214,7 +228,7 @@ const ScannerPage = () => {
                 <Keyboard size={40} />
               </div>
               <form onSubmit={handleManualSubmit} className="input-group">
-                <label className="input-label">Masukkan NIS Santri</label>
+                <label className="input-label">Masukkan NIS/NIP</label>
                 <input
                   type="text"
                   className="nis-input"
@@ -292,8 +306,8 @@ const ScannerPage = () => {
               </p>
               <p style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.5' }}>
                 {mode === 'manual'
-                  ? 'Ketik NIS santri dan tekan tombol hijau untuk absensi manual.'
-                  : 'Arahkan kamera ke QR Code santri sampai terdengar bunyi beep.'}
+                  ? 'Ketik NIS santri atau NIP guru dan tekan tombol hijau.'
+                  : 'Arahkan kamera ke QR Code santri atau guru.'}
               </p>
             </div>
           </div>
