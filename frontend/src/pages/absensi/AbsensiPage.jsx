@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, QrCode, Download, Printer, X, Calendar, Users, FileText, Loader2 } from 'lucide-react';
-import { absensiAPI, kelasAPI, santriAPI } from '../../services/api';
+import { absensiAPI, kelasAPI, santriAPI, guruAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 
 const AbsensiPage = () => {
@@ -39,7 +39,17 @@ const AbsensiPage = () => {
     if (!selectedKelas) return;
     setIsGenerating(true);
     try {
-      const data = await kelasAPI.getSantri(selectedKelas);
+      let data;
+      if (selectedKelas === 'all_guru') {
+        data = await guruAPI.getAll();
+        data = data.map(g => ({
+          ...g,
+          nomor_induk: g.nip,
+          nama_lengkap: g.nama_lengkap
+        }));
+      } else {
+        data = await kelasAPI.getSantri(selectedKelas);
+      }
       setQrResults(data || []);
     } catch (e) { console.error(e); }
     setIsGenerating(false);
@@ -254,10 +264,15 @@ const AbsensiPage = () => {
                   <div className="form-group"><label className="form-label">Pilih Kelas</label>
                     <select className="input-field" value={selectedKelas} onChange={(e) => setSelectedKelas(e.target.value)}>
                       <option value="">-- Pilih Kelas --</option>
+                      <option value="all_guru" style={{ fontWeight: 'bold', color: 'var(--color-primary-container)' }}>-- SEMUA GURU --</option>
                       {kelasList.map(k => <option key={k.id} value={k.id}>{k.nama_kelas}</option>)}
                     </select>
                   </div>
-                  <p className="text-sm text-gray-500 bg-blue-50 p-3 rounded-lg">Sistem akan membuat QR Code untuk seluruh santri di kelas yang dipilih.</p>
+                  <p className="text-sm text-gray-500 bg-blue-50 p-3 rounded-lg">
+                    {selectedKelas === 'all_guru' 
+                      ? 'Sistem akan membuat QR Code untuk seluruh tenaga pengajar (Guru).' 
+                      : 'Sistem akan membuat QR Code untuk seluruh santri di kelas yang dipilih.'}
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-2 qr-grid-print">
