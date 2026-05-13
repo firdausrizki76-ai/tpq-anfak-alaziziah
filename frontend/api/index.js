@@ -19,11 +19,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || ''
-);
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
+const isServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+console.log(`[DB] Initializing Supabase: ${supabaseUrl}`);
+console.log(`[DB] Using Service Role Key: ${isServiceKey}`);
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
@@ -61,7 +64,7 @@ app.post('/api/auth/login', async (req, res) => {
     let table = role === 'guru' ? 'guru' : 'santri';
     let idField = role === 'guru' ? 'nip' : 'nomor_induk';
 
-    console.log(`Login attempt - Role: ${role}, Username: ${username}, Table: ${table}, Field: ${idField}`);
+    console.log(`[AUTH] Login attempt - Role: ${role}, Username: ${username}, Table: ${table}, Field: ${idField}`);
     
     const { data, error } = await supabase.from(table)
       .select('*')
@@ -70,16 +73,20 @@ app.post('/api/auth/login', async (req, res) => {
       .single();
 
     if (error) {
-      console.error('Supabase Login Error:', error.message);
-      return fail(res, 'Username atau password salah', 401);
+      console.error('[AUTH] Supabase Login Error:', error.message, error.code);
+      // Jika error code PGRST116 artinya data tidak ditemukan
+      if (error.code === 'PGRST116') {
+        return fail(res, 'Username atau password salah (Data tidak ditemukan)', 401);
+      }
+      return fail(res, `Database Error: ${error.message}`, 401);
     }
     
     if (!data) {
-      console.log('Login Failed: User not found');
+      console.log('[AUTH] Login Failed: User not found in table');
       return fail(res, 'Username atau password salah', 401);
     }
 
-    console.log('Login Success for:', data.nama_lengkap);
+    console.log('[AUTH] Login Success for:', data.nama_lengkap);
     ok(res, { token: 'user-token', user: { ...data, role } });
   } catch (e) { 
     console.error('Catch Error:', e.message);
