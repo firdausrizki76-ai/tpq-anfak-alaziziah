@@ -414,15 +414,24 @@ app.put('/api/kelas/:id', async (req, res) => {
 // ==================== ABSENSI ====================
 app.get('/api/absensi', async (req, res) => {
   try {
-    const { tanggal, kelas, search, santri_id } = req.query;
-    let q = supabase.from('absensi')
-      .select('*, santri!inner(nama_lengkap, nomor_induk, kelas_id, kelas:kelas_id(nama_kelas))')
-      .eq('tipe', 'santri');
+    const { tanggal, kelas, search, santri_id, role } = req.query;
+    const tipe = role || 'santri'; // Default ke santri jika tidak ada role
+    
+    // Gunakan left join (tanpa !inner) agar data absensi tetap muncul meskipun relasinya null
+    // Tapi karena kita filter per tab, kita bisa tentukan mana yang di-load
+    let selectStr = '*, santri(nama_lengkap, nomor_induk, kelas_id, kelas:kelas_id(nama_kelas)), guru(nama_lengkap, nip)';
+    
+    let q = supabase.from('absensi').select(selectStr).eq('tipe', tipe);
     
     if (tanggal) q = q.eq('tanggal', tanggal);
-    if (kelas) q = q.eq('santri.kelas_id', kelas);
-    if (santri_id) q = q.eq('santri_id', santri_id);
-    if (search) q = q.ilike('santri.nama_lengkap', `%${search}%`);
+    
+    if (tipe === 'santri') {
+      if (kelas) q = q.eq('santri.kelas_id', kelas);
+      if (santri_id) q = q.eq('santri_id', santri_id);
+      if (search) q = q.ilike('santri.nama_lengkap', `%${search}%`);
+    } else {
+      if (search) q = q.ilike('guru.nama_lengkap', `%${search}%`);
+    }
     
     const { data, error } = await q.order('tanggal', { ascending: false }).order('waktu_scan', { ascending: false });
     if (error) throw error;
@@ -451,9 +460,10 @@ app.post('/api/absensi', async (req, res) => {
       }
     }
 
-    // 2. Bersihkan body dari id jika ada (biar DB yang generate otomatis)
+    // 2. Bersihkan body dari id & waktu_scan jika ada (biar DB yang generate otomatis)
     const insertData = { ...req.body };
     delete insertData.id;
+    if (!insertData.waktu_scan) delete insertData.waktu_scan;
 
     const { data, error } = await supabase.from('absensi').insert(insertData).select().single();
     if (error) throw error;
