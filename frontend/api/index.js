@@ -432,23 +432,30 @@ app.get('/api/absensi', async (req, res) => {
 
 app.post('/api/absensi', async (req, res) => {
   try {
-    const { santri_id, tanggal, tipe } = req.body;
+    const { santri_id, guru_id, tanggal, tipe } = req.body;
     
-    // Cek manual dulu untuk menghindari duplikat tanpa butuh constraint unik
-    if (santri_id && tanggal && tipe === 'santri') {
+    // 1. Cek duplikasi untuk Santri ATAU Guru (1x sehari)
+    const idToCheck = tipe === 'santri' ? santri_id : guru_id;
+    const fieldToCheck = tipe === 'santri' ? 'santri_id' : 'guru_id';
+
+    if (idToCheck && tanggal) {
       const { data: existing } = await supabase
         .from('absensi')
         .select('id')
-        .eq('santri_id', santri_id)
+        .eq(fieldToCheck, idToCheck)
         .eq('tanggal', tanggal)
         .maybeSingle();
       
       if (existing) {
-        return ok(res, existing, 'Santri sudah diabsenkan hari ini');
+        return ok(res, existing, `${tipe === 'santri' ? 'Santri' : 'Guru'} sudah diabsenkan hari ini`);
       }
     }
 
-    const { data, error } = await supabase.from('absensi').insert(req.body).select().single();
+    // 2. Bersihkan body dari id jika ada (biar DB yang generate otomatis)
+    const insertData = { ...req.body };
+    delete insertData.id;
+
+    const { data, error } = await supabase.from('absensi').insert(insertData).select().single();
     if (error) throw error;
     
     ok(res, data, 'Absensi berhasil dicatat');
