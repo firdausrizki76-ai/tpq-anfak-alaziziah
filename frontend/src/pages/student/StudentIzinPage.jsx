@@ -29,7 +29,7 @@ const StudentIzinPage = () => {
         santri_id: user.id,
         tanggal: formData.tanggal,
         status: 'izin',
-        keterangan: `(MENUNGGU PERSETUJUAN) ${formData.alasan}`,
+        keterangan: `(MENUNGGU PERSETUJUAN) ${formData.keterangan}`,
         tipe: 'santri',
         waktu_scan: new Date().toISOString()
       });

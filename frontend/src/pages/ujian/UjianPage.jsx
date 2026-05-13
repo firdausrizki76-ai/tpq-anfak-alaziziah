@@ -131,7 +131,7 @@ const UjianPage = () => {
     return 'Belajar';
   };
 
-  const filteredExam = examData.filter(item => !searchQuery || item.santri?.nama_lengkap?.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredExam = examData.filter(item => !searchQuery || (item.santri?.nama_lengkap || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredReg = santriList.filter(s => {
     const matchesSearch = !regSearchQuery || s.nama_lengkap?.toLowerCase().includes(regSearchQuery.toLowerCase()) || s.nomor_induk?.includes(regSearchQuery);
     const matchesKelas = !regFilterKelas || s.kelas_id === regFilterKelas;

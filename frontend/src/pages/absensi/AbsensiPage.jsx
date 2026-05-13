@@ -74,7 +74,7 @@ const AbsensiPage = () => {
   };
 
   const statusBadge = (status, keterangan = '') => {
-    const isPending = keterangan.includes('(MENUNGGU PERSETUJUAN)');
+    const isPending = keterangan?.includes('(MENUNGGU PERSETUJUAN)');
     const styles = { 
       hadir: 'badge-success', 
       sakit: { backgroundColor: '#fef08a', color: '#854d0e' }, 
@@ -176,7 +176,7 @@ const AbsensiPage = () => {
               : absensiList
                   .filter(a => {
                     const name = activeTab === 'santri' ? a.santri?.nama_lengkap : a.guru?.nama_lengkap;
-                    return name?.toLowerCase().includes(searchQuery.toLowerCase());
+                    return (name || '').toLowerCase().includes(searchQuery.toLowerCase());
                   })
                   .map((a, i) => (
                 <tr key={a.id}>

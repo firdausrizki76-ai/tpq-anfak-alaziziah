@@ -117,7 +117,7 @@ const GuruPage = () => {
     return fileId ? `https://lh3.googleusercontent.com/d/${fileId}=s400` : link;
   };
 
-  const filtered = guruList.filter(g => !searchQuery || g.nama_lengkap?.toLowerCase().includes(searchQuery.toLowerCase()) || g.nip?.includes(searchQuery));
+  const filtered = guruList.filter(g => !searchQuery || (g.nama_lengkap || '').toLowerCase().includes(searchQuery.toLowerCase()) || (g.nip || '').includes(searchQuery));
 
   return (
     <div className="flex-col gap-6 w-full">

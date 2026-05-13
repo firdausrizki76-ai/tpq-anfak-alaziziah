@@ -105,8 +105,8 @@ const TabunganPage = () => {
   const totalSaldo = santriData.reduce((s, d) => s + (d.saldo || 0), 0);
 
   const filteredData = santriData.filter(s => 
-    s.nama_lengkap.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.nomor_induk.toLowerCase().includes(searchTerm.toLowerCase())
+    (s.nama_lengkap || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (s.nomor_induk || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const myRekap = rekapGuru.find(r => r.guru_id === user.id) || { saldo_di_guru: 0 };
