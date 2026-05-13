@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, ArrowDownCircle, ArrowUpCircle, X, Save, Users, CreditCard, Calendar, Wallet, Loader2, Send, Printer, History } from 'lucide-react';
+import { Search, Filter, ArrowDownCircle, ArrowUpCircle, X, Save, Users, CreditCard, Calendar, Wallet, Loader2, Send, Printer, History, Trash2 } from 'lucide-react';
 import { tabunganAPI, santriAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 
@@ -99,6 +99,21 @@ const TabunganPage = () => {
       await loadData(); closeModal();
     } catch (e) { alert(e.message); }
     setSaving(false);
+  };
+
+  const handleDeleteRiwayat = async (id) => {
+    if (!isAdmin) return;
+    if (!window.confirm('Hapus transaksi ini? Saldo santri akan otomatis menyesuaikan.')) return;
+    setLoadingRiwayat(true);
+    try {
+      await tabunganAPI.delete(id);
+      await loadData();
+      if (selectedSantri) {
+        const data = await tabunganAPI.getRiwayat(selectedSantri.id, riwayatFilter);
+        setRiwayat(data || []);
+      }
+    } catch (e) { alert(e.message); }
+    setLoadingRiwayat(false);
   };
 
   const formatRp = (n) => `Rp ${(n||0).toLocaleString('id-ID')}`;
@@ -400,7 +415,7 @@ const TabunganPage = () => {
               : (
                 <div className="table-responsive" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                   <table className="data-table w-full text-sm">
-                    <thead><tr><th>Tanggal</th><th>Tipe</th><th>Nominal</th><th>Keterangan</th><th>Saldo</th></tr></thead>
+                    <thead><tr><th>Tanggal</th><th>Tipe</th><th>Nominal</th><th>Keterangan</th><th>Saldo</th>{isAdmin && <th className="text-center">Aksi</th>}</tr></thead>
                     <tbody>
                       {riwayat.map((r) => (
                         <tr key={r.id}>
@@ -409,6 +424,17 @@ const TabunganPage = () => {
                           <td className={`font-bold ${r.jenis === 'setor' ? 'text-emerald-600' : 'text-orange-600'}`}>{r.jenis === 'setor' ? '+' : '-'}{formatRp(r.nominal)}</td>
                           <td className="text-xs text-gray-500">{r.keterangan || '-'}</td>
                           <td className="font-bold">{formatRp(r.saldo_setelah)}</td>
+                          {isAdmin && (
+                            <td className="text-center">
+                              <button 
+                                onClick={() => handleDeleteRiwayat(r.id)}
+                                className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                title="Hapus Transaksi"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>

@@ -788,6 +788,14 @@ app.get('/api/tabungan/rekap-guru', async (req, res) => {
   } catch (e) { fail(res, e.message, 500); }
 });
 
+app.delete('/api/tabungan/:id', async (req, res) => {
+  try {
+    const { error } = await supabase.from('tabungan_santri').delete().eq('id', req.params.id);
+    if (error) throw error;
+    ok(res, null, 'Transaksi tabungan berhasil dihapus');
+  } catch (e) { fail(res, e.message, 500); }
+});
+
 // ==================== LAPORAN ====================
 app.get('/api/laporan/keuangan', async (req, res) => {
   try {

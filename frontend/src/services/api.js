@@ -137,6 +137,7 @@ export const tabunganAPI = {
   getRekapAdmin: () => request('/tabungan/rekap-admin'),
   getRekapGuru: () => request('/tabungan/rekap-guru'),
   transact: (body) => request('/tabungan', { method: 'POST', body }),
+  delete: (id) => request(`/tabungan/${id}`, { method: 'DELETE' }),
 };
 
 // Laporan
