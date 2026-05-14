@@ -219,8 +219,9 @@ app.post('/api/santri', upload.fields([{ name: 'foto', maxCount: 1 }, { name: 'k
       }
     }
 
-    // LOGIKA PASSWORD DEFAULT OTOMATIS
-    if (!santriData.password || String(santriData.password).trim() === '' || santriData.password === 'null') {
+    // LOGIKA PASSWORD DEFAULT OTOMATIS - PALU GODAM
+    const rawPwd = santriData.password;
+    if (rawPwd === undefined || rawPwd === null || String(rawPwd).trim() === '' || String(rawPwd) === 'null' || String(rawPwd) === 'undefined') {
       santriData.password = 'siswa123';
     }
 
@@ -316,8 +317,9 @@ app.post('/api/guru', upload.fields([{ name: 'foto', maxCount: 1 }, { name: 'kk'
       }
     }
 
-    // LOGIKA PASSWORD DEFAULT OTOMATIS
-    if (!guruData.password || String(guruData.password).trim() === '' || guruData.password === 'null') {
+    // LOGIKA PASSWORD DEFAULT OTOMATIS - PALU GODAM
+    const rawPwdGuru = guruData.password;
+    if (rawPwdGuru === undefined || rawPwdGuru === null || String(rawPwdGuru).trim() === '' || String(rawPwdGuru) === 'null' || String(rawPwdGuru) === 'undefined') {
       guruData.password = 'guru123';
     }
 
