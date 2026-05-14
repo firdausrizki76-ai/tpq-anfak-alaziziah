@@ -629,8 +629,3 @@ const SantriPage = () => {
 };
 
 export default SantriPage;
-/ /   f i n a l   p u s h   f o r c e   u p d a t e 
- 
- 
-/ /   p u b l i c   r e p o   t r i g g e r  
- 
