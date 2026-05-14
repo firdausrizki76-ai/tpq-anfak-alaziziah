@@ -219,6 +219,11 @@ app.post('/api/santri', upload.fields([{ name: 'foto', maxCount: 1 }, { name: 'k
       }
     }
 
+    // LOGIKA PASSWORD DEFAULT OTOMATIS
+    if (!santriData.password || String(santriData.password).trim() === '' || santriData.password === 'null') {
+      santriData.password = 'siswa123';
+    }
+
     const { data, error } = await supabase.from('santri').insert(santriData).select().single();
     if (error) throw error;
     
@@ -309,6 +314,11 @@ app.post('/api/guru', upload.fields([{ name: 'foto', maxCount: 1 }, { name: 'kk'
       if (req.files.ijazah) {
          guruData.ijazah_url = await uploadToGDrive(req.files.ijazah[0], `Ijazah_Guru_${guruData.nip}_${Date.now()}`);
       }
+    }
+
+    // LOGIKA PASSWORD DEFAULT OTOMATIS
+    if (!guruData.password || String(guruData.password).trim() === '' || guruData.password === 'null') {
+      guruData.password = 'guru123';
     }
 
     const { data, error } = await supabase.from('guru').insert(guruData).select().single();
