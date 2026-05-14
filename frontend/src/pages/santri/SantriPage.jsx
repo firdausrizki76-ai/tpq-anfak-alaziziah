@@ -89,7 +89,8 @@ const SantriPage = () => {
         hobi: '', cita_cita: '', no_kk: '', nama_ayah: '', nik_ayah: '', pekerjaan_ayah: '', pendidikan_ayah: '',
         nama_ibu: '', nik_ibu: '', pekerjaan_ibu: '', pendidikan_ibu: '', nama_wali: '', pekerjaan_wali: '',
         hubungan_keluarga: '', tanggal_daftar: '', tanggal_keluar: '',
-        foto: null, kk: null, akte: null
+        foto: null, kk: null, akte: null,
+        password: 'siswa123'
       });
     }
   };
