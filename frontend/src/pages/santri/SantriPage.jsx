@@ -271,6 +271,11 @@ const SantriPage = () => {
                 <div className="grid grid-cols-2 gap-4">
                   {/* DATA PRIBADI */}
                   <div className="col-span-2"><h3 className="font-bold text-gray-700 border-b pb-2">Data Pribadi</h3></div>
+                  <div className="form-group col-span-2">
+                    <label className="form-label font-bold text-blue-600">Password Login (Manual)</label>
+                    <input type="text" name="password" value={formData.password} onChange={handleInputChange} className="input-field border-blue-400 bg-blue-50 text-lg font-bold" required />
+                    <p className="text-[10px] text-blue-500">Wajib diisi untuk login siswa!</p>
+                  </div>
                   <div className="form-group">
                     <label className="form-label">Nomor Induk (NIS)</label>
                     <input type="text" name="nomor_induk" value={formData.nomor_induk} onChange={handleInputChange} className="input-field" required />
@@ -286,10 +291,6 @@ const SantriPage = () => {
                   <div className="form-group">
                     <label className="form-label">Nama Panggilan</label>
                     <input type="text" name="nama_panggilan" value={formData.nama_panggilan} onChange={handleInputChange} className="input-field" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label font-bold text-blue-600">Password Login (Manual)</label>
-                    <input type="text" name="password" value={formData.password} onChange={handleInputChange} className="input-field border-blue-200 bg-blue-50" required />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Jenis Kelamin</label>

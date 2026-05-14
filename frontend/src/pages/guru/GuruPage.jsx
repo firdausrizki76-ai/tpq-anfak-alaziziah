@@ -167,10 +167,10 @@ const GuruPage = () => {
             <div className="modal-body">
               <div className="grid grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-2">
                 <div className="col-span-2"><h3 className="font-bold text-gray-700 border-b pb-2">Data Pegawai</h3></div>
+                <div className="form-group col-span-2"><label className="form-label font-bold text-green-600">Password Login (Manual)</label><input type="text" name="password" value={formData.password} onChange={handleInputChange} className="input-field border-green-400 bg-green-50 text-lg font-bold" required /><p className="text-[10px] text-green-500">Wajib diisi untuk login guru!</p></div>
                 <div className="form-group"><label className="form-label">NIP</label><input type="text" name="nip" value={formData.nip} onChange={handleInputChange} className="input-field" required /></div>
                 <div className="form-group"><label className="form-label">Nama Lengkap</label><input type="text" name="nama_lengkap" value={formData.nama_lengkap} onChange={handleInputChange} className="input-field" required /></div>
                 <div className="form-group"><label className="form-label">Jabatan</label><input type="text" name="jabatan" value={formData.jabatan} onChange={handleInputChange} className="input-field" required /></div>
-                <div className="form-group"><label className="form-label font-bold text-green-600">Password Login (Manual)</label><input type="text" name="password" value={formData.password} onChange={handleInputChange} className="input-field border-green-200 bg-green-50" required /></div>
                 <div className="form-group"><label className="form-label">Status</label><select name="status" value={formData.status} onChange={handleInputChange} className="input-field"><option value="aktif">Aktif</option><option value="nonaktif">Nonaktif</option></select></div>
 
                 <div className="col-span-2 mt-2"><h3 className="font-bold text-gray-700 border-b pb-2">Data Pribadi</h3></div>
