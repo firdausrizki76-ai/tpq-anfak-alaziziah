@@ -433,12 +433,11 @@ const SantriPage = () => {
                         <label className="form-label text-sm">Scan Akte Kelahiran</label>
                         <input type="file" name="akte" accept="image/*,application/pdf" onChange={handleFileChange} className="input-field p-2 border border-gray-300 rounded text-sm" />
                       </div>
-                    </div>
-                  </div>
                   </div>
                 </div>
               </div>
-              <div className="modal-footer">
+            </div>
+            <div className="modal-footer">
                 <button type="button" className="btn-primary" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={closeModal}>Batal</button>
                 <button 
                   type="submit" 
