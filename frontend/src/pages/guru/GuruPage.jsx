@@ -201,6 +201,9 @@ const GuruPage = () => {
                     <div className="form-group"><label className="form-label text-sm">Pas Foto</label><input type="file" name="foto" accept="image/*" onChange={handleFileChange} className="input-field p-2 text-sm" /></div>
                     <div className="form-group"><label className="form-label text-sm">Scan KTP</label><input type="file" name="ktp" accept="image/*,application/pdf" onChange={handleFileChange} className="input-field p-2 text-sm" /></div>
                     <div className="form-group"><label className="form-label text-sm">Scan KK</label><input type="file" name="kk" accept="image/*,application/pdf" onChange={handleFileChange} className="input-field p-2 text-sm" /></div>
+                    <div className="form-group"><label className="form-label text-sm">Ijazah Terakhir</label><input type="file" name="ijazah" accept="image/*,application/pdf" onChange={handleFileChange} className="input-field p-2 text-sm" /></div>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="modal-footer">
