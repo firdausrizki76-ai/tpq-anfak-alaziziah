@@ -170,6 +170,7 @@ const GuruPage = () => {
                 <div className="form-group"><label className="form-label">NIP</label><input type="text" name="nip" value={formData.nip} onChange={handleInputChange} className="input-field" required /></div>
                 <div className="form-group"><label className="form-label">Nama Lengkap</label><input type="text" name="nama_lengkap" value={formData.nama_lengkap} onChange={handleInputChange} className="input-field" required /></div>
                 <div className="form-group"><label className="form-label">Jabatan</label><input type="text" name="jabatan" value={formData.jabatan} onChange={handleInputChange} className="input-field" required /></div>
+                <div className="form-group"><label className="form-label font-bold text-green-600">Password Login (Manual)</label><input type="text" name="password" value={formData.password} onChange={handleInputChange} className="input-field border-green-200 bg-green-50" required /></div>
                 <div className="form-group"><label className="form-label">Status</label><select name="status" value={formData.status} onChange={handleInputChange} className="input-field"><option value="aktif">Aktif</option><option value="nonaktif">Nonaktif</option></select></div>
 
                 <div className="col-span-2 mt-2"><h3 className="font-bold text-gray-700 border-b pb-2">Data Pribadi</h3></div>
@@ -200,27 +201,6 @@ const GuruPage = () => {
                     <div className="form-group"><label className="form-label text-sm">Pas Foto</label><input type="file" name="foto" accept="image/*" onChange={handleFileChange} className="input-field p-2 text-sm" /></div>
                     <div className="form-group"><label className="form-label text-sm">Scan KTP</label><input type="file" name="ktp" accept="image/*,application/pdf" onChange={handleFileChange} className="input-field p-2 text-sm" /></div>
                     <div className="form-group"><label className="form-label text-sm">Scan KK</label><input type="file" name="kk" accept="image/*,application/pdf" onChange={handleFileChange} className="input-field p-2 text-sm" /></div>
-                    <div className="form-group"><label className="form-label text-sm">Ijazah Terakhir</label><input type="file" name="ijazah" accept="image/*,application/pdf" onChange={handleFileChange} className="input-field p-2 text-sm" /></div>
-                  </div>
-                </div>
-
-                {/* PASSWORD MANUAL */}
-                <div className="col-span-2 pt-4 mt-2 border-t border-gray-100">
-                  <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Keamanan Login</h4>
-                  <div className="form-group">
-                    <label className="form-label">Password Akun (Manual)</label>
-                    <input 
-                      type="text" 
-                      name="password" 
-                      value={formData.password} 
-                      onChange={handleInputChange} 
-                      className="input-field" 
-                      placeholder="Isi password untuk login guru"
-                      required 
-                    />
-                    <p className="text-[10px] text-gray-400 mt-1">* Password ini digunakan guru untuk login ke dashboard.</p>
-                  </div>
-                </div>
               </div>
             </div>
             <div className="modal-footer">
