@@ -79,7 +79,8 @@ const SantriPage = () => {
         hubungan_keluarga: santri.hubungan_keluarga || '',
         tanggal_daftar: santri.tanggal_daftar || '',
         tanggal_keluar: santri.tanggal_keluar || '',
-        foto: null, kk: null, akte: null
+        foto: null, kk: null, akte: null,
+        password: santri.password || 'siswa123'
       });
     } else {
       setFormData({
@@ -427,6 +428,24 @@ const SantriPage = () => {
                         <label className="form-label text-sm">Scan Akte Kelahiran</label>
                         <input type="file" name="akte" accept="image/*,application/pdf" onChange={handleFileChange} className="input-field p-2 border border-gray-300 rounded text-sm" />
                       </div>
+                    </div>
+                  </div>
+
+                  {/* PASSWORD MANUAL */}
+                  <div className="col-span-2 pt-4 mt-2 border-t border-gray-200">
+                    <h3 className="font-semibold text-gray-800 mb-2">Keamanan Login</h3>
+                    <div className="form-group">
+                      <label className="form-label">Password Akun (Manual)</label>
+                      <input 
+                        type="text" 
+                        name="password" 
+                        value={formData.password} 
+                        onChange={handleInputChange} 
+                        className="input-field" 
+                        placeholder="Isi password untuk login santri"
+                        required 
+                      />
+                      <p className="text-[10px] text-gray-400 mt-1">* Password ini digunakan santri untuk login ke dashboard.</p>
                     </div>
                   </div>
                 </div>

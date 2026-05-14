@@ -10,7 +10,7 @@ const GuruPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeModal, setActiveModal] = useState(null);
   const [selectedGuru, setSelectedGuru] = useState(null);
-  const [formData, setFormData] = useState({ nip: '', nama_lengkap: '', jabatan: '', jenis_kelamin: 'L', tempat_lahir: '', tanggal_lahir: '', nik: '', no_kk: '', alamat: '', rt: '', rw: '', nama_ibu: '', no_hp: '', email: '', status: 'aktif' });
+  const [formData, setFormData] = useState({ nip: '', nama_lengkap: '', jabatan: '', jenis_kelamin: 'L', tempat_lahir: '', tanggal_lahir: '', nik: '', no_kk: '', alamat: '', rt: '', rw: '', nama_ibu: '', no_hp: '', email: '', status: 'aktif', password: 'guru123' });
   const [files, setFiles] = useState({ foto: null, kk: null, ktp: null, ijazah: null });
 
   useEffect(() => { loadData(); }, []);
@@ -41,11 +41,12 @@ const GuruPage = () => {
         nama_ibu: guru.nama_ibu||'',
         no_hp: guru.no_hp||'', 
         email: guru.email||'', 
-        status: guru.status||'aktif'
+        status: guru.status||'aktif',
+        password: guru.password || 'guru123'
       }); 
     }
     else { 
-      setFormData({ nip: '', nama_lengkap: '', jabatan: '', jenis_kelamin: 'L', tempat_lahir: '', tanggal_lahir: '', nik: '', no_kk: '', alamat: '', rt: '', rw: '', nama_ibu: '', no_hp: '', email: '', status: 'aktif' }); 
+      setFormData({ nip: '', nama_lengkap: '', jabatan: '', jenis_kelamin: 'L', tempat_lahir: '', tanggal_lahir: '', nik: '', no_kk: '', alamat: '', rt: '', rw: '', nama_ibu: '', no_hp: '', email: '', status: 'aktif', password: 'guru123' }); 
     }
   };
 
@@ -200,6 +201,24 @@ const GuruPage = () => {
                     <div className="form-group"><label className="form-label text-sm">Scan KTP</label><input type="file" name="ktp" accept="image/*,application/pdf" onChange={handleFileChange} className="input-field p-2 text-sm" /></div>
                     <div className="form-group"><label className="form-label text-sm">Scan KK</label><input type="file" name="kk" accept="image/*,application/pdf" onChange={handleFileChange} className="input-field p-2 text-sm" /></div>
                     <div className="form-group"><label className="form-label text-sm">Ijazah Terakhir</label><input type="file" name="ijazah" accept="image/*,application/pdf" onChange={handleFileChange} className="input-field p-2 text-sm" /></div>
+                  </div>
+                </div>
+
+                {/* PASSWORD MANUAL */}
+                <div className="col-span-2 pt-4 mt-2 border-t border-gray-100">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Keamanan Login</h4>
+                  <div className="form-group">
+                    <label className="form-label">Password Akun (Manual)</label>
+                    <input 
+                      type="text" 
+                      name="password" 
+                      value={formData.password} 
+                      onChange={handleInputChange} 
+                      className="input-field" 
+                      placeholder="Isi password untuk login guru"
+                      required 
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">* Password ini digunakan guru untuk login ke dashboard.</p>
                   </div>
                 </div>
               </div>
