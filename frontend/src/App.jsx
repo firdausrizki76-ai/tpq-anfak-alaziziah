@@ -38,7 +38,12 @@ const ProtectedRoute = ({ children, allowedRole }) => {
   try {
     const user = JSON.parse(userStr);
     if (allowedRole && user.role !== allowedRole) {
-      if (user.role === 'admin') return <Navigate to="/dashboard" replace />;
+      // Khusus: Kepala Lembaga diperbolehkan akses rute Admin
+      if (user.role === 'kepala' && allowedRole === 'admin') {
+        return children;
+      }
+
+      if (user.role === 'admin' || user.role === 'kepala') return <Navigate to="/dashboard" replace />;
       if (user.role === 'guru') return <Navigate to="/guru/dashboard" replace />;
       if (user.role === 'siswa') return <Navigate to="/siswa/dashboard" replace />;
       return <Navigate to="/login" replace />;
