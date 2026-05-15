@@ -115,7 +115,12 @@ const UjianPage = () => {
   const handlePromotionConfirm = async () => {
     setSaving(true);
     try {
-      await ujianAPI.naikKelas({ santri_id: selectedSantri.santri_id, kelas_dari_id: selectedSantri.kelas_id, kelas_ke_id: nextKelasId, tanggal_naik: new Date().toISOString().split('T')[0] });
+      await ujianAPI.naikKelas({ 
+        santri_id: selectedSantri.santri_id, 
+        kelas_dari_id: selectedSantri.kelas_id, 
+        kelas_ke_id: nextKelasId, 
+        tanggal_naik: formData.tanggal_naik || formData.tanggal_tes 
+      });
       await loadData(); closeModal();
     } catch (e) { alert(e.message); }
     setSaving(false);

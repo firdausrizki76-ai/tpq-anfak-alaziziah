@@ -1023,6 +1023,14 @@ app.post('/api/ujian/nilai', async (req, res) => {
   try {
     const { santri_id, kelas_dari_id, nilai_tes, status_tes, catatan, tanggal_tes, tanggal_naik, tanggal_mulai, tanggal_selesai } = req.body;
     
+    let masa_tempuh = null;
+    if (tanggal_mulai && tanggal_selesai) {
+      const d1 = new Date(tanggal_mulai);
+      const d2 = new Date(tanggal_selesai);
+      // Hitung selisih hari (inklusif hari awal dan akhir)
+      masa_tempuh = Math.floor((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+    }
+
     const payload = {
       santri_id, 
       kelas_dari_id,
@@ -1032,7 +1040,8 @@ app.post('/api/ujian/nilai', async (req, res) => {
       catatan: catatan || null,
       tanggal_naik: tanggal_naik || tanggal_tes || new Date().toISOString().split('T')[0],
       tanggal_mulai: tanggal_mulai || null,
-      tanggal_selesai: tanggal_selesai || null
+      tanggal_selesai: tanggal_selesai || null,
+      masa_tempuh
     };
 
     const { data, error } = await supabase.from('riwayat_kelas').insert(payload).select().single();
@@ -1055,7 +1064,7 @@ app.get('/api/ujian/history/:santriId', async (req, res) => {
 
 app.post('/api/ujian/naik-kelas', async (req, res) => {
   try {
-    const { santri_id, kelas_dari_id, kelas_ke_id } = req.body;
+    const { santri_id, kelas_dari_id, kelas_ke_id, tanggal_naik } = req.body;
 
     // 1. Update kelas santri di tabel santri
     const { error: errSantri } = await supabase.from('santri').update({ kelas_id: kelas_ke_id }).eq('id', santri_id);
@@ -1071,10 +1080,19 @@ app.post('/api/ujian/naik-kelas', async (req, res) => {
       .maybeSingle();
 
     if (latestRiwayat) {
-      await supabase.from('riwayat_kelas').update({ 
-        kelas_ke_id: kelas_ke_id || kelas_dari_id,
-        tanggal_naik: new Date().toISOString().split('T')[0] 
-      }).eq('id', latestRiwayat.id);
+      const updateData = { kelas_ke_id: kelas_ke_id || kelas_dari_id };
+      if (tanggal_naik) {
+        updateData.tanggal_naik = tanggal_naik;
+      } else {
+        // Fallback hanya jika tidak ada data tanggal_naik sebelumnya di record tersebut
+        // Kita cek dulu apakah sudah ada tanggal_naik di latestRiwayat
+        const { data: current } = await supabase.from('riwayat_kelas').select('tanggal_naik').eq('id', latestRiwayat.id).single();
+        if (!current?.tanggal_naik) {
+          updateData.tanggal_naik = new Date().toISOString().split('T')[0];
+        }
+      }
+
+      await supabase.from('riwayat_kelas').update(updateData).eq('id', latestRiwayat.id);
     }
 
     // 3. Tandai target_pencapaian lama sebagai selesai
