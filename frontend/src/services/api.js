@@ -170,3 +170,11 @@ export const jenisPembayaranAPI = {
   update: (id, body) => request(`/jenis-pembayaran/${id}`, { method: 'PUT', body }),
   delete: (id) => request(`/jenis-pembayaran/${id}`, { method: 'DELETE' }),
 };
+
+// Users Management
+export const userAPI = {
+  getAll: () => request('/users'),
+  create: (body) => request('/users', { method: 'POST', body }),
+  update: (id, body) => request(`/users/${id}`, { method: 'PUT', body }),
+  delete: (id) => request(`/users/${id}`, { method: 'DELETE' }),
+};

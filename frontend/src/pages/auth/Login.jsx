@@ -60,7 +60,7 @@ const Login = () => {
               className={`role-btn ${role === 'admin' ? 'active' : ''}`}
               onClick={() => { setRole('admin'); setError(''); }}
             >
-              Admin
+              Admin & Kepala Lembaga
             </button>
             <button 
               type="button" 

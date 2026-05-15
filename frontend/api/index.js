@@ -49,15 +49,27 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { role, username, password } = req.body;
     
-    // 1. Logic khusus Admin
+    // 1. Logic khusus Admin & Kepala Lembaga
     if (role === 'admin') {
+      const { data: userAccount } = await supabase.from('users')
+        .select('*')
+        .eq('username', username)
+        .eq('password', password)
+        .single();
+      
+      if (userAccount) {
+        console.log('[AUTH] Login Success (Table users) for:', userAccount.nama_lengkap);
+        return ok(res, { token: 'admin-token', user: { ...userAccount, role: userAccount.role } });
+      }
+
       const { data: user } = await supabase.from('pengaturan').select('value').eq('key', 'admin_username').single();
       const { data: pass } = await supabase.from('pengaturan').select('value').eq('key', 'admin_password').single();
       
       if (user?.value === username && pass?.value === password) {
-        return ok(res, { token: 'admin-token', user: { nama_lengkap: 'Administrator', role: 'admin' } });
+        console.log('[AUTH] Login Success (Legacy) for: Administrator');
+        return ok(res, { token: 'admin-token', user: { nama_lengkap: 'Administrator', role: 'admin', username: username } });
       }
-      return fail(res, 'Username atau password Admin salah', 401);
+      return fail(res, 'Username atau password salah', 401);
     }
 
     // 2. Logic untuk Guru / Siswa
@@ -1112,6 +1124,40 @@ app.delete('/api/jenis-pembayaran/:id', async (req, res) => {
     const { error } = await supabase.from('jenis_pembayaran').delete().eq('id', req.params.id);
     if (error) throw error;
     ok(res, null, 'Jenis pembayaran berhasil dihapus');
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+
+// ==================== USER MANAGEMENT ====================
+app.get('/api/users', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    ok(res, data);
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+app.post('/api/users', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('users').insert(req.body).select().single();
+    if (error) throw error;
+    ok(res, data, 'Akun berhasil ditambahkan');
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('users').update(req.body).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    ok(res, data, 'Akun berhasil diperbarui');
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const { error } = await supabase.from('users').delete().eq('id', req.params.id);
+    if (error) throw error;
+    ok(res, null, 'Akun berhasil dihapus');
   } catch (e) { fail(res, e.message, 500); }
 });
 

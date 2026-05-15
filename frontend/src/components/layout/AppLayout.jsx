@@ -20,6 +20,9 @@ const AppLayout = () => {
     setIsMobileMenuOpen(false);
   };
 
+  const userData = JSON.parse(localStorage.getItem('tpq_user') || '{}');
+  const userRole = userData.role;
+
   const menuItems = [
     { path: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { path: '/santri', icon: <Users size={20} />, label: 'Santri' },
@@ -31,7 +34,16 @@ const AppLayout = () => {
     { path: '/tabungan', icon: <Wallet size={20} />, label: 'Tabungan' },
     { path: '/laporan', icon: <FileBarChart size={20} />, label: 'Laporan' },
     { path: '/pengaturan', icon: <Settings size={20} />, label: 'Pengaturan' }
-  ];
+  ].filter(item => {
+    if (userRole === 'kepala') {
+      return item.path !== '/pembayaran' && item.path !== '/tabungan';
+    }
+    return true;
+  });
+
+  const topbarTitle = userRole === 'kepala' ? 'Panel Kepala Lembaga' : 'Panel Admin';
+  const profileName = userData.nama_lengkap || (userRole === 'kepala' ? 'Kepala Lembaga' : 'Admin TPQ');
+  const initials = profileName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
   return (
     <div className="app-layout">
@@ -82,12 +94,12 @@ const AppLayout = () => {
                 <Menu size={24} />
               </button>
               <div className="topbar-search">
-                <h2 className="topbar-title font-medium">Panel Admin</h2>
+                <h2 className="topbar-title font-medium">{topbarTitle}</h2>
               </div>
             </div>
             <div className="topbar-profile flex items-center gap-4">
-              <span className="text-sm font-medium">Admin TPQ</span>
-              <div className="avatar arch-avatar">AD</div>
+              <span className="text-sm font-medium">{profileName}</span>
+              <div className="avatar arch-avatar">{initials}</div>
             </div>
           </header>
           
