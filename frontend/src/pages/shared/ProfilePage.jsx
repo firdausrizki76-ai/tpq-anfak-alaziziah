@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, MapPin, Calendar, Briefcase, CreditCard, LogOut, Loader2, Camera, ShieldCheck, Heart, Star, BookOpen } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Calendar, Briefcase, CreditCard, LogOut, Loader2, Camera, ShieldCheck, Heart, Star, BookOpen, Users } from 'lucide-react';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -105,7 +105,7 @@ const ProfilePage = () => {
           </div>
           
           <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', margin: '0 0 4px 0', letterSpacing: '-0.5px' }}>
-            {user.nama_lengkap}
+            {user.nama_lengkap} {user.nama_panggilan && <span style={{ fontWeight: '400', fontSize: '18px', color: '#64748b' }}>({user.nama_panggilan})</span>}
           </h2>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <span style={{ 
@@ -194,6 +194,30 @@ const ProfilePage = () => {
             </div>
           </div>
         </div>
+
+        {/* Family Details (For Student) */}
+        {isStudent && (
+          <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Users size={20} color="#059669" /> Data Keluarga
+            </h3>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0, fontWeight: '600', textTransform: 'uppercase' }}>Nama Ayah</p>
+                <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#334155', margin: 0 }}>{user.nama_ayah || '-'}</p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0, fontWeight: '600', textTransform: 'uppercase' }}>Nama Ibu</p>
+                <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#334155', margin: 0 }}>{user.nama_ibu || '-'}</p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', gridColumn: 'span 2' }}>
+                <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0, fontWeight: '600', textTransform: 'uppercase' }}>Nama Wali</p>
+                <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#334155', margin: 0 }}>{user.nama_wali || '-'}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Contact & Address */}
         <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9' }}>
