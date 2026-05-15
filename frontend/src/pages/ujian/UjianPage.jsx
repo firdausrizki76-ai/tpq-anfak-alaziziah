@@ -25,7 +25,9 @@ const UjianPage = () => {
 
   const user = JSON.parse(localStorage.getItem('tpq_user') || '{}');
   const isAdmin = user.role === 'admin';
+  const isKepala = user.role === 'kepala';
   const isGuru = user.role === 'guru';
+  const isAdminOrKepala = isAdmin || isKepala;
 
   useEffect(() => { loadData(); }, []);
 
@@ -326,7 +328,7 @@ const UjianPage = () => {
                         {status === 'Siap Ujian' && (
                           <>
                             <button className="p-1.5 text-orange-600 hover:bg-orange-50 rounded" title="Cetak Kartu Tes" onClick={() => handlePrintKartu(item)}><Printer size={18} /></button>
-                            {isAdmin && (
+                            {isAdminOrKepala && (
                               <>
                                 <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded flex items-center gap-1 font-medium" title="Input Nilai" onClick={() => openModal('input_nilai', item)}><Award size={18} /> Nilai</button>
                                 {item.santri?.latest_riwayat?.status_tes === 'lulus' && (
@@ -337,7 +339,7 @@ const UjianPage = () => {
                           </>
                         )}
                         {status === 'Belajar' && <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Proses Belajar</span>}
-                        {isAdmin && (
+                        {isAdminOrKepala && (
                           <button 
                             className="p-1.5 text-red-500 hover:bg-red-50 rounded" 
                             title="Hapus" 
