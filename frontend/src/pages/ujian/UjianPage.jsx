@@ -29,6 +29,17 @@ const UjianPage = () => {
   const isGuru = user.role === 'guru';
   const isAdminOrKepala = isAdmin || isKepala;
 
+  useEffect(() => {
+    if (regFormData.tanggal_mulai && regFormData.tanggal_selesai) {
+      const d1 = new Date(regFormData.tanggal_mulai);
+      const d2 = new Date(regFormData.tanggal_selesai);
+      const diff = Math.floor((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+      if (diff > 0) {
+        setRegFormData(prev => ({ ...prev, masa_tempuh: diff }));
+      }
+    }
+  }, [regFormData.tanggal_mulai, regFormData.tanggal_selesai]);
+
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
@@ -379,13 +390,9 @@ const UjianPage = () => {
           <div className="modal-body">
             {/* Form Data Tes */}
             <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-              <div className="form-group">
+              <div className="form-group col-span-2">
                 <label className="form-label text-xs">Nomor Tes</label>
                 <input type="text" className="input-field text-sm" placeholder="Contoh: TES/26/05/001" value={regFormData.nomor_tes} onChange={(e) => setRegFormData({...regFormData, nomor_tes: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label className="form-label text-xs">Masa Tempuh (Hari)</label>
-                <input type="number" className="input-field text-sm" placeholder="60" value={regFormData.masa_tempuh} onChange={(e) => setRegFormData({...regFormData, masa_tempuh: e.target.value})} />
               </div>
               <div className="form-group">
                 <label className="form-label text-xs">Tanggal Mulai</label>
@@ -394,6 +401,13 @@ const UjianPage = () => {
               <div className="form-group">
                 <label className="form-label text-xs">Tanggal Selesai</label>
                 <input type="date" className="input-field text-sm" value={regFormData.tanggal_selesai} onChange={(e) => setRegFormData({...regFormData, tanggal_selesai: e.target.value})} />
+              </div>
+              <div className="form-group col-span-2">
+                <label className="form-label text-xs font-bold text-blue-600">Masa Tempuh (Otomatis)</label>
+                <div className="flex items-center gap-2">
+                  <input type="number" className="input-field text-sm bg-blue-50 border-blue-200 font-bold text-blue-700" placeholder="60" value={regFormData.masa_tempuh} onChange={(e) => setRegFormData({...regFormData, masa_tempuh: e.target.value})} />
+                  <span className="text-sm font-bold text-blue-600">Hari</span>
+                </div>
               </div>
             </div>
 
