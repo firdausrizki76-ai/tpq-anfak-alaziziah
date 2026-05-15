@@ -25,6 +25,7 @@ import StudentTabunganPage from './pages/student/StudentTabunganPage';
 import StudentTagihanPage from './pages/student/StudentTagihanPage';
 import StudentIzinPage from './pages/student/StudentIzinPage';
 import StudentRiwayatPendidikan from './pages/student/StudentRiwayatPendidikan';
+import ProfilePage from './pages/shared/ProfilePage';
 
 const ProtectedRoute = ({ children, allowedRole }) => {
   const token = localStorage.getItem('tpq_token');
@@ -78,6 +79,7 @@ function App() {
           <Route path="/guru/absen/riwayat" element={<AttendanceHistoryPage />} />
           <Route path="/guru/tabungan" element={<TabunganPage />} />
           <Route path="/guru/ujian" element={<UjianPage />} />
+          <Route path="/guru/profile" element={<ProfilePage />} />
         </Route>
 
         {/* Student Routes */}
@@ -88,6 +90,7 @@ function App() {
           <Route path="/siswa/tabungan" element={<StudentTabunganPage />} />
           <Route path="/siswa/tagihan" element={<StudentTagihanPage />} />
           <Route path="/siswa/riwayat-pendidikan" element={<StudentRiwayatPendidikan />} />
+          <Route path="/siswa/profile" element={<ProfilePage />} />
         </Route>
       </Routes>
     </BrowserRouter>

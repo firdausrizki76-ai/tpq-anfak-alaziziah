@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, LogOut, Wallet, Receipt } from 'lucide-react';
+import { LayoutDashboard, FileText, User, Wallet, Receipt } from 'lucide-react';
 
 const StudentLayout = () => {
   const navigate = useNavigate();
@@ -10,14 +10,9 @@ const StudentLayout = () => {
     { path: '/siswa/dashboard', icon: LayoutDashboard, label: 'Beranda' },
     { path: '/siswa/tabungan', icon: Wallet, label: 'Tabungan' },
     { path: '/siswa/tagihan', icon: Receipt, label: 'Tagihan' },
-    { path: '/siswa/izin', icon: FileText, label: 'Izin' }
+    { path: '/siswa/izin', icon: FileText, label: 'Izin' },
+    { path: '/siswa/profile', icon: User, label: 'Profil' }
   ];
-
-  const handleLogout = () => {
-    localStorage.removeItem('tpq_token');
-    localStorage.removeItem('tpq_user');
-    navigate('/login');
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#f8fafc', width: '100%', fontFamily: 'var(--font-family-body, sans-serif)' }}>
@@ -99,29 +94,6 @@ const StudentLayout = () => {
             </button>
           );
         })}
-        <button
-          onClick={handleLogout}
-          style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            gap: '2px', 
-            background: 'transparent', 
-            border: 'none', 
-            color: '#ef4444', 
-            fontFamily: 'var(--font-family-body, sans-serif)', 
-            fontSize: '10px', 
-            cursor: 'pointer', 
-            flex: 1,
-            fontWeight: '500',
-            padding: '4px 0'
-          }}
-        >
-          <div style={{ padding: '6px 16px', borderRadius: '16px' }}>
-            <LogOut size={22} />
-          </div>
-          <span>Keluar</span>
-        </button>
       </nav>
     </div>
   );

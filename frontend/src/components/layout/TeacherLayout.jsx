@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, CalendarCheck, LogOut, Wallet } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, CalendarCheck, User, Wallet } from 'lucide-react';
 
 const TeacherLayout = () => {
   const navigate = useNavigate();
@@ -11,14 +11,9 @@ const TeacherLayout = () => {
     { path: '/guru/kelas', icon: Users, label: 'Kelas' },
     { path: '/guru/absen', icon: CalendarCheck, label: 'Absen' },
     { path: '/guru/tabungan', icon: Wallet, label: 'Tabungan' },
-    { path: '/guru/ujian', icon: BookOpen, label: 'Tes' }
+    { path: '/guru/ujian', icon: BookOpen, label: 'Tes' },
+    { path: '/guru/profile', icon: User, label: 'Profil' }
   ];
-
-  const handleLogout = () => {
-    localStorage.removeItem('tpq_token');
-    localStorage.removeItem('tpq_user');
-    navigate('/login');
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#f8fafc', width: '100%', fontFamily: 'var(--font-family-body, sans-serif)' }}>
@@ -100,29 +95,6 @@ const TeacherLayout = () => {
             </button>
           );
         })}
-        <button
-          onClick={handleLogout}
-          style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            gap: '2px', 
-            background: 'transparent', 
-            border: 'none', 
-            color: '#ef4444', 
-            fontFamily: 'var(--font-family-body, sans-serif)', 
-            fontSize: '10px', 
-            cursor: 'pointer', 
-            flex: 1,
-            fontWeight: '500',
-            padding: '4px 0'
-          }}
-        >
-          <div style={{ padding: '6px 16px', borderRadius: '16px' }}>
-            <LogOut size={22} />
-          </div>
-          <span>Keluar</span>
-        </button>
       </nav>
     </div>
   );
