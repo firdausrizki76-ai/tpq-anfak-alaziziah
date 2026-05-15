@@ -109,20 +109,38 @@ const PengaturanPage = () => {
         <p className="page-subtitle">Konfigurasi data institusi dan manajemen akun pengelola</p>
       </div>
 
-      {/* Tab Switcher */}
-      <div className="flex gap-4 mb-6 border-b">
-        <button 
-          className={`pb-2 px-4 font-bold transition-all ${activeTab === 'profil' ? 'border-b-2 border-[var(--color-primary)] text-[var(--color-primary)]' : 'text-gray-400'}`}
-          onClick={() => setActiveTab('profil')}
-        >
-          Profil Lembaga
-        </button>
-        <button 
-          className={`pb-2 px-4 font-bold transition-all ${activeTab === 'akun' ? 'border-b-2 border-[var(--color-primary)] text-[var(--color-primary)]' : 'text-gray-400'}`}
-          onClick={() => setActiveTab('akun')}
-        >
-          Manajemen Akun
-        </button>
+      {/* Tab Switcher - Pill Style */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
+        {[
+          { id: 'profil', label: 'Profil Lembaga', icon: <Building size={16} /> },
+          { id: 'akun', label: 'Manajemen Akun', icon: <Users size={16} /> }
+        ].map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button 
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px', 
+                padding: '10px 20px', 
+                borderRadius: '24px', 
+                fontSize: '14px', 
+                fontWeight: 'bold',
+                border: isActive ? '1px solid #059669' : '1px solid #e2e8f0',
+                backgroundColor: isActive ? '#ecfdf5' : 'white',
+                color: isActive ? '#059669' : '#64748b',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                outline: 'none'
+              }}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          )
+        })}
       </div>
 
       {activeTab === 'profil' ? (
