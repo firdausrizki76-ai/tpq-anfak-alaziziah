@@ -1062,6 +1062,15 @@ app.get('/api/ujian/history/:santriId', async (req, res) => {
   } catch (e) { fail(res, e.message, 500); }
 });
 
+app.put('/api/ujian/history/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabase.from('riwayat_kelas').update(req.body).eq('id', id).select().single();
+    if (error) throw error;
+    ok(res, data, 'Riwayat pendidikan berhasil diperbarui');
+  } catch (e) { fail(res, e.message, 500); }
+});
+
 app.post('/api/ujian/naik-kelas', async (req, res) => {
   try {
     const { santri_id, kelas_dari_id, kelas_ke_id, tanggal_naik } = req.body;

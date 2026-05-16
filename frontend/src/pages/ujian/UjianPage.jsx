@@ -13,6 +13,7 @@ const UjianPage = () => {
   const [selectedSantri, setSelectedSantri] = useState(null);
   const [historyList, setHistoryList] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [editingHistory, setEditingHistory] = useState(null);
   const [printSantri, setPrintSantri] = useState(null);
   const [selectedSantriIds, setSelectedSantriIds] = useState([]);
   const [nextKelas, setNextKelas] = useState('');
@@ -146,6 +147,37 @@ const UjianPage = () => {
       setHistoryList(data || []);
     } catch (e) { console.error(e); }
     setLoadingHistory(false);
+  };
+
+  const handleUpdateHistory = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      // Hitung ulang masa tempuh jika tanggal berubah
+      let masa_tempuh = editingHistory.masa_tempuh;
+      if (formData.tanggal_mulai && formData.tanggal_selesai) {
+        const d1 = new Date(formData.tanggal_mulai);
+        const d2 = new Date(formData.tanggal_selesai);
+        masa_tempuh = Math.floor((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+      }
+
+      await ujianAPI.updateHistory(editingHistory.id, {
+        nilai_tes: parseInt(formData.nilai),
+        status_tes: formData.hasil,
+        catatan: formData.keterangan,
+        tanggal_naik: formData.tanggal_naik,
+        tanggal_mulai: formData.tanggal_mulai,
+        tanggal_selesai: formData.tanggal_selesai,
+        masa_tempuh
+      });
+      
+      // Refresh history
+      const data = await ujianAPI.getHistory(selectedSantri.santri_id);
+      setHistoryList(data || []);
+      setEditingHistory(null);
+      alert('Riwayat berhasil diperbarui');
+    } catch (e) { alert(e.message); }
+    setSaving(false);
   };
 
   const handlePrintKartu = (item) => {
@@ -518,39 +550,102 @@ const UjianPage = () => {
                       <div className="card p-4 bg-gray-50 border-gray-100 hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start mb-2">
                           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{new Date(h.tanggal_naik || h.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                          <span className={`badge ${h.status_tes === 'lulus' ? 'badge-success' : 'badge-danger'}`}>{h.status_tes}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="font-bold text-gray-700">{h.kelas_dari?.nama_kelas}</span>
-                          <ArrowRight size={14} className="text-gray-400" />
-                          <span className="font-bold text-blue-600">{h.kelas_ke?.nama_kelas || h.kelas_dari?.nama_kelas}</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4 text-xs mt-3">
-                          <div>
-                            <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Tgl Mulai</p>
-                            <p className="font-bold text-gray-700">{h.tanggal_mulai ? new Date(h.tanggal_mulai).toLocaleDateString('id-ID') : '-'}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Tgl Selesai</p>
-                            <p className="font-bold text-gray-700">{h.tanggal_selesai ? new Date(h.tanggal_selesai).toLocaleDateString('id-ID') : '-'}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Tgl Naik</p>
-                            <p className="font-bold text-blue-600">{h.tanggal_naik ? new Date(h.tanggal_naik).toLocaleDateString('id-ID') : '-'}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Nilai Ujian</p>
-                            <p className="font-bold text-gray-700">{h.nilai_tes || '-'}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Masa Tempuh</p>
-                            <p className="font-bold text-gray-700">{h.masa_tempuh ? `${h.masa_tempuh} Hari` : '-'}</p>
-                          </div>
-                          <div className="col-span-3 mt-1 pt-1 border-t border-gray-100">
-                            <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Catatan / Keterangan</p>
-                            <p className="italic text-gray-600 text-xs">{h.catatan || '-'}</p>
+                          <div className="flex gap-2">
+                            <span className={`badge ${h.status_tes === 'lulus' ? 'badge-success' : 'badge-danger'}`}>{h.status_tes}</span>
+                            {isAdminOrKepala && (
+                              <button 
+                                className="p-1 px-2 text-[10px] bg-white border border-orange-200 text-orange-600 rounded hover:bg-orange-50 font-bold"
+                                onClick={() => {
+                                  setEditingHistory(h);
+                                  setFormData({
+                                    nilai: h.nilai_tes || '',
+                                    hasil: h.status_tes || 'lulus',
+                                    keterangan: h.catatan || '',
+                                    tanggal_naik: h.tanggal_naik || '',
+                                    tanggal_mulai: h.tanggal_mulai || '',
+                                    tanggal_selesai: h.tanggal_selesai || ''
+                                  });
+                                }}
+                              >
+                                EDIT
+                              </button>
+                            )}
                           </div>
                         </div>
+
+                        {editingHistory?.id === h.id ? (
+                          <form onSubmit={handleUpdateHistory} className="mt-4 p-3 bg-white rounded-lg border border-orange-100 space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="form-group">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase">Nilai</label>
+                                <input type="number" name="nilai" className="input-field py-1 px-2 text-sm" value={formData.nilai} onChange={handleInputChange} required />
+                              </div>
+                              <div className="form-group">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase">Hasil</label>
+                                <select name="hasil" className="input-field py-1 px-2 text-sm" value={formData.hasil} onChange={handleInputChange}>
+                                  <option value="lulus">Lulus</option>
+                                  <option value="remidi">Remidi</option>
+                                </select>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="form-group">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase">Tgl Mulai</label>
+                                <input type="date" name="tanggal_mulai" className="input-field py-1 px-2 text-xs" value={formData.tanggal_mulai} onChange={handleInputChange} />
+                              </div>
+                              <div className="form-group">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase">Tgl Selesai</label>
+                                <input type="date" name="tanggal_selesai" className="input-field py-1 px-2 text-xs" value={formData.tanggal_selesai} onChange={handleInputChange} />
+                              </div>
+                              <div className="form-group">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase">Tgl Naik</label>
+                                <input type="date" name="tanggal_naik" className="input-field py-1 px-2 text-xs" value={formData.tanggal_naik} onChange={handleInputChange} />
+                              </div>
+                            </div>
+                            <div className="form-group">
+                              <label className="text-[10px] font-bold text-gray-500 uppercase">Catatan</label>
+                              <textarea name="keterangan" className="input-field py-1 px-2 text-sm" rows="2" value={formData.keterangan} onChange={handleInputChange}></textarea>
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <button type="button" className="btn-primary py-1 px-3 text-xs" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={() => setEditingHistory(null)}>Batal</button>
+                              <button type="submit" className="btn-primary py-1 px-3 text-xs" disabled={saving}>{saving ? '...' : 'Simpan'}</button>
+                            </div>
+                          </form>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="font-bold text-gray-700">{h.kelas_dari?.nama_kelas}</span>
+                              <ArrowRight size={14} className="text-gray-400" />
+                              <span className="font-bold text-blue-600">{h.kelas_ke?.nama_kelas || h.kelas_dari?.nama_kelas}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4 text-xs mt-3">
+                              <div>
+                                <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Tgl Mulai</p>
+                                <p className="font-bold text-gray-700">{h.tanggal_mulai ? new Date(h.tanggal_mulai).toLocaleDateString('id-ID') : '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Tgl Selesai</p>
+                                <p className="font-bold text-gray-700">{h.tanggal_selesai ? new Date(h.tanggal_selesai).toLocaleDateString('id-ID') : '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Tgl Naik</p>
+                                <p className="font-bold text-blue-600">{h.tanggal_naik ? new Date(h.tanggal_naik).toLocaleDateString('id-ID') : '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Nilai Ujian</p>
+                                <p className="font-bold text-gray-700">{h.nilai_tes || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Masa Tempuh</p>
+                                <p className="font-bold text-gray-700">{h.masa_tempuh ? `${h.masa_tempuh} Hari` : '-'}</p>
+                              </div>
+                              <div className="col-span-3 mt-1 pt-1 border-t border-gray-100">
+                                <p className="text-gray-400 mb-0.5 text-[9px] uppercase">Catatan / Keterangan</p>
+                                <p className="italic text-gray-600 text-xs">{h.catatan || '-'}</p>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
