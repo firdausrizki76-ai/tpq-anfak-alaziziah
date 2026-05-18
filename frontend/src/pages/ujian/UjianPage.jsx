@@ -23,6 +23,13 @@ const UjianPage = () => {
   const [regFilterKelas, setRegFilterKelas] = useState('');
   const [formData, setFormData] = useState({ nilai: '', keterangan: '', tanggal: new Date().toISOString().split('T')[0], hasil: 'lulus', tanggal_tes: '', tanggal_naik: '' });
   const [regFormData, setRegFormData] = useState({ nomor_tes: '', tanggal_mulai: new Date().toISOString().split('T')[0], tanggal_selesai: '', masa_tempuh: '' });
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+    setSortConfig({ key, direction });
+  };
 
   const user = JSON.parse(localStorage.getItem('tpq_user') || '{}');
   const isAdmin = user.role === 'admin';
@@ -192,11 +199,22 @@ const UjianPage = () => {
   };
 
   const filteredExam = examData.filter(item => !searchQuery || (item.santri?.nama_lengkap || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  
+  const sortedExam = [...filteredExam].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    let aVal = getStatus(a);
+    let bVal = getStatus(b);
+    
+    if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   const filteredReg = santriList.filter(s => {
     const matchesSearch = !regSearchQuery || s.nama_lengkap?.toLowerCase().includes(regSearchQuery.toLowerCase()) || s.nomor_induk?.includes(regSearchQuery);
     const matchesKelas = !regFilterKelas || s.kelas_id === regFilterKelas;
     const isNotAlreadyInExam = !examData.some(e => e.santri_id === s.id && getStatus(e) === 'Siap Ujian');
-    return matchesSearch && matchesKelas && isNotAlreadyInExam && s.status === 'aktif';
+    return matchesSearch && matchesKelas && s.status === 'aktif';
   });
 
   return (
@@ -345,11 +363,11 @@ const UjianPage = () => {
 
         <div className="table-responsive">
           <table className="data-table w-full">
-            <thead><tr><th>No</th><th>Nama Santri</th><th>Kelas</th><th>Tanggal</th><th>Masa Tempuh</th><th>Status</th><th className="text-center">Aksi</th><th>Riwayat</th></tr></thead>
+            <thead><tr><th>No</th><th>Nama Santri</th><th>Kelas</th><th>Tanggal</th><th>Masa Tempuh</th><th onClick={() => handleSort('status')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Urutkan berdasarkan status">Status {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th><th className="text-center">Aksi</th><th>Riwayat</th></tr></thead>
             <tbody>
               {loading && !activeModal ? <tr><td colSpan="8" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
-              : filteredExam.length === 0 ? <tr><td colSpan="8" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data pencapaian</td></tr>
-              : filteredExam.map((item, i) => {
+              : sortedExam.length === 0 ? <tr><td colSpan="8" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data pencapaian</td></tr>
+              : sortedExam.map((item, i) => {
                 const status = getStatus(item);
                 const pct = item.target_hari > 0 ? Math.min((item.aktual_hari / item.target_hari) * 100, 100) : 0;
                 return (

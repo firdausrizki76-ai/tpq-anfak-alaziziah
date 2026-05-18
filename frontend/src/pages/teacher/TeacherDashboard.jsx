@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, QrCode, BookOpen, CheckCircle, Loader2, Lock, X, Save } from 'lucide-react';
+import { Users, QrCode, BookOpen, CheckCircle, Loader2, Lock, X, Save, FileText } from 'lucide-react';
 import { absensiAPI, kelasAPI, authAPI } from '../../services/api';
 
 const TeacherDashboard = () => {
@@ -104,6 +104,15 @@ const TeacherDashboard = () => {
             <Users size={28} />
           </div>
           <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#334155', margin: 0 }}>Daftar Kelas</h3>
+        </div>
+        <div 
+          onClick={() => navigate('/guru/izin')}
+          style={{ backgroundColor: 'white', borderRadius: '24px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', gridColumn: 'span 2' }}
+        >
+          <div style={{ padding: '16px', backgroundColor: '#fef3c7', borderRadius: '50%', color: '#d97706', marginBottom: '12px' }}>
+            <FileText size={28} />
+          </div>
+          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#334155', margin: 0 }}>Pengajuan Izin</h3>
         </div>
       </div>
 

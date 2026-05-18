@@ -8,7 +8,14 @@ const GuruPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [activeModal, setActiveModal] = useState(null);
+
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+    setSortConfig({ key, direction });
+  };
   const [selectedGuru, setSelectedGuru] = useState(null);
   const [formData, setFormData] = useState({ nip: '', nama_lengkap: '', jabatan: '', jenis_kelamin: 'L', tempat_lahir: '', tanggal_lahir: '', nik: '', no_kk: '', alamat: '', rt: '', rw: '', nama_ibu: '', no_hp: '', email: '', status: 'aktif', password: 'guru123' });
   const [files, setFiles] = useState({ foto: null, kk: null, ktp: null, ijazah: null });
@@ -120,6 +127,20 @@ const GuruPage = () => {
 
   const filtered = guruList.filter(g => !searchQuery || (g.nama_lengkap || '').toLowerCase().includes(searchQuery.toLowerCase()) || (g.nip || '').includes(searchQuery));
 
+  const sortedGuru = [...filtered].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    let aVal, bVal;
+    if (sortConfig.key === 'nip') {
+      aVal = a.nip; bVal = b.nip;
+    } else if (sortConfig.key === 'nama') {
+      aVal = a.nama_lengkap?.toLowerCase(); bVal = b.nama_lengkap?.toLowerCase();
+    }
+    
+    if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   return (
     <div className="flex-col gap-6 w-full">
       <div className="page-header mb-6 flex justify-between items-center">
@@ -138,11 +159,18 @@ const GuruPage = () => {
 
         <div className="table-responsive">
           <table className="data-table w-full">
-            <thead><tr><th>No</th><th>NIP</th><th>Nama Lengkap</th><th>Jabatan</th><th>No. HP</th><th>Status</th><th className="text-center">Aksi</th></tr></thead>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th onClick={() => handleSort('nip')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Urutkan NIP">NIP {sortConfig.key === 'nip' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                <th onClick={() => handleSort('nama')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Urutkan Nama">Nama Lengkap {sortConfig.key === 'nama' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                <th>Jabatan</th><th>No. HP</th><th>Status</th><th className="text-center">Aksi</th>
+              </tr>
+            </thead>
             <tbody>
               {loading ? <tr><td colSpan="7" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
-              : filtered.length === 0 ? <tr><td colSpan="7" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data guru</td></tr>
-              : filtered.map((guru, i) => (
+              : sortedGuru.length === 0 ? <tr><td colSpan="7" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data guru</td></tr>
+              : sortedGuru.map((guru, i) => (
                 <tr key={guru.id}>
                   <td>{i+1}</td><td>{guru.nip}</td><td className="font-medium">{guru.nama_lengkap}</td><td>{guru.jabatan}</td><td>{guru.no_hp}</td>
                   <td><span className={`badge ${guru.status === 'aktif' ? 'badge-success' : ''}`} style={guru.status !== 'aktif' ? { backgroundColor: '#f1f5f9', color: '#64748b' } : {}}>{guru.status}</span></td>

@@ -216,9 +216,31 @@ const PembayaranPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-4-cols mb-6 no-print">
-        <div className="card stat-card" style={{ padding: '20px' }}><div className="stat-title">Pemasukan Bulan Ini</div><div className="stat-value text-emerald-600">{stats ? formatRp(stats.totalLunas) : '—'}</div><div className="stat-subtitle">{stats?.jumlahLunas || 0} santri</div></div>
-        <div className="card stat-card" style={{ padding: '20px' }}><div className="stat-title">Total Tunggakan</div><div className="stat-value text-orange-600">{stats ? formatRp(stats.totalBelum) : '—'}</div><div className="stat-subtitle">{stats?.jumlahBelum || 0} santri belum lunas</div></div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 no-print">
+        <div className="card stat-card" style={{ padding: '20px' }}>
+          <div className="stat-title">Pemasukan Bulan Ini</div>
+          <div className="stat-value text-emerald-600">{stats ? formatRp(stats.totalLunas) : '—'}</div>
+          <div className="stat-subtitle">{stats?.jumlahLunas || 0} santri</div>
+        </div>
+        <div className="card stat-card" style={{ padding: '20px' }}>
+          <div className="stat-title">Total Tunggakan</div>
+          <div className="stat-value text-orange-600">{stats ? formatRp(stats.totalBelum) : '—'}</div>
+          <div className="stat-subtitle">{stats?.jumlahBelum || 0} santri belum lunas</div>
+        </div>
+        <div className="card stat-card" style={{ padding: '20px' }}>
+          <div className="stat-title">Saldo Syahriah</div>
+          <div className="stat-value text-blue-600">
+            {formatRp(payments.filter(p => p.status === 'lunas' && (p.jenis?.nama || p.jenis_pembayaran?.nama || '').toLowerCase().includes('syahriah')).reduce((s, p) => s + p.nominal, 0))}
+          </div>
+          <div className="stat-subtitle">Total diterima bulan ini</div>
+        </div>
+        <div className="card stat-card" style={{ padding: '20px' }}>
+          <div className="stat-title">Saldo Tabungan Wajib</div>
+          <div className="stat-value text-indigo-600">
+            {formatRp(payments.filter(p => p.status === 'lunas' && (p.jenis?.nama || p.jenis_pembayaran?.nama || '').toLowerCase().includes('tabungan wajib')).reduce((s, p) => s + p.nominal, 0))}
+          </div>
+          <div className="stat-subtitle">Total diterima bulan ini</div>
+        </div>
       </div>
 
       <div className="card w-full no-print">

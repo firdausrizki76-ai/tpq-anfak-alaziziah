@@ -9,7 +9,15 @@ const SantriPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [filterKelas, setFilterKelas] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+    setSortConfig({ key, direction });
+  };
 
   const [activeModal, setActiveModal] = useState(null);
   const [selectedSantri, setSelectedSantri] = useState(null);
@@ -165,6 +173,22 @@ const SantriPage = () => {
     return matchSearch && matchKelas;
   });
 
+  const sortedList = [...filteredList].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    let aVal, bVal;
+    if (sortConfig.key === 'nis') {
+      aVal = a.nomor_induk; bVal = b.nomor_induk;
+    } else if (sortConfig.key === 'nama') {
+      aVal = a.nama_lengkap?.toLowerCase(); bVal = b.nama_lengkap?.toLowerCase();
+    } else if (sortConfig.key === 'kelas') {
+      aVal = a.kelas?.nama_kelas?.toLowerCase(); bVal = b.kelas?.nama_kelas?.toLowerCase();
+    }
+    
+    if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   const getDirectGDriveLink = (link) => {
     if (!link) return null;
     
@@ -225,15 +249,19 @@ const SantriPage = () => {
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th>No</th><th>NIS</th><th>Nama Lengkap</th><th>Kelas</th><th>Status</th><th className="text-center">Aksi</th>
+                <th>No</th>
+                <th onClick={() => handleSort('nis')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Urutkan NIS">NIS {sortConfig.key === 'nis' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                <th onClick={() => handleSort('nama')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Urutkan Nama">Nama Lengkap {sortConfig.key === 'nama' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                <th onClick={() => handleSort('kelas')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Urutkan Kelas">Kelas {sortConfig.key === 'kelas' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                <th>Status</th><th className="text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr><td colSpan="6" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
-              ) : filteredList.length === 0 ? (
+              ) : sortedList.length === 0 ? (
                 <tr><td colSpan="6" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data santri</td></tr>
-              ) : filteredList.map((santri, index) => (
+              ) : sortedList.map((santri, index) => (
                 <tr key={santri.id}>
                   <td>{index + 1}</td>
                   <td>{santri.nomor_induk}</td>
