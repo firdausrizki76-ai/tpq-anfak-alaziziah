@@ -9,7 +9,6 @@ const SantriPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [filterKelas, setFilterKelas] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
