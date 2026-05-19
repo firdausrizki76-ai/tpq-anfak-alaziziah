@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Search, Filter, Loader2, User, CheckCircle, AlertCircle, Clock, ChevronRight } from 'lucide-react';
-import { absensiAPI } from '../../services/api';
+import { absensiAPI, kelasAPI } from '../../services/api';
 
 const AttendanceHistoryPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [absensi, setAbsensi] = useState([]);
+  const [managedClassesText, setManagedClassesText] = useState('-');
   const [filter, setFilter] = useState({
     tanggal: new Date().toISOString().split('T')[0],
     search: ''
@@ -21,16 +22,21 @@ const AttendanceHistoryPage = () => {
   const loadAttendance = async () => {
     setLoading(true);
     try {
+      // 1. Fetch managed classes
+      const kelasList = await kelasAPI.getAll();
+      const myClasses = (kelasList || []).filter(k => k.wali_kelas_id === user.id || k.wali_kelas?.id === user.id);
+      const myClassIds = myClasses.map(c => c.id);
+      setManagedClassesText(myClasses.map(c => c.nama_kelas).join(', ') || '-');
+
       const params = {
         tanggal: filter.tanggal
       };
       
-      if (user.kelas_id) {
-        params.kelas = user.kelas_id;
-      }
-      
       const data = await absensiAPI.getAll(params);
-      setAbsensi(data || []);
+      
+      // 2. Filter to only show attendance from classes managed by this teacher
+      const filteredByClass = (data || []).filter(a => myClassIds.includes(a.santri?.kelas_id));
+      setAbsensi(filteredByClass);
     } catch (e) {
       console.error('Error loading attendance:', e);
     }
@@ -96,7 +102,7 @@ const AttendanceHistoryPage = () => {
           <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>Riwayat Absensi</h2>
             <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500', margin: '4px 0 0 0' }}>
-              {user.kelas?.nama_kelas || 'Semua Kelas'} • {new Date(filter.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+              {managedClassesText} • {new Date(filter.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
             </p>
           </div>
         </div>
@@ -199,7 +205,7 @@ const AttendanceHistoryPage = () => {
           <div style={{ flex: 1 }}>
             <h4 style={{ fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 4px 0' }}>Informasi</h4>
             <p style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.5, fontWeight: '500', margin: 0 }}>
-              Data ini adalah rekapan resmi santri kelas <span style={{ color: '#2563eb', fontWeight: 'bold' }}>{user.kelas?.nama_kelas || 'Anda'}</span>.
+              Data ini adalah rekapan resmi santri kelas <span style={{ color: '#2563eb', fontWeight: 'bold' }}>{managedClassesText}</span>.
             </p>
           </div>
         </div>

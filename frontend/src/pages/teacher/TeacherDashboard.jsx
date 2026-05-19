@@ -11,6 +11,7 @@ const TeacherDashboard = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
   const [savingPassword, setSavingPassword] = useState(false);
+  const [managedClassesText, setManagedClassesText] = useState('-');
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('tpq_user'));
@@ -24,17 +25,38 @@ const TeacherDashboard = () => {
     setLoading(true);
     try {
       const today = new Date().toISOString().split('T')[0];
-      const [absensiRes, kelasSantri] = await Promise.all([
-        absensiAPI.getAll({ tanggal: today }),
-        userData.kelas_id ? kelasAPI.getSantri(userData.kelas_id) : Promise.resolve([])
-      ]);
-
-      const totalSiswa = kelasSantri?.length || 0;
-      const hadirSiswa = (absensiRes || []).filter(a => 
-        kelasSantri.some(s => s.id === a.santri_id) && a.status === 'hadir'
-      ).length;
+      
+      // 1. Fetch kelas list to find classes managed by this teacher
+      const kelasList = await kelasAPI.getAll();
+      const myClasses = (kelasList || []).filter(k => k.wali_kelas_id === userData.id || k.wali_kelas?.id === userData.id);
+      
+      let totalSiswa = 0;
+      let hadirSiswa = 0;
+      
+      if (myClasses.length > 0) {
+        // Fetch all students for these classes
+        const studentsPromises = myClasses.map(k => kelasAPI.getSantri(k.id));
+        const studentsResults = await Promise.all(studentsPromises);
+        
+        const allStudents = [];
+        studentsResults.forEach(students => {
+          (students || []).forEach(s => allStudents.push(s));
+        });
+        
+        totalSiswa = allStudents.length;
+        
+        // Fetch attendance for today
+        const absensiRes = await absensiAPI.getAll({ tanggal: today });
+        hadirSiswa = (absensiRes || []).filter(a => 
+          allStudents.some(s => s.id === a.santri_id) && a.status === 'hadir'
+        ).length;
+      }
 
       setStats({ hadir: hadirSiswa, total: totalSiswa });
+      
+      // Save managed classes text in state
+      const classNames = myClasses.map(c => c.nama_kelas).join(', ');
+      setManagedClassesText(classNames || '-');
     } catch (e) {
       console.error('Error loading teacher stats:', e);
     }
@@ -80,8 +102,8 @@ const TeacherDashboard = () => {
         </div>
         <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e293b', margin: '0 0 4px 0' }}>{guru.nama_lengkap}</h2>
         <p style={{ fontSize: '13px', color: '#64748b', margin: 0, fontWeight: '500' }}>
-          {guru.jabatan || 'Guru'} {guru.kelas?.nama_kelas ? `• Wali Kelas: ` : ''}
-          {guru.kelas?.nama_kelas && <span style={{ color: '#059669', fontWeight: 'bold' }}>{guru.kelas.nama_kelas}</span>}
+          {guru.jabatan || 'Guru'} {managedClassesText !== '-' ? `• Wali Kelas: ` : ''}
+          {managedClassesText !== '-' && <span style={{ color: '#059669', fontWeight: 'bold' }}>{managedClassesText}</span>}
         </p>
       </div>
 

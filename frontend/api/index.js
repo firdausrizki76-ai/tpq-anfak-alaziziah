@@ -899,12 +899,24 @@ app.get('/api/laporan/tabungan', async (req, res) => {
 
 app.get('/api/laporan/akademik', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('riwayat_kelas')
+    const { data: history, error } = await supabase.from('riwayat_kelas')
       .select('*, santri:santri_id(nama_lengkap, nomor_induk), kelas_dari:kelas_dari_id(nama_kelas), kelas_ke:kelas_ke_id(nama_kelas)')
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    ok(res, { data });
+
+    // Fetch all active target_pencapaian to filter out not-yet-promoted students
+    const { data: targets, error: errorTarget } = await supabase.from('target_pencapaian').select('santri_id, kelas_id');
+    if (errorTarget) throw errorTarget;
+
+    const activeTargets = new Set((targets || []).map(t => `${t.santri_id}:${t.kelas_id}`));
+
+    const filteredData = (history || []).filter(h => {
+      const isNotPromotedYet = h.kelas_ke_id === h.kelas_dari_id && activeTargets.has(`${h.santri_id}:${h.kelas_dari_id}`);
+      return !isNotPromotedYet;
+    });
+
+    ok(res, { data: filteredData });
   } catch (e) { fail(res, e.message, 500); }
 });
 
@@ -1053,12 +1065,28 @@ app.post('/api/ujian/nilai', async (req, res) => {
 
 app.get('/api/ujian/history/:santriId', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('riwayat_kelas')
+    const { data: history, error: errorHistory } = await supabase.from('riwayat_kelas')
       .select('*, kelas_dari:kelas_dari_id(nama_kelas), kelas_ke:kelas_ke_id(nama_kelas)')
       .eq('santri_id', req.params.santriId)
       .order('created_at', { ascending: false });
-    if (error) throw error;
-    ok(res, data);
+    if (errorHistory) throw errorHistory;
+
+    // Fetch active target_pencapaian to check which classes the student is still actively in
+    const { data: targets, error: errorTarget } = await supabase.from('target_pencapaian')
+      .select('kelas_id')
+      .eq('santri_id', req.params.santriId);
+    if (errorTarget) throw errorTarget;
+
+    const activeClassIds = (targets || []).map(t => t.kelas_id);
+
+    // If kelas_ke_id === kelas_dari_id and the student is still active in target_pencapaian for that class,
+    // it means they just scored but haven't been promoted ("nanti saja").
+    const filteredHistory = (history || []).filter(h => {
+      const isNotPromotedYet = h.kelas_ke_id === h.kelas_dari_id && activeClassIds.includes(h.kelas_dari_id);
+      return !isNotPromotedYet;
+    });
+
+    ok(res, filteredHistory);
   } catch (e) { fail(res, e.message, 500); }
 });
 
@@ -1068,6 +1096,15 @@ app.put('/api/ujian/history/:id', async (req, res) => {
     const { data, error } = await supabase.from('riwayat_kelas').update(req.body).eq('id', id).select().single();
     if (error) throw error;
     ok(res, data, 'Riwayat pendidikan berhasil diperbarui');
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+app.delete('/api/ujian/history/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabase.from('riwayat_kelas').delete().eq('id', id);
+    if (error) throw error;
+    ok(res, null, 'Riwayat pendidikan berhasil dihapus');
   } catch (e) { fail(res, e.message, 500); }
 });
 

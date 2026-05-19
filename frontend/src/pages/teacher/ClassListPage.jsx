@@ -8,6 +8,7 @@ const ClassListPage = () => {
   const [santriList, setSantriList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [guru, setGuru] = useState(null);
+  const [kelasNames, setKelasNames] = useState('-');
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('tpq_user'));
@@ -22,25 +23,34 @@ const ClassListPage = () => {
   const loadSantri = async (userData) => {
     setLoading(true);
     try {
-      // If guru has kelas_id, use it directly. Otherwise look up via kelas wali_kelas_id
-      let kelasId = userData.kelas_id;
+      // Fetch kelas list and find all classes where wali_kelas_id = guru.id
+      const kelasList = await kelasAPI.getAll();
+      const myClasses = (kelasList || []).filter(k => k.wali_kelas_id === userData.id || k.wali_kelas?.id === userData.id);
       
-      if (!kelasId) {
-        // Fetch kelas list and find one where wali_kelas_id = guru.id
-        const kelasList = await kelasAPI.getAll();
-        const myKelas = (kelasList || []).find(k => k.wali_kelas_id === userData.id || k.wali_kelas?.id === userData.id);
-        if (myKelas) kelasId = myKelas.id;
-      }
+      setKelasNames(myClasses.map(c => c.nama_kelas).join(', ') || '-');
 
-      if (kelasId) {
-        const data = await kelasAPI.getSantri(kelasId);
+      if (myClasses.length > 0) {
+        // Fetch students for all classes
+        const studentsPromises = myClasses.map(k => kelasAPI.getSantri(k.id));
+        const studentsResults = await Promise.all(studentsPromises);
         
-        // Fetch saldo for each santri
+        const allStudents = [];
+        studentsResults.forEach((students, index) => {
+          const className = myClasses[index].nama_kelas;
+          (students || []).forEach(s => {
+            allStudents.push({
+              ...s,
+              nama_kelas_custom: className
+            });
+          });
+        });
+
+        // Fetch tabungan
         const tabunganData = await tabunganAPI.getAll({ guru_id: userData.id }).catch(() => []);
         const saldoMap = {};
         (tabunganData || []).forEach(s => { saldoMap[s.id] = s.saldo || 0; });
 
-        const enriched = (data || []).map(s => ({
+        const enriched = allStudents.map(s => ({
           ...s,
           saldo: saldoMap[s.id] || 0
         }));
@@ -56,7 +66,7 @@ const ClassListPage = () => {
   const formatRp = (n) => `Rp ${(n||0).toLocaleString('id-ID')}`;
 
   // Resolve kelas name from guru data
-  const kelasName = guru?.kelas?.nama_kelas || guru?.nama_kelas || '-';
+  const kelasName = kelasNames;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', minHeight: '100vh', backgroundColor: '#f8fafc', paddingBottom: '96px', fontFamily: 'var(--font-family-body, sans-serif)' }}>
@@ -109,6 +119,15 @@ const ClassListPage = () => {
                    }}>
                     {(santri.status || 'aktif')}
                   </span>
+                  {santri.nama_kelas_custom && (
+                    <span style={{ 
+                      fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px',
+                      backgroundColor: '#eff6ff',
+                      color: '#2563eb'
+                    }}>
+                     {santri.nama_kelas_custom}
+                    </span>
+                  )}
                   {santri.saldo > 0 && (
                     <span style={{ fontSize: '10px', padding: '4px 10px', borderRadius: '20px', fontWeight: '800', backgroundColor: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Wallet size={12} /> {formatRp(santri.saldo)}

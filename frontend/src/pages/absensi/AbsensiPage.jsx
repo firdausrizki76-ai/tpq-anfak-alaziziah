@@ -333,6 +333,65 @@ const AbsensiPage = () => {
           </div>
         </div></div>
       )}
+
+      {/* Print-only duplicate of QR Results */}
+      {qrResults.length > 0 && (
+        <div id="print-semua-qr" className="print-only">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', padding: '20px' }}>
+            {qrResults.map(s => (
+              <div key={s.id} style={{ border: '2px dashed #ccc', padding: '15px', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', backgroundColor: 'white', pageBreakInside: 'avoid' }}>
+                <div style={{ width: '100px', height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${s.nomor_induk}`} 
+                    alt={`QR ${s.nomor_induk}`}
+                    style={{ width: '90px', height: '90px' }}
+                  />
+                </div>
+                <p style={{ fontSize: '12px', fontWeight: 'bold', margin: '4px 0 2px 0', color: '#1e293b' }}>{s.nama_lengkap}</p>
+                <p style={{ fontSize: '10px', color: '#64748b', margin: 0 }}>{s.nomor_induk}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <style>{`
+        @media screen {
+          .print-only { display: none; }
+        }
+        @media print {
+          @page { size: A4 portrait; margin: 10mm; }
+          
+          /* Hide everything by default */
+          body * { visibility: hidden; }
+          
+          /* Show only the print container and its contents */
+          #print-semua-qr, #print-semua-qr * { visibility: visible; }
+          
+          /* Position the print container and force parents to be visible but not show their own content */
+          #print-semua-qr {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+          }
+          
+          /* Crucial: parents must not clip or hide the absolute child */
+          html, body, #root, .app-layout, .main-wrapper, .content-area, .content-container, .flex-col {
+            visibility: visible !important;
+            overflow: visible !important;
+            height: auto !important;
+            min-height: 0 !important;
+            position: static !important;
+            display: block !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

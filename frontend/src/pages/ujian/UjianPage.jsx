@@ -187,6 +187,18 @@ const UjianPage = () => {
     setSaving(false);
   };
 
+  const handleDeleteHistory = async (id) => {
+    if (!window.confirm('Apakah Anda yakin ingin menghapus riwayat pendidikan ini?')) return;
+    try {
+      await ujianAPI.deleteHistory(id);
+      
+      // Refresh history
+      const data = await ujianAPI.getHistory(selectedSantri.santri_id);
+      setHistoryList(data || []);
+      alert('Riwayat berhasil dihapus');
+    } catch (e) { alert(e.message); }
+  };
+
   const handlePrintKartu = (item) => {
     setPrintSantri(item);
     setTimeout(() => window.print(), 100);
@@ -571,22 +583,30 @@ const UjianPage = () => {
                           <div className="flex gap-2">
                             <span className={`badge ${h.status_tes === 'lulus' ? 'badge-success' : 'badge-danger'}`}>{h.status_tes}</span>
                             {isAdminOrKepala && (
-                              <button 
-                                className="p-1 px-2 text-[10px] bg-white border border-orange-200 text-orange-600 rounded hover:bg-orange-50 font-bold"
-                                onClick={() => {
-                                  setEditingHistory(h);
-                                  setFormData({
-                                    nilai: h.nilai_tes || '',
-                                    hasil: h.status_tes || 'lulus',
-                                    keterangan: h.catatan || '',
-                                    tanggal_naik: h.tanggal_naik || '',
-                                    tanggal_mulai: h.tanggal_mulai || '',
-                                    tanggal_selesai: h.tanggal_selesai || ''
-                                  });
-                                }}
-                              >
-                                EDIT
-                              </button>
+                              <div className="flex gap-1">
+                                <button 
+                                  className="p-1 px-2 text-[10px] bg-white border border-orange-200 text-orange-600 rounded hover:bg-orange-50 font-bold"
+                                  onClick={() => {
+                                    setEditingHistory(h);
+                                    setFormData({
+                                      nilai: h.nilai_tes || '',
+                                      hasil: h.status_tes || 'lulus',
+                                      keterangan: h.catatan || '',
+                                      tanggal_naik: h.tanggal_naik || '',
+                                      tanggal_mulai: h.tanggal_mulai || '',
+                                      tanggal_selesai: h.tanggal_selesai || ''
+                                    });
+                                  }}
+                                >
+                                  EDIT
+                                </button>
+                                <button 
+                                  className="p-1 px-2 text-[10px] bg-white border border-red-200 text-red-600 rounded hover:bg-red-50 font-bold"
+                                  onClick={() => handleDeleteHistory(h.id)}
+                                >
+                                  HAPUS
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>

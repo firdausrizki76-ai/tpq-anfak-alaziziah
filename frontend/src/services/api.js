@@ -104,6 +104,7 @@ export const ujianAPI = {
   naikKelas: (body) => request('/ujian/naik-kelas', { method: 'POST', body }),
   getHistory: (santriId) => request(`/ujian/history/${santriId}`),
   updateHistory: (id, body) => request(`/ujian/history/${id}`, { method: 'PUT', body }),
+  deleteHistory: (id) => request(`/ujian/history/${id}`, { method: 'DELETE' }),
   delete: (id) => request(`/ujian/${id}`, { method: 'DELETE' }),
 };
 
