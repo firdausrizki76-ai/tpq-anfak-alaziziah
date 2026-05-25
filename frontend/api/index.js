@@ -587,37 +587,9 @@ app.put('/api/pembayaran/:id', async (req, res) => {
     const { data, error } = await supabase.from('pembayaran')
       .update({ status, tanggal_bayar, metode_bayar, catatan })
       .eq('id', req.params.id)
-      .select('*, jenis:jenis_pembayaran_id(nama)').single();
+      .select().single();
     
     if (error) throw error;
-
-    // 3. Jika ini adalah pembayaran Tabungan Wajib, masukkan sebagai setoran di tabungan santri
-    if (data && data.status === 'lunas' && data.jenis?.nama?.toLowerCase().includes('tabungan wajib')) {
-      const { data: existingTabungan } = await supabase.from('tabungan_santri')
-        .select('id')
-        .eq('santri_id', data.santri_id)
-        .eq('keterangan', `Setoran Tabungan Wajib (Ref: ${data.id})`)
-        .maybeSingle();
-
-      if (!existingTabungan) {
-        // Ambil saldo saat ini
-        const { data: history } = await supabase.from('tabungan_santri')
-          .select('jenis, nominal')
-          .eq('santri_id', data.santri_id);
-        
-        let saldo = (history || []).reduce((s, t) => s + (t.jenis === 'setor' ? t.nominal : -t.nominal), 0);
-        const newSaldo = saldo + data.nominal;
-
-        await supabase.from('tabungan_santri').insert({
-          santri_id: data.santri_id,
-          jenis: 'setor',
-          nominal: data.nominal,
-          saldo_setelah: newSaldo,
-          keterangan: `Setoran Tabungan Wajib (Ref: ${data.id})`,
-          tanggal: data.tanggal_bayar || new Date().toISOString().split('T')[0]
-        });
-      }
-    }
 
     ok(res, data, 'Pembayaran berhasil dikonfirmasi');
   } catch (e) { fail(res, e.message, 500); }
@@ -650,28 +622,8 @@ app.post('/api/pembayaran', async (req, res) => {
   try {
     const insertData = { ...req.body };
     if (!insertData.id) delete insertData.id;
-    const { data, error } = await supabase.from('pembayaran').insert(insertData).select('*, jenis:jenis_pembayaran_id(nama)').single();
+    const { data, error } = await supabase.from('pembayaran').insert(insertData).select().single();
     if (error) throw error;
-
-    // Jika ini adalah pembayaran Tabungan Wajib yang langsung lunas, masukkan sebagai setoran di tabungan santri
-    if (data && data.status === 'lunas' && data.jenis?.nama?.toLowerCase().includes('tabungan wajib')) {
-      // Ambil saldo saat ini
-      const { data: history } = await supabase.from('tabungan_santri')
-        .select('jenis, nominal')
-        .eq('santri_id', data.santri_id);
-      
-      let saldo = (history || []).reduce((s, t) => s + (t.jenis === 'setor' ? t.nominal : -t.nominal), 0);
-      const newSaldo = saldo + data.nominal;
-
-      await supabase.from('tabungan_santri').insert({
-        santri_id: data.santri_id,
-        jenis: 'setor',
-        nominal: data.nominal,
-        saldo_setelah: newSaldo,
-        keterangan: `Setoran Tabungan Wajib (Ref: ${data.id})`,
-        tanggal: data.tanggal_bayar || new Date().toISOString().split('T')[0]
-      });
-    }
 
     ok(res, data, 'Pembayaran berhasil dicatat');
   } catch (e) { fail(res, e.message, 500); }
@@ -719,9 +671,6 @@ app.post('/api/pembayaran/generate', async (req, res) => {
 
 app.delete('/api/pembayaran/:id', async (req, res) => {
   try {
-    // Delete any associated tabungan record first
-    await supabase.from('tabungan_santri').delete().eq('keterangan', `Setoran Tabungan Wajib (Ref: ${req.params.id})`);
-
     const { error } = await supabase.from('pembayaran').delete().eq('id', req.params.id);
     if (error) throw error;
     ok(res, null, 'Data pembayaran berhasil dihapus');

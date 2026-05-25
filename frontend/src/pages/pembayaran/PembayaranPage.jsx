@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, Printer, CheckCircle, AlertCircle, X, Save, Receipt, CreditCard, Calendar, Users, Settings, Loader2, MessageCircle, Trash2 } from 'lucide-react';
+import { Search, Filter, Plus, Printer, CheckCircle, AlertCircle, X, Save, Receipt, CreditCard, Calendar, Users, Settings, Loader2, MessageCircle, Trash2, ArrowUpCircle } from 'lucide-react';
 import { pembayaranAPI, santriAPI, jenisPembayaranAPI, kelasAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 
@@ -23,6 +23,9 @@ const PembayaranPage = () => {
   const [formData, setFormData] = useState({ id: '', santri_id: '', jenis_pembayaran_id: '', nominal: '', tanggal_bayar: new Date().toISOString().split('T')[0], metode_bayar: 'tunai', bulan: new Date().getMonth()+1, tahun: new Date().getFullYear(), status: 'lunas', catatan: '' });
   const [billingData, setBillingData] = useState({ jenis_pembayaran_id: '', nominal: '50000', kelas_id: '', bulan: new Date().getMonth()+1, tahun: new Date().getFullYear() });
   const [manualBillingData, setManualBillingData] = useState({ santri_id: '', jenis_pembayaran_id: '', nominal: '', bulan: new Date().getMonth()+1, tahun: new Date().getFullYear(), catatan: '' });
+  const [tarikWajibForm, setTarikWajibForm] = useState({ santri_id: '', nominal: '', catatan: '' });
+  const [selectedSantriWajibBalance, setSelectedSantriWajibBalance] = useState(0);
+  const [loadingWajibBalance, setLoadingWajibBalance] = useState(false);
   const [jenisForm, setJenisForm] = useState({ nama: '', kategori: 'bulanan', nominal_default: '' });
 
   useEffect(() => { loadData(); }, []);
@@ -48,7 +51,7 @@ const PembayaranPage = () => {
     setLoading(false);
   };
 
-  const closeModal = () => { setActiveModal(null); setSelectedJenis(null); setUnpaidBills([]); setSelectedBillId(''); setJenisForm({ nama: '', kategori: 'bulanan', nominal_default: '' }); setManualBillingData({ santri_id: '', jenis_pembayaran_id: '', nominal: '', bulan: new Date().getMonth()+1, tahun: new Date().getFullYear(), catatan: '' }); };
+  const closeModal = () => { setActiveModal(null); setSelectedJenis(null); setUnpaidBills([]); setSelectedBillId(''); setJenisForm({ nama: '', kategori: 'bulanan', nominal_default: '' }); setManualBillingData({ santri_id: '', jenis_pembayaran_id: '', nominal: '', bulan: new Date().getMonth()+1, tahun: new Date().getFullYear(), catatan: '' }); setTarikWajibForm({ santri_id: '', nominal: '', catatan: '' }); setSelectedSantriWajibBalance(0); };
   
   const handleInputChange = async (e) => {
     const { name, value } = e.target;
@@ -102,6 +105,25 @@ const PembayaranPage = () => {
     }
   };
 
+  const handleTarikWajibChange = async (e) => {
+    const { name, value } = e.target;
+    setTarikWajibForm(prev => ({ ...prev, [name]: value }));
+
+    if (name === 'santri_id' && value) {
+      setLoadingWajibBalance(true);
+      try {
+        const data = await pembayaranAPI.getAll({ santri_id: value });
+        const totalWajib = (data || [])
+          .filter(p => p.status === 'lunas' && (p.jenis?.nama || p.jenis_pembayaran?.nama || '').toLowerCase().includes('tabungan wajib'))
+          .reduce((sum, p) => sum + p.nominal, 0);
+        setSelectedSantriWajibBalance(totalWajib);
+      } catch (err) {
+        console.error(err);
+      }
+      setLoadingWajibBalance(false);
+    }
+  };
+
   const handleSubmitManualBilling = async (e) => {
     e.preventDefault(); setSaving(true);
     try {
@@ -116,6 +138,44 @@ const PembayaranPage = () => {
       closeModal();
       alert('Tagihan manual berhasil dibuat!');
     } catch (e) { alert(e.message); }
+    setSaving(false);
+  };
+
+  const handleSubmitTarikWajib = async (e) => {
+    e.preventDefault();
+    if (!tarikWajibForm.santri_id) return;
+    if (parseInt(tarikWajibForm.nominal) > selectedSantriWajibBalance) {
+      alert('Saldo Tabungan Wajib tidak mencukupi!');
+      return;
+    }
+    
+    // Find Tabungan Wajib type
+    const wajibType = jenisList.find(j => j.nama.toLowerCase().includes('tabungan wajib'));
+    if (!wajibType) {
+      alert('Jenis tagihan "Tabungan Wajib" tidak ditemukan! Silakan buat terlebih dahulu di menu "Kelola Jenis".');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        santri_id: tarikWajibForm.santri_id,
+        jenis_pembayaran_id: wajibType.id,
+        nominal: -parseInt(tarikWajibForm.nominal), // negative!
+        status: 'lunas',
+        tanggal_bayar: new Date().toISOString().split('T')[0],
+        catatan: tarikWajibForm.catatan || 'Penarikan Tabungan Wajib',
+        bulan: new Date().getMonth() + 1,
+        tahun: new Date().getFullYear(),
+        tahun_ajaran: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`
+      };
+      await pembayaranAPI.create(payload);
+      await loadData();
+      closeModal();
+      alert('Penarikan Tabungan Wajib berhasil dicatat!');
+    } catch (err) {
+      alert(err.message);
+    }
     setSaving(false);
   };
 
@@ -242,6 +302,7 @@ const PembayaranPage = () => {
           <button className="btn-primary" style={{ backgroundColor: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }} onClick={() => setActiveModal('kelola_jenis')}><Settings size={18} /> Kelola Jenis</button>
           <button className="btn-primary" style={{ backgroundColor: 'white', color: 'var(--color-primary-container)', border: '1px solid var(--color-surface-container-highest)', borderBottom: '2px solid var(--color-gold)' }} onClick={() => setActiveModal('generate')}><Receipt size={18} /> Generate Tagihan</button>
           <button className="btn-primary" style={{ backgroundColor: 'white', color: 'var(--color-primary-container)', border: '1px solid var(--color-surface-container-highest)', borderBottom: '2px solid var(--color-gold)' }} onClick={() => setActiveModal('input_manual_tagihan')}><Plus size={18} /> Input Tagihan Manual</button>
+          <button className="btn-primary" style={{ backgroundColor: 'white', color: 'var(--color-primary-container)', border: '1px solid var(--color-surface-container-highest)', borderBottom: '2px solid var(--color-gold)' }} onClick={() => setActiveModal('tarik_tabungan_wajib')}><ArrowUpCircle size={18} /> Tarik Tabungan Wajib</button>
           <button className="btn-primary" onClick={() => setActiveModal('catat')}><Plus size={18} /> Catat Pembayaran</button>
         </div>
       </div>
@@ -423,6 +484,43 @@ const PembayaranPage = () => {
           <div className="modal-footer">
             <button type="button" className="btn-primary" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={closeModal}>Batal</button>
             <button type="submit" className="btn-primary" disabled={saving}><Save size={18} /> Simpan Tagihan</button>
+          </div></form>
+        </div></div>
+      )}
+
+      {activeModal === 'tarik_tabungan_wajib' && (
+        <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '500px' }}>
+          <div className="modal-header"><h2 className="modal-title">Tarik Tabungan Wajib</h2><X className="modal-close" onClick={closeModal} /></div>
+          <form onSubmit={handleSubmitTarikWajib}><div className="modal-body"><div className="space-y-4">
+            <div className="form-group">
+              <label className="form-label">Pilih Santri</label>
+              <select name="santri_id" className="input-field" value={tarikWajibForm.santri_id} onChange={handleTarikWajibChange} required>
+                <option value="">-- Pilih Santri --</option>
+                {santriList.map(s => <option key={s.id} value={s.id}>{s.nama_lengkap} ({s.kelas?.nama_kelas})</option>)}
+              </select>
+            </div>
+            {tarikWajibForm.santri_id && (
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 flex justify-between items-center">
+                <span className="text-sm text-gray-600 font-medium">Saldo Tabungan Wajib</span>
+                {loadingWajibBalance ? <Loader2 size={16} className="animate-spin text-blue-600" />
+                : <span className="font-bold text-blue-700">{formatRp(selectedSantriWajibBalance)}</span>}
+              </div>
+            )}
+            <div className="form-group">
+              <label className="form-label">Nominal Penarikan (Rp)</label>
+              <input type="number" name="nominal" className="input-field" value={tarikWajibForm.nominal} onChange={handleTarikWajibChange} required disabled={!tarikWajibForm.santri_id} />
+              {parseInt(tarikWajibForm.nominal) > selectedSantriWajibBalance && (
+                <p className="text-xs text-red-500 mt-1 font-semibold">Saldo tidak mencukupi!</p>
+              )}
+            </div>
+            <div className="form-group">
+              <label className="form-label">Catatan / Keperluan</label>
+              <textarea name="catatan" className="input-field" rows="2" style={{ resize: 'none' }} value={tarikWajibForm.catatan} onChange={handleTarikWajibChange} placeholder="Contoh: Penarikan saat kelulusan"></textarea>
+            </div>
+          </div></div>
+          <div className="modal-footer">
+            <button type="button" className="btn-primary" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={closeModal}>Batal</button>
+            <button type="submit" className="btn-primary" disabled={saving || !tarikWajibForm.santri_id || parseInt(tarikWajibForm.nominal) > selectedSantriWajibBalance}><ArrowUpCircle size={18} /> Konfirmasi Tarik</button>
           </div></form>
         </div></div>
       )}
