@@ -53,7 +53,7 @@ const Dashboard = () => {
         <p className="page-subtitle">Ringkasan aktivitas dan data TPQ hari ini.</p>
       </div>
 
-      <div className="stats-grid grid-4-cols mb-6">
+      <div className="stats-grid grid-5-cols mb-6">
         <StatCard 
           title="Total Santri Aktif" 
           value={stats?.totalSantri ?? '—'} 
@@ -63,9 +63,16 @@ const Dashboard = () => {
           loading={loading}
         />
         <StatCard 
-          title="Hadir Hari Ini" 
+          title="Hadir Hari Ini (Santri)" 
           value={stats ? `${stats.hadirHariIni} / ${stats.totalSantri}` : '—'} 
           subtext={stats ? `Tingkat kehadiran ${stats.totalSantri > 0 ? Math.round((stats.hadirHariIni / stats.totalSantri) * 100) : 0}%` : '—'} 
+          icon={UserCheck}
+          loading={loading}
+        />
+        <StatCard 
+          title="Hadir Hari Ini (Guru)" 
+          value={stats ? `${stats.hadirGuruHariIni} / ${stats.totalGuru}` : '—'} 
+          subtext={stats ? `Tingkat kehadiran guru ${stats.totalGuru > 0 ? Math.round((stats.hadirGuruHariIni / stats.totalGuru) * 100) : 0}%` : '—'} 
           icon={UserCheck}
           loading={loading}
         />

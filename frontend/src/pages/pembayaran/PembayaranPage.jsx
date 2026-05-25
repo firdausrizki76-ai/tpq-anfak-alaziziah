@@ -22,6 +22,7 @@ const PembayaranPage = () => {
   const [selectedSantri, setSelectedSantri] = useState(null);
   const [formData, setFormData] = useState({ id: '', santri_id: '', jenis_pembayaran_id: '', nominal: '', tanggal_bayar: new Date().toISOString().split('T')[0], metode_bayar: 'tunai', bulan: new Date().getMonth()+1, tahun: new Date().getFullYear(), status: 'lunas', catatan: '' });
   const [billingData, setBillingData] = useState({ jenis_pembayaran_id: '', nominal: '50000', kelas_id: '', bulan: new Date().getMonth()+1, tahun: new Date().getFullYear() });
+  const [manualBillingData, setManualBillingData] = useState({ santri_id: '', jenis_pembayaran_id: '', nominal: '', bulan: new Date().getMonth()+1, tahun: new Date().getFullYear(), catatan: '' });
   const [jenisForm, setJenisForm] = useState({ nama: '', kategori: 'bulanan', nominal_default: '' });
 
   useEffect(() => { loadData(); }, []);
@@ -47,7 +48,7 @@ const PembayaranPage = () => {
     setLoading(false);
   };
 
-  const closeModal = () => { setActiveModal(null); setSelectedJenis(null); setUnpaidBills([]); setSelectedBillId(''); setJenisForm({ nama: '', kategori: 'bulanan', nominal_default: '' }); };
+  const closeModal = () => { setActiveModal(null); setSelectedJenis(null); setUnpaidBills([]); setSelectedBillId(''); setJenisForm({ nama: '', kategori: 'bulanan', nominal_default: '' }); setManualBillingData({ santri_id: '', jenis_pembayaran_id: '', nominal: '', bulan: new Date().getMonth()+1, tahun: new Date().getFullYear(), catatan: '' }); };
   
   const handleInputChange = async (e) => {
     const { name, value } = e.target;
@@ -89,6 +90,33 @@ const PembayaranPage = () => {
     } else {
       setBillingData(prev => ({ ...prev, [name]: value }));
     }
+  };
+
+  const handleManualBillingChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'jenis_pembayaran_id') {
+      const selected = jenisList.find(j => j.id === value);
+      setManualBillingData(prev => ({ ...prev, [name]: value, nominal: selected?.nominal_default || prev.nominal }));
+    } else {
+      setManualBillingData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleSubmitManualBilling = async (e) => {
+    e.preventDefault(); setSaving(true);
+    try {
+      const payload = {
+        ...manualBillingData,
+        status: 'belum',
+        metode_bayar: 'tunai',
+        tahun_ajaran: `${manualBillingData.tahun}/${parseInt(manualBillingData.tahun) + 1}`
+      };
+      await pembayaranAPI.create(payload);
+      await loadData();
+      closeModal();
+      alert('Tagihan manual berhasil dibuat!');
+    } catch (e) { alert(e.message); }
+    setSaving(false);
   };
 
   const formatRp = (n) => `Rp ${(n||0).toLocaleString('id-ID')}`;
@@ -212,6 +240,7 @@ const PembayaranPage = () => {
         <div className="flex gap-2">
           <button className="btn-primary" style={{ backgroundColor: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }} onClick={() => setActiveModal('kelola_jenis')}><Settings size={18} /> Kelola Jenis</button>
           <button className="btn-primary" style={{ backgroundColor: 'white', color: 'var(--color-primary-container)', border: '1px solid var(--color-surface-container-highest)', borderBottom: '2px solid var(--color-gold)' }} onClick={() => setActiveModal('generate')}><Receipt size={18} /> Generate Tagihan</button>
+          <button className="btn-primary" style={{ backgroundColor: 'white', color: 'var(--color-primary-container)', border: '1px solid var(--color-surface-container-highest)', borderBottom: '2px solid var(--color-gold)' }} onClick={() => setActiveModal('input_manual_tagihan')}><Plus size={18} /> Input Tagihan Manual</button>
           <button className="btn-primary" onClick={() => setActiveModal('catat')}><Plus size={18} /> Catat Pembayaran</button>
         </div>
       </div>
@@ -302,14 +331,19 @@ const PembayaranPage = () => {
             {formData.santri_id && (
               <div className="form-group">
                 <label className="form-label">Pilih Tagihan Belum Lunas</label>
-                {loadingBills ? <div className="text-xs text-gray-500 py-2 flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Mencari tagihan...</div>
-                : unpaidBills.length === 0 ? <div className="text-xs text-emerald-600 font-semibold py-2">Semua tagihan santri ini sudah lunas!</div>
-                : (
+                {loadingBills ? (
+                  <div className="text-xs text-gray-500 py-2 flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Mencari tagihan...</div>
+                ) : (
                   <select className="input-field bg-blue-50 border-blue-200" value={selectedBillId} onChange={(e) => handleSelectBill(e.target.value)}>
                     <option value="">-- Pilih Tagihan --</option>
-                    {unpaidBills.map(b => <option key={b.id} value={b.id}>{b.jenis?.nama || 'Tagihan'} - {b.bulan}/{b.tahun} ({formatRp(b.nominal)})</option>)}
+                    {unpaidBills.map(b => (
+                      <option key={b.id} value={b.id}>{b.jenis?.nama || 'Tagihan'} - {b.bulan}/{b.tahun} ({formatRp(b.nominal)})</option>
+                    ))}
                     <option value="manual">+ Input Manual (Tagihan Baru)</option>
                   </select>
+                )}
+                {!loadingBills && unpaidBills.length === 0 && (
+                  <div className="text-xs text-emerald-600 font-semibold mt-1">Semua tagihan santri ini sudah lunas. Gunakan opsi "+ Input Manual" di atas untuk mencatat pembayaran baru.</div>
                 )}
               </div>
             )}
@@ -350,6 +384,44 @@ const PembayaranPage = () => {
           <div className="modal-footer">
             <button type="button" className="btn-primary" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={closeModal}>Batal</button>
             <button type="submit" className="btn-primary" disabled={saving}><Receipt size={18} /> Generate</button>
+          </div></form>
+        </div></div>
+      )}
+
+      {activeModal === 'input_manual_tagihan' && (
+        <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '500px' }}>
+          <div className="modal-header"><h2 className="modal-title">Input Tagihan Manual</h2><X className="modal-close" onClick={closeModal} /></div>
+          <form onSubmit={handleSubmitManualBilling}><div className="modal-body"><div className="space-y-4">
+            <div className="form-group">
+              <label className="form-label">Pilih Santri</label>
+              <select name="santri_id" className="input-field" value={manualBillingData.santri_id} onChange={handleManualBillingChange} required>
+                <option value="">-- Pilih Santri --</option>
+                {santriList.map(s => <option key={s.id} value={s.id}>{s.nama_lengkap} ({s.kelas?.nama_kelas})</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Jenis Tagihan</label>
+              <select name="jenis_pembayaran_id" className="input-field" value={manualBillingData.jenis_pembayaran_id} onChange={handleManualBillingChange} required>
+                <option value="">-- Pilih Jenis Tagihan --</option>
+                {jenisList.map(j => <option key={j.id} value={j.id}>{j.nama}</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="form-group"><label className="form-label">Bulan</label><input type="number" name="bulan" min="1" max="12" className="input-field" value={manualBillingData.bulan} onChange={handleManualBillingChange} required /></div>
+              <div className="form-group"><label className="form-label">Tahun</label><input type="number" name="tahun" className="input-field" value={manualBillingData.tahun} onChange={handleManualBillingChange} required /></div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Nominal (Rp)</label>
+              <input type="number" name="nominal" className="input-field" value={manualBillingData.nominal} onChange={handleManualBillingChange} required />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Catatan</label>
+              <textarea name="catatan" className="input-field" rows="2" style={{ resize: 'none' }} value={manualBillingData.catatan} onChange={handleManualBillingChange}></textarea>
+            </div>
+          </div></div>
+          <div className="modal-footer">
+            <button type="button" className="btn-primary" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={closeModal}>Batal</button>
+            <button type="submit" className="btn-primary" disabled={saving}><Save size={18} /> Simpan Tagihan</button>
           </div></form>
         </div></div>
       )}

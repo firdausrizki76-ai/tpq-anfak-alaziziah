@@ -18,10 +18,22 @@
   gap: 24px;
 }
 
+.grid-5-cols {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 24px;
+}
+
 .grid-2-cols {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 24px;
+}
+
+@media (max-width: 1200px) {
+  .grid-5-cols {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 @media (max-width: 1024px) {
@@ -30,8 +42,20 @@
   }
 }
 
+@media (max-width: 900px) {
+  .grid-5-cols {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .grid-4-cols, .grid-2-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .grid-5-cols {
     grid-template-columns: 1fr;
   }
 }

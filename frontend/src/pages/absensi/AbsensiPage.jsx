@@ -47,6 +47,8 @@ const AbsensiPage = () => {
           nomor_induk: g.nip,
           nama_lengkap: g.nama_lengkap
         }));
+      } else if (selectedKelas === 'all_santri') {
+        data = await santriAPI.getAll({ status: 'aktif' });
       } else {
         data = await kelasAPI.getSantri(selectedKelas);
       }
@@ -270,6 +272,7 @@ const AbsensiPage = () => {
                   <div className="form-group"><label className="form-label">Pilih Kelas</label>
                     <select className="input-field" value={selectedKelas} onChange={(e) => setSelectedKelas(e.target.value)}>
                       <option value="">-- Pilih Kelas --</option>
+                      <option value="all_santri" style={{ fontWeight: 'bold', color: 'var(--color-primary-container)' }}>-- SEMUA SANTRI --</option>
                       <option value="all_guru" style={{ fontWeight: 'bold', color: 'var(--color-primary-container)' }}>-- SEMUA GURU --</option>
                       {kelasList.map(k => <option key={k.id} value={k.id}>{k.nama_kelas}</option>)}
                     </select>
@@ -277,6 +280,8 @@ const AbsensiPage = () => {
                   <p className="text-sm text-gray-500 bg-blue-50 p-3 rounded-lg">
                     {selectedKelas === 'all_guru' 
                       ? 'Sistem akan membuat QR Code untuk seluruh tenaga pengajar (Guru).' 
+                      : selectedKelas === 'all_santri'
+                      ? 'Sistem akan membuat QR Code untuk seluruh santri aktif.'
                       : 'Sistem akan membuat QR Code untuk seluruh santri di kelas yang dipilih.'}
                   </p>
                 </div>

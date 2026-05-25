@@ -143,18 +143,22 @@ app.get('/api/dashboard/stats', async (req, res) => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const [santriRes, hadirRes, tunggakanRes, tabunganRes, trendDataRes, kelasRes, santriDistRes] = await Promise.all([
+    const [santriRes, hadirRes, tunggakanRes, tabunganRes, trendDataRes, kelasRes, santriDistRes, guruRes, hadirGuruRes] = await Promise.all([
       supabase.from('santri').select('id', { count: 'exact' }),
       supabase.from('absensi').select('id', { count: 'exact' }).eq('tanggal', today).eq('status', 'hadir').eq('tipe', 'santri'),
       supabase.from('pembayaran').select('nominal').eq('status', 'belum'),
       supabase.from('v_saldo_tabungan').select('saldo'),
       supabase.from('absensi').select('tanggal').eq('tipe', 'santri').eq('status', 'hadir').gte('tanggal', thirtyDaysAgo.toISOString().split('T')[0]),
       supabase.from('kelas').select('id, nama_kelas'),
-      supabase.from('santri').select('kelas_id')
+      supabase.from('santri').select('kelas_id'),
+      supabase.from('guru').select('id', { count: 'exact' }).eq('status', 'aktif'),
+      supabase.from('absensi').select('id', { count: 'exact' }).eq('tanggal', today).eq('status', 'hadir').eq('tipe', 'guru')
     ]);
 
     const totalSantri = santriRes.count || 0;
     const hadirHariIni = hadirRes.count || 0;
+    const totalGuru = guruRes.count || 0;
+    const hadirGuruHariIni = hadirGuruRes.count || 0;
     const tunggakan = (tunggakanRes.data || []).reduce((sum, p) => sum + (p.nominal || 0), 0);
     const totalTabungan = (tabunganRes.data || []).reduce((sum, t) => sum + (t.saldo || 0), 0);
 
@@ -177,7 +181,7 @@ app.get('/api/dashboard/stats', async (req, res) => {
       return { label: k.nama_kelas, value: count };
     });
 
-    ok(res, { totalSantri, hadirHariIni, tunggakan, totalTabungan, kehadiranTrend, distribusiKelas });
+    ok(res, { totalSantri, hadirHariIni, totalGuru, hadirGuruHariIni, tunggakan, totalTabungan, kehadiranTrend, distribusiKelas });
   } catch (e) { fail(res, e.message, 500); }
 });
 
@@ -583,9 +587,38 @@ app.put('/api/pembayaran/:id', async (req, res) => {
     const { data, error } = await supabase.from('pembayaran')
       .update({ status, tanggal_bayar, metode_bayar, catatan })
       .eq('id', req.params.id)
-      .select().single();
+      .select('*, jenis:jenis_pembayaran_id(nama)').single();
     
     if (error) throw error;
+
+    // 3. Jika ini adalah pembayaran Tabungan Wajib, masukkan sebagai setoran di tabungan santri
+    if (data && data.status === 'lunas' && data.jenis?.nama?.toLowerCase().includes('tabungan wajib')) {
+      const { data: existingTabungan } = await supabase.from('tabungan_santri')
+        .select('id')
+        .eq('santri_id', data.santri_id)
+        .eq('keterangan', `Setoran Tabungan Wajib (Ref: ${data.id})`)
+        .maybeSingle();
+
+      if (!existingTabungan) {
+        // Ambil saldo saat ini
+        const { data: history } = await supabase.from('tabungan_santri')
+          .select('jenis, nominal')
+          .eq('santri_id', data.santri_id);
+        
+        let saldo = (history || []).reduce((s, t) => s + (t.jenis === 'setor' ? t.nominal : -t.nominal), 0);
+        const newSaldo = saldo + data.nominal;
+
+        await supabase.from('tabungan_santri').insert({
+          santri_id: data.santri_id,
+          jenis: 'setor',
+          nominal: data.nominal,
+          saldo_setelah: newSaldo,
+          keterangan: `Setoran Tabungan Wajib (Ref: ${data.id})`,
+          tanggal: data.tanggal_bayar || new Date().toISOString().split('T')[0]
+        });
+      }
+    }
+
     ok(res, data, 'Pembayaran berhasil dikonfirmasi');
   } catch (e) { fail(res, e.message, 500); }
 });
@@ -615,8 +648,29 @@ app.get('/api/pembayaran/stats', async (req, res) => {
 
 app.post('/api/pembayaran', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('pembayaran').insert(req.body).select().single();
+    const { data, error } = await supabase.from('pembayaran').insert(req.body).select('*, jenis:jenis_pembayaran_id(nama)').single();
     if (error) throw error;
+
+    // Jika ini adalah pembayaran Tabungan Wajib yang langsung lunas, masukkan sebagai setoran di tabungan santri
+    if (data && data.status === 'lunas' && data.jenis?.nama?.toLowerCase().includes('tabungan wajib')) {
+      // Ambil saldo saat ini
+      const { data: history } = await supabase.from('tabungan_santri')
+        .select('jenis, nominal')
+        .eq('santri_id', data.santri_id);
+      
+      let saldo = (history || []).reduce((s, t) => s + (t.jenis === 'setor' ? t.nominal : -t.nominal), 0);
+      const newSaldo = saldo + data.nominal;
+
+      await supabase.from('tabungan_santri').insert({
+        santri_id: data.santri_id,
+        jenis: 'setor',
+        nominal: data.nominal,
+        saldo_setelah: newSaldo,
+        keterangan: `Setoran Tabungan Wajib (Ref: ${data.id})`,
+        tanggal: data.tanggal_bayar || new Date().toISOString().split('T')[0]
+      });
+    }
+
     ok(res, data, 'Pembayaran berhasil dicatat');
   } catch (e) { fail(res, e.message, 500); }
 });
@@ -663,6 +717,9 @@ app.post('/api/pembayaran/generate', async (req, res) => {
 
 app.delete('/api/pembayaran/:id', async (req, res) => {
   try {
+    // Delete any associated tabungan record first
+    await supabase.from('tabungan_santri').delete().eq('keterangan', `Setoran Tabungan Wajib (Ref: ${req.params.id})`);
+
     const { error } = await supabase.from('pembayaran').delete().eq('id', req.params.id);
     if (error) throw error;
     ok(res, null, 'Data pembayaran berhasil dihapus');
