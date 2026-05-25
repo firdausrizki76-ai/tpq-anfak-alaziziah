@@ -648,7 +648,9 @@ app.get('/api/pembayaran/stats', async (req, res) => {
 
 app.post('/api/pembayaran', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('pembayaran').insert(req.body).select('*, jenis:jenis_pembayaran_id(nama)').single();
+    const insertData = { ...req.body };
+    if (!insertData.id) delete insertData.id;
+    const { data, error } = await supabase.from('pembayaran').insert(insertData).select('*, jenis:jenis_pembayaran_id(nama)').single();
     if (error) throw error;
 
     // Jika ini adalah pembayaran Tabungan Wajib yang langsung lunas, masukkan sebagai setoran di tabungan santri

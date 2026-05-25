@@ -134,7 +134,8 @@ const PembayaranPage = () => {
         });
       } else {
         // Create new manual payment
-        await pembayaranAPI.create(formData); 
+        const { id, ...payload } = formData;
+        await pembayaranAPI.create(payload); 
       }
       await loadData(); closeModal(); 
     } catch (e) { alert(e.message); }
