@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, ArrowDownCircle, ArrowUpCircle, X, Save, Users, CreditCard, Calendar, Wallet, Loader2, Send, Printer, History, Trash2 } from 'lucide-react';
-import { tabunganAPI, santriAPI } from '../../services/api';
+import { tabunganAPI, santriAPI, laporanAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 
 const TabunganPage = () => {
@@ -22,12 +22,41 @@ const TabunganPage = () => {
     year: new Date().getFullYear() 
   });
   const [formData, setFormData] = useState({ santri_id: '', nominal: '', tanggal: new Date().toISOString().split('T')[0], keterangan: '' });
+  const [allMutations, setAllMutations] = useState([]);
+  const [loadingMutations, setLoadingMutations] = useState(false);
+  const [mutasiFilter, setMutasiFilter] = useState({
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+    santri_id: '',
+    jenis: ''
+  });
   
   const user = JSON.parse(localStorage.getItem('tpq_user') || '{}');
   const isAdmin = user.role === 'admin';
   const isGuru = user.role === 'guru';
 
   useEffect(() => { loadData(); }, []);
+
+  const loadAllMutations = async (filter = null) => {
+    const f = filter || mutasiFilter;
+    setLoadingMutations(true);
+    try {
+      const startDate = `${f.year}-${f.month.toString().padStart(2, '0')}-01`;
+      const lastDay = new Date(f.year, f.month, 0).getDate();
+      const endDate = `${f.year}-${f.month.toString().padStart(2, '0')}-${lastDay}`;
+      const res = await laporanAPI.getTabungan({ dari: startDate, sampai: endDate });
+      setAllMutations(res.data || []);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoadingMutations(false);
+  };
+
+  useEffect(() => {
+    if (isAdmin && activeTab === 'mutasi_semua') {
+      loadAllMutations();
+    }
+  }, [activeTab, mutasiFilter.month, mutasiFilter.year]);
 
   const loadData = async () => {
     setLoading(true);
@@ -112,6 +141,9 @@ const TabunganPage = () => {
         const data = await tabunganAPI.getRiwayat(selectedSantri.id, riwayatFilter);
         setRiwayat(data || []);
       }
+      if (activeTab === 'mutasi_semua') {
+        await loadAllMutations();
+      }
     } catch (e) { alert(e.message); }
     setLoadingRiwayat(false);
   };
@@ -125,6 +157,20 @@ const TabunganPage = () => {
   );
 
   const myRekap = rekapGuru.find(r => r.guru_id === user.id) || { saldo_di_guru: 0 };
+
+  const filteredMutations = allMutations.filter(m => {
+    const matchSantri = !mutasiFilter.santri_id || m.santri_id === mutasiFilter.santri_id;
+    const matchJenis = !mutasiFilter.jenis || m.jenis === mutasiFilter.jenis;
+    return matchSantri && matchJenis;
+  });
+
+  const totalSetorMutasi = filteredMutations
+    .filter(m => m.jenis === 'setor')
+    .reduce((sum, m) => sum + m.nominal, 0);
+
+  const totalTarikMutasi = filteredMutations
+    .filter(m => m.jenis === 'tarik')
+    .reduce((sum, m) => sum + m.nominal, 0);
 
   return (
     <div className="flex-col gap-6 w-full">
@@ -196,6 +242,7 @@ const TabunganPage = () => {
         <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }} className="no-print">
           {[
             { id: 'santri', label: 'Data Santri', icon: <Users size={16} /> },
+            { id: 'mutasi_semua', label: 'Mutasi Semua Tabungan', icon: <History size={16} /> },
             { id: 'rekap_guru', label: 'Rekap Guru', icon: <Wallet size={16} /> },
             { id: 'rekap_admin', label: 'Rekap Pusat', icon: <CreditCard size={16} /> }
           ].map((tab) => {
@@ -224,6 +271,144 @@ const TabunganPage = () => {
               </button>
             )
           })}
+        </div>
+      )}
+
+      {isAdmin && activeTab === 'mutasi_semua' && (
+        <div className="card w-full printable-ledger" style={{ borderRadius: '12px', overflow: 'hidden', marginBottom: '24px' }}>
+          {/* Header & Print Button */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap', gap: '16px' }} className="no-print">
+            <h3 style={{ margin: 0, fontSize: '16px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <History size={20} color="#059669" /> Mutasi Semua Tabungan Santri
+            </h3>
+            <button className="btn-primary py-1.5 px-4 text-xs bg-white text-blue-600 border border-blue-200" onClick={downloadMutasi}>
+              <Printer size={14} /> Cetak Ledger
+            </button>
+          </div>
+
+          {/* Filters Row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 20px', backgroundColor: '#fdfdfd', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }} className="no-print">
+            <span className="text-sm font-semibold text-gray-600">Filter:</span>
+            <select className="input-field py-1.5 px-3 text-sm" style={{ width: '140px', backgroundColor: 'white' }} value={mutasiFilter.month} onChange={(e) => setMutasiFilter({...mutasiFilter, month: parseInt(e.target.value)})}>
+              {['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
+            </select>
+            <select className="input-field py-1.5 px-3 text-sm" style={{ width: '100px', backgroundColor: 'white' }} value={mutasiFilter.year} onChange={(e) => setMutasiFilter({...mutasiFilter, year: parseInt(e.target.value)})}>
+              {[2024,2025,2026,2027].map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+            <select className="input-field py-1.5 px-3 text-sm" style={{ width: '220px', backgroundColor: 'white' }} value={mutasiFilter.santri_id} onChange={(e) => setMutasiFilter({...mutasiFilter, santri_id: e.target.value})}>
+              <option value="">-- Semua Santri --</option>
+              {santriData.map(s => <option key={s.id} value={s.id}>{s.nama_lengkap} ({s.nomor_induk})</option>)}
+            </select>
+            <select className="input-field py-1.5 px-3 text-sm" style={{ width: '150px', backgroundColor: 'white' }} value={mutasiFilter.jenis} onChange={(e) => setMutasiFilter({...mutasiFilter, jenis: e.target.value})}>
+              <option value="">-- Semua Tipe --</option>
+              <option value="setor">Setor (Tabung)</option>
+              <option value="tarik">Tarik</option>
+            </select>
+          </div>
+
+          {/* Print Title (Only visible when printing) */}
+          <div className="print-only" style={{ padding: '20px', textAlign: 'center', borderBottom: '2px solid #333', marginBottom: '20px' }}>
+            <h2 style={{ margin: '0 0 5px 0', fontSize: '20px' }}>LAPORAN MUTASI TABUNGAN SANTRI</h2>
+            <p style={{ margin: 0, fontSize: '14px' }}>Periode: {['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][mutasiFilter.month-1]} {mutasiFilter.year}</p>
+            {mutasiFilter.santri_id && (
+              <p style={{ margin: '5px 0 0 0', fontSize: '13px', fontWeight: 'bold' }}>
+                Santri: {santriData.find(s => s.id === mutasiFilter.santri_id)?.nama_lengkap}
+              </p>
+            )}
+          </div>
+
+          {/* Stats Bar */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', padding: '20px', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '12px', color: '#047857' }}>
+              <ArrowDownCircle size={24} />
+              <div>
+                <p style={{ margin: 0, fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', opacity: 0.8 }}>Total Tabung (Setor)</p>
+                <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '900' }}>{formatRp(totalSetorMutasi)}</h4>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', color: '#b91c1c' }}>
+              <ArrowUpCircle size={24} />
+              <div>
+                <p style={{ margin: 0, fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', opacity: 0.8 }}>Total Tarik</p>
+                <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '900' }}>{formatRp(totalTarikMutasi)}</h4>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', color: '#1d4ed8' }} className="no-print">
+              <History size={24} />
+              <div>
+                <p style={{ margin: 0, fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', opacity: 0.8 }}>Jumlah Transaksi</p>
+                <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '900' }}>{filteredMutations.length}</h4>
+              </div>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="table-responsive" style={{ padding: '12px' }}>
+            <table className="data-table w-full">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Tanggal</th>
+                  <th>Nama Santri</th>
+                  <th>Kelas</th>
+                  <th>Tipe</th>
+                  <th>Nominal</th>
+                  <th>Saldo Setelahnya</th>
+                  <th>Keterangan</th>
+                  {isAdmin && <th className="text-center no-print">Aksi</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {loadingMutations ? (
+                  <tr>
+                    <td colSpan={isAdmin ? 9 : 8} style={{ textAlign: 'center', padding: '40px' }}>
+                      <Loader2 size={32} className="animate-spin" color="#059669" style={{ margin: '0 auto' }} />
+                    </td>
+                  </tr>
+                ) : filteredMutations.length === 0 ? (
+                  <tr>
+                    <td colSpan={isAdmin ? 9 : 8} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', fontStyle: 'italic' }}>
+                      Belum ada data mutasi tabungan
+                    </td>
+                  </tr>
+                ) : (
+                  filteredMutations.map((m, idx) => (
+                    <tr key={m.id}>
+                      <td>{idx + 1}</td>
+                      <td style={{ color: '#64748b' }}>{new Date(m.tanggal).toLocaleDateString('id-ID')}</td>
+                      <td style={{ fontWeight: 'bold', color: '#1e293b' }}>{m.santri?.nama_lengkap || '-'}</td>
+                      <td>
+                        <span style={{ padding: '4px 8px', backgroundColor: '#f1f5f9', color: '#475569', borderRadius: '4px', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase' }}>
+                          {m.santri?.kelas?.nama_kelas || '-'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`badge ${m.jenis === 'setor' ? 'badge-success' : 'badge-warning'}`}>
+                          {m.jenis.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className={`font-bold ${m.jenis === 'setor' ? 'text-emerald-600' : 'text-orange-600'}`}>
+                        {m.jenis === 'setor' ? '+' : '-'}{formatRp(m.nominal)}
+                      </td>
+                      <td style={{ fontWeight: 'bold', color: '#475569' }}>{formatRp(m.saldo_setelah)}</td>
+                      <td style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>{m.keterangan || '-'}</td>
+                      {isAdmin && (
+                        <td className="text-center no-print">
+                          <button 
+                            onClick={() => handleDeleteRiwayat(m.id)}
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                            title="Hapus Transaksi"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -450,8 +635,8 @@ const TabunganPage = () => {
       <style>{`
         @media print {
           body * { visibility: hidden; }
-          .modal-overlay, .modal-overlay * { visibility: visible; }
-          .modal-overlay { position: absolute; left: 0; top: 0; width: 100%; }
+          .modal-overlay, .modal-overlay *, .printable-ledger, .printable-ledger * { visibility: visible; }
+          .modal-overlay, .printable-ledger { position: absolute; left: 0; top: 0; width: 100%; }
           .no-print { display: none !important; }
         }
       `}</style>
