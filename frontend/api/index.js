@@ -838,29 +838,53 @@ app.delete('/api/tabungan/:id', async (req, res) => {
 // ==================== LAPORAN ====================
 app.get('/api/laporan/keuangan', async (req, res) => {
   try {
-    const { bulan, tahun } = req.query;
+    const { bulan, tahun, dari, sampai } = req.query;
     let q = supabase.from('pembayaran')
       .select('*, santri:santri_id(nama_lengkap, nomor_induk), jenis:jenis_pembayaran_id(nama)');
     
-    if (bulan) q = q.eq('bulan', bulan);
-    if (tahun) q = q.eq('tahun', tahun);
+    if (!dari && !sampai) {
+      if (bulan) q = q.eq('bulan', bulan);
+      if (tahun) q = q.eq('tahun', tahun);
+    }
 
     const { data, error } = await q.order('created_at', { ascending: false });
     if (error) throw error;
 
-    const totalMasuk = (data || []).filter(p => p.status === 'lunas').reduce((s, p) => s + p.nominal, 0);
-    const totalTunggakan = (data || []).filter(p => p.status === 'belum').reduce((s, p) => s + p.nominal, 0);
+    let filtered = data || [];
+    if (dari || sampai) {
+      const start = dari ? new Date(dari) : null;
+      const end = sampai ? new Date(sampai + 'T23:59:59.999Z') : null;
+      
+      filtered = filtered.filter(p => {
+        const payDate = p.tanggal_bayar ? new Date(p.tanggal_bayar) : null;
+        const createDate = new Date(p.created_at);
+        
+        if (p.status === 'lunas') {
+          const dateToCompare = payDate || createDate;
+          if (start && dateToCompare < start) return false;
+          if (end && dateToCompare > end) return false;
+          return true;
+        } else {
+          if (start && createDate < start) return false;
+          if (end && createDate > end) return false;
+          return true;
+        }
+      });
+    }
+
+    const totalMasuk = filtered.filter(p => p.status === 'lunas').reduce((s, p) => s + p.nominal, 0);
+    const totalTunggakan = filtered.filter(p => p.status === 'belum').reduce((s, p) => s + p.nominal, 0);
     
     // Rekap per kategori
     const perKategori = {};
-    (data || []).forEach(p => {
+    filtered.forEach(p => {
       const catName = p.jenis?.nama || 'Lainnya';
       if (!perKategori[catName]) perKategori[catName] = { masuk: 0, tunggakan: 0 };
       if (p.status === 'lunas') perKategori[catName].masuk += p.nominal;
       else perKategori[catName].tunggakan += p.nominal;
     });
     
-    ok(res, { totalMasuk, totalTunggakan, perKategori, totalTransaksi: (data || []).length, data });
+    ok(res, { totalMasuk, totalTunggakan, perKategori, totalTransaksi: filtered.length, data: filtered });
   } catch (e) { fail(res, e.message, 500); }
 });
 
@@ -907,9 +931,14 @@ app.get('/api/laporan/tabungan', async (req, res) => {
 
 app.get('/api/laporan/akademik', async (req, res) => {
   try {
-    const { data: history, error } = await supabase.from('riwayat_kelas')
-      .select('*, santri:santri_id(nama_lengkap, nomor_induk), kelas_dari:kelas_dari_id(nama_kelas), kelas_ke:kelas_ke_id(nama_kelas)')
-      .order('created_at', { ascending: false });
+    const { dari, sampai } = req.query;
+    let q = supabase.from('riwayat_kelas')
+      .select('*, santri:santri_id(nama_lengkap, nomor_induk), kelas_dari:kelas_dari_id(nama_kelas), kelas_ke:kelas_ke_id(nama_kelas)');
+    
+    if (dari) q = q.gte('created_at', dari);
+    if (sampai) q = q.lte('created_at', sampai + 'T23:59:59.999Z');
+
+    const { data: history, error } = await q.order('created_at', { ascending: false });
     
     if (error) throw error;
 

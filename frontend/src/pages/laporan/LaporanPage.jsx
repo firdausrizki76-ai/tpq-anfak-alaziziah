@@ -12,14 +12,60 @@ const LaporanPage = () => {
   const [absensiData, setAbsensiData] = useState(null);
   const [tabunganData, setTabunganData] = useState(null);
 
-  useEffect(() => { loadSummary(); }, []);
+  const getInitialDates = (presetType) => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = today.getMonth();
+    
+    if (presetType === 'this_month') {
+      const start = new Date(y, m, 1);
+      return {
+        startDate: start.toISOString().split('T')[0],
+        endDate: today.toISOString().split('T')[0]
+      };
+    }
+    if (presetType === 'last_month') {
+      const start = new Date(y, m - 1, 1);
+      const end = new Date(y, m, 0);
+      return {
+        startDate: start.toISOString().split('T')[0],
+        endDate: end.toISOString().split('T')[0]
+      };
+    }
+    return { startDate: '', endDate: '' };
+  };
 
-  const loadSummary = async () => {
+  const [preset, setPreset] = useState('this_month');
+  const [startDate, setStartDate] = useState(getInitialDates('this_month').startDate);
+  const [endDate, setEndDate] = useState(getInitialDates('this_month').endDate);
+
+  const handlePresetChange = (e) => {
+    const val = e.target.value;
+    setPreset(val);
+    if (val !== 'custom' && val !== 'all') {
+      const dates = getInitialDates(val);
+      setStartDate(dates.startDate);
+      setEndDate(dates.endDate);
+    } else if (val === 'all') {
+      setStartDate('');
+      setEndDate('');
+    }
+  };
+
+  useEffect(() => {
+    loadSummary(startDate, endDate);
+  }, [startDate, endDate]);
+
+  const loadSummary = async (start = startDate, end = endDate) => {
     try {
+      const params = {};
+      if (start) params.dari = start;
+      if (end) params.sampai = end;
+
       const [keu, abs, tab] = await Promise.all([
-        laporanAPI.getKeuangan().catch(() => null), 
-        laporanAPI.getAbsensi().catch(() => null),
-        laporanAPI.getTabungan().catch(() => null)
+        laporanAPI.getKeuangan(params).catch(() => null), 
+        laporanAPI.getAbsensi(params).catch(() => null),
+        laporanAPI.getTabungan(params).catch(() => null)
       ]);
       setKeuanganData(keu); 
       setAbsensiData(abs);
@@ -96,11 +142,15 @@ const LaporanPage = () => {
     const key = `${type}_${format}`;
     setLoading(prev => ({ ...prev, [key]: true }));
     try {
+      const params = {};
+      if (startDate) params.dari = startDate;
+      if (endDate) params.sampai = endDate;
+
       let result;
-      if (type === 'keuangan') result = await laporanAPI.getKeuangan();
-      else if (type === 'absensi') result = await laporanAPI.getAbsensi();
-      else if (type === 'tabungan') result = await laporanAPI.getTabungan();
-      else if (type === 'santri') result = await laporanAPI.getAkademik();
+      if (type === 'keuangan') result = await laporanAPI.getKeuangan(params);
+      else if (type === 'absensi') result = await laporanAPI.getAbsensi(params);
+      else if (type === 'tabungan') result = await laporanAPI.getTabungan(params);
+      else if (type === 'santri') result = await laporanAPI.getAkademik(params);
 
       if (!result || !result.data) throw new Error('Data tidak ditemukan');
 
@@ -142,16 +192,8 @@ const LaporanPage = () => {
           <p className="text-sm text-gray-500">{description}</p>
         </div>
       </div>
-      {summary && <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-600">{summary}</div>}
-      <div className="flex gap-2 items-center">
-        <Calendar size={16} className="text-gray-400" />
-        <select className="input-field" style={{ flex: 1 }}>
-          <option>Seluruh Periode</option>
-          <option>Bulan Ini</option>
-          <option>Bulan Lalu</option>
-        </select>
-      </div>
-      <div className="grid grid-cols-2 gap-2 mt-2">
+      {summary && <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-600" style={{ flex: 1 }}>{summary}</div>}
+      <div className="grid grid-cols-2 gap-2 mt-auto">
         <button className="btn-primary justify-center bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-50" onClick={() => handleDownload(type, 'Excel')} disabled={loading[`${type}_Excel`]}>
           {loading[`${type}_Excel`] ? <Loader2 size={16} className="animate-spin" /> : <><Download size={16} /> Excel</>}
         </button>
@@ -165,6 +207,53 @@ const LaporanPage = () => {
   return (
     <div className="flex-col gap-6 w-full">
       <div className="page-header mb-6"><h1 className="page-title">Pusat Laporan</h1><p className="page-subtitle">Unduh rekapitulasi data TPQ untuk periode tertentu</p></div>
+      
+      {/* Global Filter Bar */}
+      <div className="card mb-6" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Calendar size={20} color="var(--color-primary-container)" />
+          <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#475569' }}>Periode Laporan:</span>
+        </div>
+        <select 
+          className="input-field" 
+          style={{ width: '180px', backgroundColor: 'white' }} 
+          value={preset} 
+          onChange={handlePresetChange}
+        >
+          <option value="this_month">Bulan Ini</option>
+          <option value="last_month">Bulan Lalu</option>
+          <option value="all">Semua Periode</option>
+          <option value="custom">Rentang Kustom</option>
+        </select>
+        
+        {preset === 'custom' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '13px', color: '#64748b' }}>Dari:</span>
+            <input 
+              type="date" 
+              className="input-field" 
+              style={{ width: '150px', padding: '6px 12px' }} 
+              value={startDate} 
+              onChange={(e) => setStartDate(e.target.value)} 
+            />
+            <span style={{ fontSize: '13px', color: '#64748b' }}>Sampai:</span>
+            <input 
+              type="date" 
+              className="input-field" 
+              style={{ width: '150px', padding: '6px 12px' }} 
+              value={endDate} 
+              onChange={(e) => setEndDate(e.target.value)} 
+            />
+          </div>
+        )}
+        
+        {startDate && endDate && (
+          <div style={{ fontSize: '12px', color: '#059669', fontWeight: '600', backgroundColor: '#ecfdf5', padding: '6px 12px', borderRadius: '20px', border: '1px solid #a7f3d0' }}>
+            Menampilkan data: {new Date(startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} s/d {new Date(endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-2-cols gap-6">
         <ReportCard type="keuangan" title="Laporan Keuangan" description="Rekap syahriah, pemasukan, dan pengeluaran." icon={Wallet} colorClass="bg-emerald-100 text-emerald-600"
           summary={keuanganData ? (
