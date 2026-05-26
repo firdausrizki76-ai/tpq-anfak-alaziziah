@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Plus, Printer, CheckCircle, AlertCircle, X, Save, Receipt, CreditCard, Calendar, Users, Settings, Loader2, MessageCircle, Trash2, ArrowUpCircle } from 'lucide-react';
-import { pembayaranAPI, santriAPI, jenisPembayaranAPI, kelasAPI } from '../../services/api';
+import { pembayaranAPI, santriAPI, jenisPembayaranAPI, kelasAPI, tabunganAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 
 const PembayaranPage = () => {
@@ -28,16 +28,26 @@ const PembayaranPage = () => {
   const [loadingWajibBalance, setLoadingWajibBalance] = useState(false);
   const [jenisForm, setJenisForm] = useState({ nama: '', kategori: 'bulanan', nominal_default: '' });
 
+  // State baru untuk filter, sorting, riwayat, dan tabungan
+  const [activeTab, setActiveTab] = useState('bulanan'); // 'bulanan' or 'riwayat_realtime'
+  const [filterStatus, setFilterStatus] = useState('');
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [historyPayments, setHistoryPayments] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyFilterSearch, setHistoryFilterSearch] = useState('');
+  const [historyFilterJenis, setHistoryFilterJenis] = useState('');
+  const [selectedSantriTabunganBalance, setSelectedSantriTabunganBalance] = useState(0);
+  const [loadingTabunganBalance, setLoadingTabunganBalance] = useState(false);
+
   useEffect(() => { loadData(); }, []);
 
-  const loadData = async (bulan, tahun, jenis) => {
-    const b = bulan || filterBulan;
-    const t = tahun || filterTahun;
-    const j = jenis !== undefined ? jenis : filterJenis;
+  const loadData = async (bulan = filterBulan, tahun = filterTahun, jenis = filterJenis, status = filterStatus) => {
     setLoading(true);
     try {
-      const queryParams = { bulan: b, tahun: t };
-      if (j) queryParams.jenis_pembayaran_id = j;
+      const queryParams = { bulan, tahun };
+      if (jenis) queryParams.jenis_pembayaran_id = jenis;
+      if (status) queryParams.status = status;
 
       const [p, s, st, jt, k] = await Promise.all([
         pembayaranAPI.getAll(queryParams).catch(() => []), 
@@ -51,7 +61,97 @@ const PembayaranPage = () => {
     setLoading(false);
   };
 
-  const closeModal = () => { setActiveModal(null); setSelectedJenis(null); setUnpaidBills([]); setSelectedBillId(''); setJenisForm({ nama: '', kategori: 'bulanan', nominal_default: '' }); setManualBillingData({ santri_id: '', jenis_pembayaran_id: '', nominal: '', bulan: new Date().getMonth()+1, tahun: new Date().getFullYear(), catatan: '' }); setTarikWajibForm({ santri_id: '', nominal: '', catatan: '' }); setSelectedSantriWajibBalance(0); };
+  const fetchTabunganBalance = async (santriId) => {
+    if (!santriId) return;
+    setLoadingTabunganBalance(true);
+    try {
+      const riwayat = await tabunganAPI.getRiwayat(santriId).catch(() => []);
+      const balance = (riwayat || []).reduce((sum, item) => sum + (item.jenis === 'setor' ? item.nominal : -item.nominal), 0);
+      setSelectedSantriTabunganBalance(balance);
+    } catch (err) {
+      console.error(err);
+      setSelectedSantriTabunganBalance(0);
+    }
+    setLoadingTabunganBalance(false);
+  };
+
+  const loadHistoryData = async (jenis = historyFilterJenis) => {
+    setLoadingHistory(true);
+    try {
+      const queryParams = { status: 'lunas' };
+      if (jenis) queryParams.jenis_pembayaran_id = jenis;
+      const data = await pembayaranAPI.getAll(queryParams);
+      setHistoryPayments(data || []);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoadingHistory(false);
+  };
+
+  const handlePayBillDirect = async (bill) => {
+    setLoadingBills(true);
+    setActiveModal('catat');
+    setFormData(prev => ({
+      ...prev,
+      santri_id: bill.santri_id,
+      id: bill.id,
+      jenis_pembayaran_id: bill.jenis_pembayaran_id,
+      nominal: bill.nominal,
+      bulan: bill.bulan,
+      tahun: bill.tahun,
+      tanggal_bayar: new Date().toISOString().split('T')[0],
+      metode_bayar: 'tunai',
+      status: 'lunas'
+    }));
+    setSelectedBillId(bill.id);
+    fetchTabunganBalance(bill.santri_id);
+    try {
+      const bills = await pembayaranAPI.getAll({ santri_id: bill.santri_id, status: 'belum' });
+      setUnpaidBills(bills || []);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoadingBills(false);
+  };
+
+  const getSortedPayments = (items) => {
+    const sorted = [...items];
+    sorted.sort((a, b) => {
+      let valA, valB;
+      if (sortBy === 'status') {
+        valA = a.status || '';
+        valB = b.status || '';
+      } else if (sortBy === 'nama') {
+        valA = a.santri?.nama_lengkap || '';
+        valB = b.santri?.nama_lengkap || '';
+      } else if (sortBy === 'nominal') {
+        valA = a.nominal || 0;
+        valB = b.nominal || 0;
+      } else if (sortBy === 'tanggal') {
+        valA = a.tanggal_bayar || a.created_at || '';
+        valB = b.tanggal_bayar || b.created_at || '';
+      } else {
+        valA = a.created_at || '';
+        valB = b.created_at || '';
+      }
+
+      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  };
+
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const closeModal = () => { setActiveModal(null); setSelectedJenis(null); setUnpaidBills([]); setSelectedBillId(''); setJenisForm({ nama: '', kategori: 'bulanan', nominal_default: '' }); setManualBillingData({ santri_id: '', jenis_pembayaran_id: '', nominal: '', bulan: new Date().getMonth()+1, tahun: new Date().getFullYear(), catatan: '' }); setTarikWajibForm({ santri_id: '', nominal: '', catatan: '' }); setSelectedSantriWajibBalance(0); setSelectedSantriTabunganBalance(0); };
   
   const handleInputChange = async (e) => {
     const { name, value } = e.target;
@@ -63,6 +163,7 @@ const PembayaranPage = () => {
         const bills = await pembayaranAPI.getAll({ santri_id: value, status: 'belum' });
         setUnpaidBills(bills || []);
         setSelectedBillId('');
+        fetchTabunganBalance(value);
       } catch (e) { console.error(e); }
       setLoadingBills(false);
     }
@@ -171,6 +272,7 @@ const PembayaranPage = () => {
       };
       await pembayaranAPI.create(payload);
       await loadData();
+      await loadHistoryData();
       closeModal();
       alert('Penarikan Tabungan Wajib berhasil dicatat!');
     } catch (err) {
@@ -197,14 +299,16 @@ const PembayaranPage = () => {
         const { id, ...payload } = formData;
         await pembayaranAPI.create(payload); 
       }
-      await loadData(); closeModal(); 
+      await loadData();
+      await loadHistoryData();
+      closeModal(); 
     } catch (e) { alert(e.message); }
     setSaving(false);
   };
 
   const handleSubmitBilling = async (e) => {
     e.preventDefault(); setSaving(true);
-    try { await pembayaranAPI.generate(billingData); await loadData(); closeModal(); alert('Tagihan berhasil digenerate!'); } catch (e) { alert(e.message); }
+    try { await pembayaranAPI.generate(billingData); await loadData(); await loadHistoryData(); closeModal(); alert('Tagihan berhasil digenerate!'); } catch (e) { alert(e.message); }
     setSaving(false);
   };
 
@@ -225,25 +329,30 @@ const PembayaranPage = () => {
 
   const handleDeletePayment = async (id) => {
     if (!window.confirm('Hapus data pembayaran ini? Tindakan ini tidak bisa dibatalkan.')) return;
-    try { await pembayaranAPI.delete(id); await loadData(); } catch (e) { alert(e.message); }
+    try { await pembayaranAPI.delete(id); await loadData(); await loadHistoryData(); } catch (e) { alert(e.message); }
   };
 
   const handleFilterBulan = (e) => {
     const val = parseInt(e.target.value);
     setFilterBulan(val);
-    loadData(val, filterTahun);
+    loadData(val, filterTahun, filterJenis, filterStatus);
   };
 
   const handleFilterTahun = (e) => {
     const val = parseInt(e.target.value);
     setFilterTahun(val);
-    loadData(filterBulan, val, filterJenis);
+    loadData(filterBulan, val, filterJenis, filterStatus);
   };
 
   const handleFilterJenis = (e) => {
     const val = e.target.value;
     setFilterJenis(val);
-    loadData(filterBulan, filterTahun, val);
+    loadData(filterBulan, filterTahun, val, filterStatus);
+  };
+
+  const handleFilterStatus = (val) => {
+    setFilterStatus(val);
+    loadData(filterBulan, filterTahun, filterJenis, val);
   };
 
   const handlePrint = (p) => {
@@ -334,55 +443,236 @@ const PembayaranPage = () => {
         </div>
       </div>
 
-      <div className="card w-full no-print">
-        <div className="flex items-center gap-3 mb-4 flex-wrap">
-          <span className="text-sm font-semibold text-gray-600">Filter:</span>
-          <select className="input-field py-1.5 px-3 text-sm" style={{ width: '140px' }} value={filterBulan} onChange={handleFilterBulan}>
-            {['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
-          </select>
-          <select className="input-field py-1.5 px-3 text-sm" style={{ width: '100px' }} value={filterTahun} onChange={handleFilterTahun}>
-            {[2024,2025,2026,2027].map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-          <select className="input-field py-1.5 px-3 text-sm" style={{ width: '180px' }} value={filterJenis} onChange={handleFilterJenis}>
-            <option value="">Semua Jenis</option>
-            {jenisList.map(j => <option key={j.id} value={j.id}>{j.nama}</option>)}
-          </select>
-        </div>
-        <div className="table-responsive">
-          <table className="data-table w-full">
-            <thead><tr><th>No</th><th>Tanggal</th><th>Nama Santri</th><th>Jenis</th><th>Periode</th><th>Nominal</th><th>Status</th><th className="text-center">Aksi</th></tr></thead>
-            <tbody>
-              {loading ? <tr><td colSpan="8" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
-              : payments.length === 0 ? <tr><td colSpan="8" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data pembayaran</td></tr>
-              : payments.map((p, i) => (
-                <tr key={p.id}>
-                  <td>{i+1}</td>
-                  <td>{p.tanggal_bayar ? new Date(p.tanggal_bayar).toLocaleDateString('id-ID') : '-'}</td>
-                  <td className="font-medium">{p.santri?.nama_lengkap || '-'}</td>
-                  <td><span className="text-xs font-semibold px-2 py-1 bg-blue-50 text-blue-700 rounded">{p.jenis?.nama || p.jenis_pembayaran?.nama || 'Syahriah'}</span></td>
-                  <td>{p.bulan}/{p.tahun}</td>
-                  <td>{formatRp(p.nominal)}</td>
-                  <td>{p.status === 'lunas' ? <span className="flex items-center gap-1 text-emerald-600 text-sm font-semibold"><CheckCircle size={16} /> Lunas</span> : <span className="flex items-center gap-1 text-orange-600 text-sm font-semibold"><AlertCircle size={16} /> Belum</span>}</td>
-                  <td className="text-center flex justify-center gap-2">
-                    {p.status === 'lunas' && <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Cetak Kwitansi" onClick={() => handlePrint(p)}><Printer size={18} /></button>}
-                    <button 
-                      className="p-1.5 rounded-full hover:bg-emerald-50 transition-all active:scale-95" 
-                      style={{ color: '#25D366', backgroundColor: '#f0fff4', border: '1px solid #dcfce7' }}
-                      title="Kirim Pesan WA" 
-                      onClick={() => handleWA(p)}
-                    >
-                      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-                        <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.187-2.59-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793 0-.852.448-1.271.607-1.445.159-.175.348-.218.463-.218.116 0 .232.001.334.005.109.004.256-.041.401.31.145.352.493 1.203.536 1.29.044.087.073.188.014.305-.058.116-.088.188-.174.289-.087.101-.182.227-.261.306-.087.087-.179.181-.077.357.102.176.454.748.975 1.211.672.596 1.24.782 1.416.869.176.087.278.073.381-.044.102-.116.448-.522.568-.7.12-.179.24-.15.405-.09.165.06 1.044.493 1.223.583.179.09.298.135.342.21.044.075.044.434-.1.839zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22c-5.523 0-10-4.477-10-10S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
-                      </svg>
-                    </button>
-                    <button className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Hapus" onClick={() => handleDeletePayment(p.id)}><Trash2 size={18} /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* Tabs Menu */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }} className="no-print">
+        {[
+          { id: 'bulanan', label: 'Tagihan Bulanan', icon: <Calendar size={16} /> },
+          { id: 'riwayat_realtime', label: 'Riwayat / Mutasi Real-Time', icon: <Receipt size={16} /> }
+        ].map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button 
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id);
+                if (tab.id === 'riwayat_realtime') {
+                  loadHistoryData();
+                }
+              }}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px', 
+                padding: '10px 20px', 
+                borderRadius: '24px', 
+                fontSize: '14px', 
+                fontWeight: 'bold',
+                border: isActive ? '1px solid var(--color-primary-container)' : '1px solid #e2e8f0',
+                backgroundColor: isActive ? '#f0fdf4' : 'white', 
+                color: isActive ? 'var(--color-primary-container)' : '#64748b',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          )
+        })}
       </div>
+
+      {activeTab === 'bulanan' ? (
+        <div className="card w-full no-print">
+          <div className="flex items-center gap-3 mb-4 flex-wrap">
+            <span className="text-sm font-semibold text-gray-600">Filter:</span>
+            <select className="input-field py-1.5 px-3 text-sm" style={{ width: '140px' }} value={filterBulan} onChange={handleFilterBulan}>
+              {['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
+            </select>
+            <select className="input-field py-1.5 px-3 text-sm" style={{ width: '100px' }} value={filterTahun} onChange={handleFilterTahun}>
+              {[2024,2025,2026,2027].map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+            <select className="input-field py-1.5 px-3 text-sm" style={{ width: '180px' }} value={filterJenis} onChange={handleFilterJenis}>
+              <option value="">Semua Jenis</option>
+              {jenisList.map(j => <option key={j.id} value={j.id}>{j.nama}</option>)}
+            </select>
+            <select className="input-field py-1.5 px-3 text-sm" style={{ width: '150px' }} value={filterStatus} onChange={(e) => handleFilterStatus(e.target.value)}>
+              <option value="">Semua Status</option>
+              <option value="lunas">Lunas</option>
+              <option value="belum">Belum Lunas</option>
+            </select>
+          </div>
+          <div className="table-responsive">
+            <table className="data-table w-full">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th onClick={() => handleSort('tanggal')} className="cursor-pointer select-none hover:bg-slate-50" style={{ cursor: 'pointer' }}>
+                    Tanggal {sortBy === 'tanggal' && (sortOrder === 'asc' ? '▲' : '▼')}
+                  </th>
+                  <th onClick={() => handleSort('nama')} className="cursor-pointer select-none hover:bg-slate-50" style={{ cursor: 'pointer' }}>
+                    Nama Santri {sortBy === 'nama' && (sortOrder === 'asc' ? '▲' : '▼')}
+                  </th>
+                  <th>Jenis</th>
+                  <th>Periode</th>
+                  <th onClick={() => handleSort('nominal')} className="cursor-pointer select-none hover:bg-slate-50" style={{ cursor: 'pointer' }}>
+                    Nominal {sortBy === 'nominal' && (sortOrder === 'asc' ? '▲' : '▼')}
+                  </th>
+                  <th onClick={() => handleSort('status')} className="cursor-pointer select-none hover:bg-slate-50" style={{ cursor: 'pointer' }}>
+                    Status {sortBy === 'status' && (sortOrder === 'asc' ? '▲' : '▼')}
+                  </th>
+                  <th className="text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? <tr><td colSpan="8" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
+                : payments.length === 0 ? <tr><td colSpan="8" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data pembayaran</td></tr>
+                : getSortedPayments(payments).map((p, i) => (
+                  <tr key={p.id}>
+                    <td>{i+1}</td>
+                    <td>{p.tanggal_bayar ? new Date(p.tanggal_bayar).toLocaleDateString('id-ID') : '-'}</td>
+                    <td className="font-medium">{p.santri?.nama_lengkap || '-'}</td>
+                    <td><span className="text-xs font-semibold px-2 py-1 bg-blue-50 text-blue-700 rounded">{p.jenis?.nama || p.jenis_pembayaran?.nama || 'Syahriah'}</span></td>
+                    <td>{p.bulan}/{p.tahun}</td>
+                    <td>{formatRp(p.nominal)}</td>
+                    <td>{p.status === 'lunas' ? <span className="flex items-center gap-1 text-emerald-600 text-sm font-semibold"><CheckCircle size={16} /> Lunas</span> : <span className="flex items-center gap-1 text-orange-600 text-sm font-semibold"><AlertCircle size={16} /> Belum</span>}</td>
+                    <td className="text-center flex justify-center gap-2">
+                      {p.status === 'lunas' ? (
+                        <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Cetak Kwitansi" onClick={() => handlePrint(p)}><Printer size={18} /></button>
+                      ) : (
+                        <button className="p-1.5 text-orange-600 hover:bg-orange-50 rounded" title="Catat Pembayaran" onClick={() => handlePayBillDirect(p)}><CreditCard size={18} /></button>
+                      )}
+                      <button 
+                        className="p-1.5 rounded-full hover:bg-emerald-50 transition-all active:scale-95" 
+                        style={{ color: '#25D366', backgroundColor: '#f0fff4', border: '1px solid #dcfce7' }}
+                        title="Kirim Pesan WA" 
+                        onClick={() => handleWA(p)}
+                      >
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                          <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.187-2.59-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793 0-.852.448-1.271.607-1.445.159-.175.348-.218.463-.218.116 0 .232.001.334.005.109.004.256-.041.401.31.145.352.493 1.203.536 1.29.044.087.073.188.014.305-.058.116-.088.188-.174.289-.087.101-.182.227-.261.306-.087.087-.179.181-.077.357.102.176.454.748.975 1.211.672.596 1.24.782 1.416.869.176.087.278.073.381-.044.102-.116.448-.522.568-.7.12-.179.24-.15.405-.09.165.06 1.044.493 1.223.583.179.09.298.135.342.21.044.075.044.434-.1.839zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22c-5.523 0-10-4.477-10-10S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+                        </svg>
+                      </button>
+                      <button className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Hapus" onClick={() => handleDeletePayment(p.id)}><Trash2 size={18} /></button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="card w-full no-print">
+          <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-600">Cari Santri:</span>
+              <div className="input-with-icon" style={{ maxWidth: '250px' }}>
+                <input 
+                  type="text" 
+                  className="input-field py-1.5 px-3 text-sm" 
+                  placeholder="Nama / NIS..." 
+                  value={historyFilterSearch} 
+                  onChange={(e) => setHistoryFilterSearch(e.target.value)} 
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-600">Jenis:</span>
+              <select 
+                className="input-field py-1.5 px-3 text-sm" 
+                style={{ width: '180px' }} 
+                value={historyFilterJenis} 
+                onChange={(e) => {
+                  setHistoryFilterJenis(e.target.value);
+                  loadHistoryData(e.target.value);
+                }}
+              >
+                <option value="">Semua Jenis</option>
+                {jenisList.map(j => <option key={j.id} value={j.id}>{j.nama}</option>)}
+              </select>
+            </div>
+          </div>
+          
+          <div className="table-responsive">
+            <table className="data-table w-full">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th onClick={() => handleSort('tanggal')} className="cursor-pointer select-none hover:bg-slate-50" style={{ cursor: 'pointer' }}>
+                    Waktu Bayar {sortBy === 'tanggal' && (sortOrder === 'asc' ? '▲' : '▼')}
+                  </th>
+                  <th onClick={() => handleSort('nama')} className="cursor-pointer select-none hover:bg-slate-50" style={{ cursor: 'pointer' }}>
+                    Nama Santri {sortBy === 'nama' && (sortOrder === 'asc' ? '▲' : '▼')}
+                  </th>
+                  <th>Jenis</th>
+                  <th>Periode</th>
+                  <th onClick={() => handleSort('nominal')} className="cursor-pointer select-none hover:bg-slate-50" style={{ cursor: 'pointer' }}>
+                    Nominal {sortBy === 'nominal' && (sortOrder === 'asc' ? '▲' : '▼')}
+                  </th>
+                  <th>Metode</th>
+                  <th className="text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loadingHistory ? (
+                  <tr>
+                    <td colSpan="8" className="text-center" style={{ padding: '40px' }}>
+                      <Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} />
+                    </td>
+                  </tr>
+                ) : historyPayments.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>
+                      Belum ada riwayat pembayaran lunas
+                    </td>
+                  </tr>
+                ) : (
+                  getSortedPayments(
+                    historyPayments.filter(p => 
+                      (p.santri?.nama_lengkap || '').toLowerCase().includes(historyFilterSearch.toLowerCase()) ||
+                      (p.santri?.nomor_induk || '').toLowerCase().includes(historyFilterSearch.toLowerCase())
+                    )
+                  ).map((p, i) => (
+                    <tr key={p.id}>
+                      <td>{i+1}</td>
+                      <td>{p.tanggal_bayar ? new Date(p.tanggal_bayar).toLocaleDateString('id-ID') : '-'}</td>
+                      <td className="font-medium">{p.santri?.nama_lengkap || '-'} <span className="text-xs text-gray-400 font-normal">({p.santri?.kelas?.nama_kelas || '-'})</span></td>
+                      <td><span className="text-xs font-semibold px-2 py-1 bg-blue-50 text-blue-700 rounded">{p.jenis?.nama || p.jenis_pembayaran?.nama || 'Syahriah'}</span></td>
+                      <td>{p.bulan}/{p.tahun}</td>
+                      <td className="font-semibold text-emerald-600">{formatRp(p.nominal)}</td>
+                      <td>
+                        <span className="badge" style={{
+                          backgroundColor: p.metode_bayar === 'tabungan' ? '#ecfdf5' : p.metode_bayar === 'transfer' ? '#eff6ff' : '#f8fafc',
+                          color: p.metode_bayar === 'tabungan' ? '#047857' : p.metode_bayar === 'transfer' ? '#1d4ed8' : '#475569',
+                          border: p.metode_bayar === 'tabungan' ? '1px solid #a7f3d0' : p.metode_bayar === 'transfer' ? '1px solid #bfdbfe' : '1px solid #e2e8f0',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: 'bold'
+                        }}>
+                          {(p.metode_bayar || 'tunai').toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="text-center flex justify-center gap-2">
+                        <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Cetak Kwitansi" onClick={() => handlePrint(p)}><Printer size={18} /></button>
+                        <button 
+                          className="p-1.5 rounded-full hover:bg-emerald-50 transition-all active:scale-95" 
+                          style={{ color: '#25D366', backgroundColor: '#f0fff4', border: '1px solid #dcfce7' }}
+                          title="Kirim Pesan WA" 
+                          onClick={() => handleWA(p)}
+                        >
+                          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                            <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.187-2.59-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793 0-.852.448-1.271.607-1.445.159-.175.348-.218.463-.218.116 0 .232.001.334.005.109.004.256-.041.401.31.145.352.493 1.203.536 1.29.044.087.073.188.014.305-.058.116-.088.188-.174.289-.087.101-.182.227-.261.306-.087.087-.179.181-.077.357.102.176.454.748.975 1.211.672.596 1.24.782 1.416.869.176.087.278.073.381-.044.102-.116.448-.522.568-.7.12-.179.24-.15.405-.09.165.06 1.044.493 1.223.583.179.09.298.135.342.21.044.075.044.434-.1.839zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22c-5.523 0-10-4.477-10-10S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+                          </svg>
+                        </button>
+                        <button className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Hapus" onClick={() => handleDeletePayment(p.id)}><Trash2 size={18} /></button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {activeModal === 'catat' && (
         <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '500px' }}>
@@ -420,12 +710,22 @@ const PembayaranPage = () => {
                   <div className="form-group"><label className="form-label">Tanggal</label><input type="date" name="tanggal_bayar" className="input-field" value={formData.tanggal_bayar} onChange={handleInputChange} /></div>
                   <div className="form-group"><label className="form-label">Metode</label><select name="metode_bayar" className="input-field" value={formData.metode_bayar} onChange={handleInputChange}><option value="tunai">Tunai</option><option value="transfer">Transfer</option><option value="tabungan">Potong Tabungan</option></select></div>
                 </div>
+                {formData.metode_bayar === 'tabungan' && (
+                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 mt-2 flex justify-between items-center">
+                    <span className="text-sm text-gray-600 font-medium">Saldo Tabungan Santri</span>
+                    {loadingTabunganBalance ? <Loader2 size={16} className="animate-spin text-blue-600" />
+                    : <span className="font-bold text-blue-700">{formatRp(selectedSantriTabunganBalance)}</span>}
+                  </div>
+                )}
+                {formData.metode_bayar === 'tabungan' && !loadingTabunganBalance && selectedSantriTabunganBalance < parseInt(formData.nominal) && (
+                  <p className="text-xs text-red-500 mt-1 font-semibold">⚠️ Saldo tidak mencukupi untuk melakukan pembayaran! (Kurang {formatRp(parseInt(formData.nominal) - selectedSantriTabunganBalance)})</p>
+                )}
               </>
             )}
           </div></div>
           <div className="modal-footer">
             <button type="button" className="btn-primary" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={closeModal}>Batal</button>
-            <button type="submit" className="btn-primary" disabled={saving || (!formData.santri_id)}><Save size={18} /> {selectedBillId && selectedBillId !== 'manual' ? 'Konfirmasi Bayar' : 'Simpan Pembayaran'}</button>
+            <button type="submit" className="btn-primary" disabled={saving || (!formData.santri_id) || (formData.metode_bayar === 'tabungan' && !loadingTabunganBalance && selectedSantriTabunganBalance < parseInt(formData.nominal))}><Save size={18} /> {selectedBillId && selectedBillId !== 'manual' ? 'Konfirmasi Bayar' : 'Simpan Pembayaran'}</button>
           </div></form>
         </div></div>
       )}
