@@ -89,6 +89,7 @@ export const kelasAPI = {
 };
 
 // Absensi
+export const absensiAPI = {
   getAll: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return request(`/absensi${qs ? `?${qs}` : ''}`);
