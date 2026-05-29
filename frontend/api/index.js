@@ -143,45 +143,56 @@ app.get('/api/dashboard/stats', async (req, res) => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const [santriRes, hadirRes, tunggakanRes, tabunganRes, trendDataRes, kelasRes, santriDistRes, guruRes, hadirGuruRes] = await Promise.all([
-      supabase.from('santri').select('id', { count: 'exact' }),
+    const [santriAktifRes, santriKeluarRes, santriKhotamRes, hadirRes, tunggakanRes, tabunganRes, trendDataRes, kelasRes, santriDistRes, guruAktifRes, guruNonaktifRes, hadirGuruRes] = await Promise.all([
+      supabase.from('santri').select('id', { count: 'exact' }).eq('status', 'aktif'),
+      supabase.from('santri').select('id', { count: 'exact' }).eq('status', 'pindah'),
+      supabase.from('santri').select('id', { count: 'exact' }).eq('status', 'lulus'),
       supabase.from('absensi').select('id', { count: 'exact' }).eq('tanggal', today).eq('status', 'hadir').eq('tipe', 'santri'),
       supabase.from('pembayaran').select('nominal').eq('status', 'belum'),
       supabase.from('v_saldo_tabungan').select('saldo'),
       supabase.from('absensi').select('tanggal').eq('tipe', 'santri').eq('status', 'hadir').gte('tanggal', thirtyDaysAgo.toISOString().split('T')[0]),
       supabase.from('kelas').select('id, nama_kelas'),
-      supabase.from('santri').select('kelas_id'),
+      supabase.from('santri').select('kelas_id').eq('status', 'aktif'),
       supabase.from('guru').select('id', { count: 'exact' }).eq('status', 'aktif'),
+      supabase.from('guru').select('id', { count: 'exact' }).eq('status', 'nonaktif'),
       supabase.from('absensi').select('id', { count: 'exact' }).eq('tanggal', today).eq('status', 'hadir').eq('tipe', 'guru')
     ]);
 
-    const totalSantri = santriRes.count || 0;
+    const totalSantriAktif = santriAktifRes.count || 0;
+    const totalSantriKeluar = santriKeluarRes.count || 0;
+    const totalSantriKhotam = santriKhotamRes.count || 0;
+    const totalSantri = totalSantriAktif; // for backward compat, kehadiran dihitung dari aktif
     const hadirHariIni = hadirRes.count || 0;
-    const totalGuru = guruRes.count || 0;
+    const totalGuruAktif = guruAktifRes.count || 0;
+    const totalGuruNonaktif = guruNonaktifRes.count || 0;
+    const totalGuru = totalGuruAktif; // kehadiran dihitung dari guru aktif
     const hadirGuruHariIni = hadirGuruRes.count || 0;
     const tunggakan = (tunggakanRes.data || []).reduce((sum, p) => sum + (p.nominal || 0), 0);
     const totalTabungan = (tabunganRes.data || []).reduce((sum, t) => sum + (t.saldo || 0), 0);
 
-    // Process Trend
+    // Process Trend — include tanggal + percentage data
     const trendMap = {};
     (trendDataRes.data || []).forEach(a => {
       trendMap[a.tanggal] = (trendMap[a.tanggal] || 0) + 1;
     });
     const kehadiranTrend = [];
+    const kehadiranTrendDetail = [];
     for (let i = 29; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
-      kehadiranTrend.push(trendMap[dateStr] || 0);
+      const hadir = trendMap[dateStr] || 0;
+      kehadiranTrend.push(hadir);
+      kehadiranTrendDetail.push({ tanggal: dateStr, hadir, totalAktif: totalSantriAktif });
     }
 
-    // Process Distribusi
+    // Process Distribusi — only count active santri
     const distribusiKelas = (kelasRes.data || []).map(k => {
       const count = (santriDistRes.data || []).filter(s => s.kelas_id === k.id).length;
       return { label: k.nama_kelas, value: count };
     });
 
-    ok(res, { totalSantri, hadirHariIni, totalGuru, hadirGuruHariIni, tunggakan, totalTabungan, kehadiranTrend, distribusiKelas });
+    ok(res, { totalSantri, totalSantriAktif, totalSantriKeluar, totalSantriKhotam, hadirHariIni, totalGuru, totalGuruAktif, totalGuruNonaktif, hadirGuruHariIni, tunggakan, totalTabungan, kehadiranTrend, kehadiranTrendDetail, distribusiKelas });
   } catch (e) { fail(res, e.message, 500); }
 });
 
@@ -430,9 +441,16 @@ app.post('/api/kelas', async (req, res) => {
 
 app.get('/api/kelas/:id/santri', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('santri')
-      .select('id, nomor_induk, nama_lengkap, status')
-      .eq('kelas_id', req.params.id).eq('status', 'aktif').order('nama_lengkap');
+    const { status } = req.query;
+    let q = supabase.from('santri')
+      .select('id, nomor_induk, nama_lengkap, status, tanggal_keluar')
+      .eq('kelas_id', req.params.id);
+    if (status === 'keluar') {
+      q = q.in('status', ['pindah', 'nonaktif', 'lulus']);
+    } else {
+      q = q.eq('status', status || 'aktif');
+    }
+    const { data, error } = await q.order('nama_lengkap');
     if (error) throw error;
     ok(res, data);
   } catch (e) { fail(res, e.message, 500); }
@@ -526,6 +544,45 @@ app.delete('/api/absensi/:id', async (req, res) => {
   } catch (e) { fail(res, e.message, 500); }
 });
 
+// ==================== ABSENSI REKAP ====================
+app.get('/api/absensi/rekap', async (req, res) => {
+  try {
+    const { tanggal_mulai, tanggal_selesai, tipe, kelas_id } = req.query;
+    const role = tipe || 'santri';
+    let selectStr = role === 'santri'
+      ? '*, santri:santri_id(id, nama_lengkap, nomor_induk, kelas_id, kelas:kelas_id(nama_kelas))'
+      : '*, guru:guru_id(id, nama_lengkap, nip)';
+    let q = supabase.from('absensi').select(selectStr).eq('tipe', role);
+    if (tanggal_mulai) q = q.gte('tanggal', tanggal_mulai);
+    if (tanggal_selesai) q = q.lte('tanggal', tanggal_selesai);
+    const { data, error } = await q.order('tanggal', { ascending: false });
+    if (error) throw error;
+    // Group by person
+    const map = {};
+    (data || []).forEach(a => {
+      const personId = role === 'santri' ? a.santri_id : a.guru_id;
+      const person = role === 'santri' ? a.santri : a.guru;
+      if (!personId) return;
+      if (!map[personId]) {
+        map[personId] = {
+          id: personId,
+          nama: person?.nama_lengkap || '-',
+          kelas: person?.kelas?.nama_kelas || '-',
+          kelas_id: person?.kelas_id || null,
+          hadir: 0, izin: 0, sakit: 0, alfa: 0, total: 0
+        };
+      }
+      map[personId][a.status] = (map[personId][a.status] || 0) + 1;
+      map[personId].total++;
+    });
+    let result = Object.values(map);
+    if (kelas_id && role === 'santri') {
+      result = result.filter(r => r.kelas_id === kelas_id);
+    }
+    result.sort((a, b) => a.nama.localeCompare(b.nama));
+    ok(res, result);
+  } catch (e) { fail(res, e.message, 500); }
+});
 
 // ==================== PEMBAYARAN ====================
 app.get('/api/pembayaran', async (req, res) => {
@@ -1058,6 +1115,46 @@ app.post('/api/ujian/register', async (req, res) => {
     console.error('Ujian Register Error:', e.message);
     fail(res, e.message, 500); 
   }
+});
+
+// Riwayat semua kenaikan kelas (real-time)
+app.get('/api/ujian/riwayat-all', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('riwayat_kelas')
+      .select('*, santri:santri_id(nama_lengkap, nomor_induk, kelas:kelas_id(nama_kelas)), kelas_dari:kelas_dari_id(nama_kelas), kelas_ke:kelas_ke_id(nama_kelas)')
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    // Filter out records where kelas_ke === kelas_dari (belum naik)
+    const filtered = (data || []).filter(h => h.kelas_ke_id !== h.kelas_dari_id);
+    ok(res, filtered);
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+// Rekap bulanan kenaikan kelas
+app.get('/api/ujian/rekap-bulanan', async (req, res) => {
+  try {
+    const { tahun } = req.query;
+    const year = tahun || new Date().getFullYear();
+    const { data, error } = await supabase.from('riwayat_kelas')
+      .select('tanggal_naik, status_tes, kelas_dari_id, kelas_ke_id')
+      .gte('tanggal_naik', `${year}-01-01`)
+      .lte('tanggal_naik', `${year}-12-31`);
+    if (error) throw error;
+    // Filter only actual promotions (kelas_ke !== kelas_dari)
+    const promotions = (data || []).filter(h => h.kelas_ke_id !== h.kelas_dari_id);
+    // Group by month
+    const months = {};
+    for (let m = 1; m <= 12; m++) months[m] = { bulan: m, naik: 0, remidi: 0 };
+    promotions.forEach(h => {
+      if (!h.tanggal_naik) return;
+      const m = new Date(h.tanggal_naik).getMonth() + 1;
+      if (h.status_tes === 'lulus' || h.status_tes === 'lulus_bersyarat') months[m].naik++;
+      else if (h.status_tes === 'remidi') months[m].remidi++;
+      else months[m].naik++;
+    });
+    ok(res, { tahun: parseInt(year), data: Object.values(months) });
+  } catch (e) { fail(res, e.message, 500); }
 });
 
 app.delete('/api/ujian/:id', async (req, res) => {

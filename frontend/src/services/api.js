@@ -81,15 +81,21 @@ export const guruAPI = {
 // Kelas
 export const kelasAPI = {
   getAll: () => request('/kelas'),
-  getSantri: (id) => request(`/kelas/${id}/santri`),
+  getSantri: (id, params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/kelas/${id}/santri${qs ? `?${qs}` : ''}`);
+  },
   update: (id, body) => request(`/kelas/${id}`, { method: 'PUT', body }),
 };
 
 // Absensi
-export const absensiAPI = {
   getAll: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return request(`/absensi${qs ? `?${qs}` : ''}`);
+  },
+  getRekap: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/absensi/rekap${qs ? `?${qs}` : ''}`);
   },
   create: (body) => request('/absensi', { method: 'POST', body }),
   update: (id, body) => request(`/absensi/${id}`, { method: 'PUT', body }),
@@ -103,6 +109,11 @@ export const ujianAPI = {
   inputNilai: (body) => request('/ujian/nilai', { method: 'POST', body }),
   naikKelas: (body) => request('/ujian/naik-kelas', { method: 'POST', body }),
   getHistory: (santriId) => request(`/ujian/history/${santriId}`),
+  getRiwayatAll: () => request('/ujian/riwayat-all'),
+  getRekapBulanan: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/ujian/rekap-bulanan${qs ? `?${qs}` : ''}`);
+  },
   updateHistory: (id, body) => request(`/ujian/history/${id}`, { method: 'PUT', body }),
   deleteHistory: (id) => request(`/ujian/history/${id}`, { method: 'DELETE' }),
   delete: (id) => request(`/ujian/${id}`, { method: 'DELETE' }),

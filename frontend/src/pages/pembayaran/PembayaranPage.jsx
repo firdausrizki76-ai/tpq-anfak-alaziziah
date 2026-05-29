@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Filter, Plus, Printer, CheckCircle, AlertCircle, X, Save, Receipt, CreditCard, Calendar, Users, Settings, Loader2, MessageCircle, Trash2, ArrowUpCircle } from 'lucide-react';
 import { pembayaranAPI, santriAPI, jenisPembayaranAPI, kelasAPI, tabunganAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
@@ -37,6 +37,7 @@ const PembayaranPage = () => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historyFilterSearch, setHistoryFilterSearch] = useState('');
   const [historyFilterJenis, setHistoryFilterJenis] = useState('');
+  const [historyFilterTanggal, setHistoryFilterTanggal] = useState(new Date().toISOString().split('T')[0]);
   const [selectedSantriTabunganBalance, setSelectedSantriTabunganBalance] = useState(0);
   const [loadingTabunganBalance, setLoadingTabunganBalance] = useState(false);
 
@@ -374,6 +375,25 @@ const PembayaranPage = () => {
     window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
+  const recapHarian = useMemo(() => {
+    const filtered = historyPayments.filter(p => p.tanggal_bayar && p.tanggal_bayar.startsWith(historyFilterTanggal));
+    let wajib = 0;
+    let syahriah = 0;
+    let tunai = 0;
+    let potongTabungan = 0;
+    
+    filtered.forEach(p => {
+      const namaJenis = (p.jenis?.nama || p.jenis_pembayaran?.nama || '').toLowerCase();
+      if (namaJenis.includes('wajib') || namaJenis.includes('tabungan')) wajib += p.nominal;
+      else syahriah += p.nominal;
+
+      if (p.metode_bayar === 'tunai') tunai += p.nominal;
+      else if (p.metode_bayar === 'tabungan') potongTabungan += p.nominal;
+    });
+
+    return { wajib, syahriah, tunai, potongTabungan, total: wajib + syahriah };
+  }, [historyPayments, historyFilterTanggal]);
+
   return (
     <div className="flex-col gap-6 w-full">
       {/* Kwitansi Area (Visible only in Print) */}
@@ -589,6 +609,35 @@ const PembayaranPage = () => {
                 {jenisList.map(j => <option key={j.id} value={j.id}>{j.nama}</option>)}
               </select>
             </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-600">Tanggal:</span>
+              <input 
+                type="date" 
+                className="input-field py-1.5 px-3 text-sm" 
+                value={historyFilterTanggal} 
+                onChange={(e) => setHistoryFilterTanggal(e.target.value)} 
+              />
+            </div>
+          </div>
+
+          {/* Rekap Harian Card */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
+              <div className="text-xs font-bold text-blue-600 uppercase mb-1">Total Syahriah (dll)</div>
+              <div className="text-lg font-bold text-blue-800">{formatRp(recapHarian.syahriah)}</div>
+            </div>
+            <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl">
+              <div className="text-xs font-bold text-emerald-600 uppercase mb-1">Tabungan Wajib</div>
+              <div className="text-lg font-bold text-emerald-800">{formatRp(recapHarian.wajib)}</div>
+            </div>
+            <div className="bg-orange-50 border border-orange-100 p-4 rounded-xl">
+              <div className="text-xs font-bold text-orange-600 uppercase mb-1">Pembayaran Tunai</div>
+              <div className="text-lg font-bold text-orange-800">{formatRp(recapHarian.tunai)}</div>
+            </div>
+            <div className="bg-purple-50 border border-purple-100 p-4 rounded-xl">
+              <div className="text-xs font-bold text-purple-600 uppercase mb-1">Potong Tabungan</div>
+              <div className="text-lg font-bold text-purple-800">{formatRp(recapHarian.potongTabungan)}</div>
+            </div>
           </div>
           
           <div className="table-responsive">
@@ -626,10 +675,12 @@ const PembayaranPage = () => {
                   </tr>
                 ) : (
                   getSortedPayments(
-                    historyPayments.filter(p => 
-                      (p.santri?.nama_lengkap || '').toLowerCase().includes(historyFilterSearch.toLowerCase()) ||
-                      (p.santri?.nomor_induk || '').toLowerCase().includes(historyFilterSearch.toLowerCase())
-                    )
+                    historyPayments.filter(p => {
+                      const matchesSearch = (p.santri?.nama_lengkap || '').toLowerCase().includes(historyFilterSearch.toLowerCase()) ||
+                                            (p.santri?.nomor_induk || '').toLowerCase().includes(historyFilterSearch.toLowerCase());
+                      const matchesDate = p.tanggal_bayar && p.tanggal_bayar.startsWith(historyFilterTanggal);
+                      return matchesSearch && matchesDate;
+                    })
                   ).map((p, i) => (
                     <tr key={p.id}>
                       <td>{i+1}</td>

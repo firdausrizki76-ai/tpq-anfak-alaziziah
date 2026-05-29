@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, QrCode, Download, Printer, X, Calendar, Users, FileText, Loader2 } from 'lucide-react';
+import { Search, Filter, QrCode, Download, Printer, X, Calendar, Users, FileText, Loader2, BarChart3 } from 'lucide-react';
 import { absensiAPI, kelasAPI, santriAPI, guruAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 
@@ -14,6 +14,14 @@ const AbsensiPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [qrResults, setQrResults] = useState([]);
+  // Rekap state
+  const [rekapData, setRekapData] = useState([]);
+  const [loadingRekap, setLoadingRekap] = useState(false);
+  const [rekapTipe, setRekapTipe] = useState('santri');
+  const [rekapDari, setRekapDari] = useState(() => { const d = new Date(); d.setDate(1); return d.toISOString().split('T')[0]; });
+  const [rekapSampai, setRekapSampai] = useState(new Date().toISOString().split('T')[0]);
+  const [rekapKelas, setRekapKelas] = useState('');
+
 
   useEffect(() => { loadData(); }, []);
   useEffect(() => { loadAbsensi(); }, [filterTanggal, activeTab]);
@@ -59,6 +67,18 @@ const AbsensiPage = () => {
 
   const closeModal = () => { setActiveModal(null); setQrResults([]); setSelectedKelas(''); };
 
+  const loadRekap = async (tipe = rekapTipe, dari = rekapDari, sampai = rekapSampai, kelas_id = rekapKelas) => {
+    setLoadingRekap(true);
+    try {
+      const params = { tipe, tanggal_mulai: dari, tanggal_selesai: sampai };
+      if (kelas_id) params.kelas_id = kelas_id;
+      const data = await absensiAPI.getRekap(params);
+      setRekapData(data || []);
+    } catch (e) { console.error(e); setRekapData([]); }
+    setLoadingRekap(false);
+  };
+
+
   const handleApprove = async (a) => {
     try {
       const newKeterangan = a.keterangan.replace('(MENUNGGU PERSETUJUAN) ', '');
@@ -99,46 +119,28 @@ const AbsensiPage = () => {
         </div>
       </div>
 
-      <div className="card w-full">
-        <div className="flex items-center gap-4 mb-10 no-print">
-          <button 
-            type="button"
-            className="flex items-center gap-2 transition-all duration-200"
-            style={{
-              padding: '10px 24px',
-              borderRadius: '100px',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              border: activeTab === 'santri' ? '1.5px solid #10b981' : '1.5px solid #e5e7eb',
-              backgroundColor: activeTab === 'santri' ? '#f0fdf4' : '#ffffff',
-              color: activeTab === 'santri' ? '#047857' : '#6b7280',
-              boxShadow: activeTab === 'santri' ? '0 4px 6px -1px rgba(16, 185, 129, 0.1)' : 'none'
-            }}
-            onClick={() => setActiveTab('santri')}
-          >
-            <Users size={18} /> Absensi Santri
+      {/* Tabs: Santri / Guru / Rekap */}
+      <div className="flex items-center gap-4 mb-4 no-print">
+        {[
+          { id: 'santri', label: 'Absensi Santri', icon: Users },
+          { id: 'guru', label: 'Absensi Guru', icon: FileText },
+          { id: 'rekap', label: 'Rekap Kehadiran', icon: BarChart3 }
+        ].map(tab => (
+          <button key={tab.id} type="button" className="flex items-center gap-2 transition-all duration-200" style={{
+            padding: '10px 24px', borderRadius: '100px', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+            border: activeTab === tab.id ? '1.5px solid #10b981' : '1.5px solid #e5e7eb',
+            backgroundColor: activeTab === tab.id ? '#f0fdf4' : '#ffffff',
+            color: activeTab === tab.id ? '#047857' : '#6b7280',
+            boxShadow: activeTab === tab.id ? '0 4px 6px -1px rgba(16, 185, 129, 0.1)' : 'none'
+          }} onClick={() => { setActiveTab(tab.id); if (tab.id === 'rekap') loadRekap(); }}>
+            <tab.icon size={18} /> {tab.label}
           </button>
-          <button 
-            type="button"
-            className="flex items-center gap-2 transition-all duration-200"
-            style={{
-              padding: '10px 24px',
-              borderRadius: '100px',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              border: activeTab === 'guru' ? '1.5px solid #10b981' : '1.5px solid #e5e7eb',
-              backgroundColor: activeTab === 'guru' ? '#f0fdf4' : '#ffffff',
-              color: activeTab === 'guru' ? '#047857' : '#6b7280',
-              boxShadow: activeTab === 'guru' ? '0 4px 6px -1px rgba(16, 185, 129, 0.1)' : 'none'
-            }}
-            onClick={() => setActiveTab('guru')}
-          >
-            <FileText size={18} /> Absensi Guru
-          </button>
-        </div>
+        ))}
+      </div>
 
+
+      {activeTab !== 'rekap' ? (
+      <div className="card w-full">
         <div className="flex items-center justify-between mb-8 gap-4 flex-wrap no-print">
           <div className="flex items-center gap-4 flex-1">
             <div className="input-with-icon" style={{ maxWidth: '200px', width: '100%' }}>
@@ -220,6 +222,84 @@ const AbsensiPage = () => {
           </table>
         </div>
       </div>
+      ) : (
+      /* ===== REKAP TAB ===== */
+      <div className="card w-full">
+        <div className="flex items-center gap-4 mb-6 flex-wrap no-print">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-gray-600">Tipe:</span>
+            {[{ id: 'santri', label: 'Santri' }, { id: 'guru', label: 'Guru' }].map(t => (
+              <button key={t.id} onClick={() => { setRekapTipe(t.id); loadRekap(t.id, rekapDari, rekapSampai, t.id === 'guru' ? '' : rekapKelas); }} style={{
+                padding: '5px 14px', borderRadius: '100px', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+                border: rekapTipe === t.id ? '1.5px solid #3b82f6' : '1.5px solid #e5e7eb',
+                backgroundColor: rekapTipe === t.id ? '#eff6ff' : '#ffffff',
+                color: rekapTipe === t.id ? '#1d4ed8' : '#6b7280'
+              }}>{t.label}</button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-gray-600">Dari:</span>
+            <input type="date" className="input-field py-1.5 px-3 text-sm" style={{ width: '160px' }} value={rekapDari} onChange={(e) => setRekapDari(e.target.value)} />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-gray-600">Sampai:</span>
+            <input type="date" className="input-field py-1.5 px-3 text-sm" style={{ width: '160px' }} value={rekapSampai} onChange={(e) => setRekapSampai(e.target.value)} />
+          </div>
+          {rekapTipe === 'santri' && (
+            <select className="input-field py-1.5 px-3 text-sm" style={{ width: '160px' }} value={rekapKelas} onChange={(e) => setRekapKelas(e.target.value)}>
+              <option value="">Semua Kelas</option>
+              {kelasList.map(k => <option key={k.id} value={k.id}>{k.nama_kelas}</option>)}
+            </select>
+          )}
+          <button className="btn-primary py-1.5 px-4 text-sm" onClick={() => loadRekap()}><Search size={14} /> Tampilkan</button>
+        </div>
+
+        <div className="table-responsive">
+          <table className="data-table w-full">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama {rekapTipe === 'santri' ? 'Santri' : 'Guru'}</th>
+                {rekapTipe === 'santri' && <th>Kelas</th>}
+                <th style={{ backgroundColor: '#f0fdf4', color: '#166534' }}>Hadir</th>
+                <th style={{ backgroundColor: '#eff6ff', color: '#1e40af' }}>Izin</th>
+                <th style={{ backgroundColor: '#fefce8', color: '#854d0e' }}>Sakit</th>
+                <th style={{ backgroundColor: '#fef2f2', color: '#991b1b' }}>Alfa</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingRekap ? <tr><td colSpan={rekapTipe === 'santri' ? 8 : 7} className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
+              : rekapData.length === 0 ? <tr><td colSpan={rekapTipe === 'santri' ? 8 : 7} className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>Belum ada data rekap. Klik "Tampilkan" untuk memuat.</td></tr>
+              : rekapData.map((r, i) => (
+                <tr key={r.id}>
+                  <td>{i+1}</td>
+                  <td className="font-medium">{r.nama}</td>
+                  {rekapTipe === 'santri' && <td>{r.kelas || '-'}</td>}
+                  <td style={{ fontWeight: '700', color: '#166534' }}>{r.hadir || 0}</td>
+                  <td style={{ fontWeight: '700', color: '#1e40af' }}>{r.izin || 0}</td>
+                  <td style={{ fontWeight: '700', color: '#854d0e' }}>{r.sakit || 0}</td>
+                  <td style={{ fontWeight: '700', color: '#991b1b' }}>{r.alfa || 0}</td>
+                  <td style={{ fontWeight: '700' }}>{r.total || 0}</td>
+                </tr>
+              ))}
+            </tbody>
+            {rekapData.length > 0 && (
+              <tfoot>
+                <tr style={{ backgroundColor: '#f8fafc', fontWeight: '700' }}>
+                  <td colSpan={rekapTipe === 'santri' ? 3 : 2} style={{ textAlign: 'right' }}>TOTAL</td>
+                  <td style={{ color: '#166534' }}>{rekapData.reduce((s, r) => s + (r.hadir || 0), 0)}</td>
+                  <td style={{ color: '#1e40af' }}>{rekapData.reduce((s, r) => s + (r.izin || 0), 0)}</td>
+                  <td style={{ color: '#854d0e' }}>{rekapData.reduce((s, r) => s + (r.sakit || 0), 0)}</td>
+                  <td style={{ color: '#991b1b' }}>{rekapData.reduce((s, r) => s + (r.alfa || 0), 0)}</td>
+                  <td>{rekapData.reduce((s, r) => s + (r.total || 0), 0)}</td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      </div>
+      )}
 
       {activeModal === 'qr_massal' && (
         <div className="modal-overlay">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Filter, Award, ArrowRight, Save, X, Calendar, Loader2, Plus, CheckCircle2, Printer } from 'lucide-react';
+import { Search, Filter, Award, ArrowRight, Save, X, Calendar, Loader2, Plus, CheckCircle2, Printer, History, BarChart3, GraduationCap } from 'lucide-react';
 import { ujianAPI, kelasAPI, santriAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 
@@ -11,6 +11,14 @@ const UjianPage = () => {
   const [saving, setSaving] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
   const [selectedSantri, setSelectedSantri] = useState(null);
+  // New states for tabs
+  const [activeTab, setActiveTab] = useState('evaluasi'); // evaluasi, riwayat, rekap
+  const [riwayatAll, setRiwayatAll] = useState([]);
+  const [rekapBulanan, setRekapBulanan] = useState([]);
+  const [rekapTahun, setRekapTahun] = useState(new Date().getFullYear().toString());
+  const [loadingRiwayat, setLoadingRiwayat] = useState(false);
+  const [loadingRekap, setLoadingRekap] = useState(false);
+  // Existing states
   const [historyList, setHistoryList] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [editingHistory, setEditingHistory] = useState(null);
@@ -58,6 +66,24 @@ const UjianPage = () => {
       setExamData(ujian || []); setKelasList(kelas || []);
     } catch (e) { console.error(e); }
     setLoading(false);
+  };
+
+  const loadRiwayatAll = async () => {
+    setLoadingRiwayat(true);
+    try {
+      const data = await ujianAPI.getRiwayatAll();
+      setRiwayatAll(data || []);
+    } catch (e) { console.error(e); }
+    setLoadingRiwayat(false);
+  };
+
+  const loadRekapBulanan = async (tahun = rekapTahun) => {
+    setLoadingRekap(true);
+    try {
+      const res = await ujianAPI.getRekapBulanan({ tahun });
+      setRekapBulanan(res?.data || []);
+    } catch (e) { console.error(e); }
+    setLoadingRekap(false);
   };
 
   const openModal = async (type, item) => {
@@ -365,6 +391,30 @@ const UjianPage = () => {
         <button className="btn-primary" onClick={() => openModal('register_exam')}><Plus size={18} /> Daftarkan Tes</button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex items-center gap-4 mb-4 no-print">
+        {[
+          { id: 'evaluasi', label: 'Evaluasi & Ujian', icon: GraduationCap },
+          { id: 'riwayat', label: 'Riwayat Real-Time', icon: History },
+          { id: 'rekap', label: 'Rekap Bulanan', icon: BarChart3 }
+        ].map(tab => (
+          <button key={tab.id} type="button" className="flex items-center gap-2 transition-all duration-200" style={{
+            padding: '10px 24px', borderRadius: '100px', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+            border: activeTab === tab.id ? '1.5px solid #10b981' : '1.5px solid #e5e7eb',
+            backgroundColor: activeTab === tab.id ? '#f0fdf4' : '#ffffff',
+            color: activeTab === tab.id ? '#047857' : '#6b7280',
+            boxShadow: activeTab === tab.id ? '0 4px 6px -1px rgba(16, 185, 129, 0.1)' : 'none'
+          }} onClick={() => { 
+            setActiveTab(tab.id); 
+            if (tab.id === 'riwayat') loadRiwayatAll();
+            if (tab.id === 'rekap') loadRekapBulanan();
+          }}>
+            <tab.icon size={18} /> {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'evaluasi' && (
       <div className="card w-full">
         <div className="flex items-center gap-4 mb-6 flex-wrap">
           <div className="input-with-icon" style={{ maxWidth: '300px', width: '100%' }}>
@@ -445,6 +495,75 @@ const UjianPage = () => {
           </table>
         </div>
       </div>
+      )}
+
+      {activeTab === 'riwayat' && (
+      <div className="card w-full">
+        <h3 className="card-title mb-4">Riwayat Kenaikan Kelas (Real-Time)</h3>
+        <div className="table-responsive">
+          <table className="data-table w-full">
+            <thead>
+              <tr>
+                <th>Tanggal Naik</th>
+                <th>Nama Santri</th>
+                <th>Dari Kelas</th>
+                <th>Ke Kelas</th>
+                <th>Nilai Tes</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingRiwayat ? <tr><td colSpan="6" className="text-center py-8"><Loader2 size={24} className="animate-spin mx-auto" /></td></tr>
+              : riwayatAll.length === 0 ? <tr><td colSpan="6" className="text-center py-8 text-gray-400">Belum ada riwayat kenaikan kelas</td></tr>
+              : riwayatAll.map((r, i) => (
+                <tr key={r.id}>
+                  <td>{r.tanggal_naik ? new Date(r.tanggal_naik).toLocaleDateString('id-ID') : '-'}</td>
+                  <td className="font-medium">{r.santri?.nama_lengkap || '-'}</td>
+                  <td>{r.kelas_dari?.nama_kelas || '-'}</td>
+                  <td className="font-bold text-emerald-600">{r.kelas_ke?.nama_kelas || '-'}</td>
+                  <td>{r.nilai_tes || '-'}</td>
+                  <td><span className={`badge ${r.status_tes === 'lulus' ? 'badge-success' : 'badge-info'}`}>{r.status_tes}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      )}
+
+      {activeTab === 'rekap' && (
+      <div className="card w-full">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="card-title">Rekap Kenaikan Kelas per Bulan</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-gray-600">Tahun:</span>
+            <input type="number" className="input-field py-1.5 px-3 text-sm" style={{ width: '100px' }} value={rekapTahun} onChange={(e) => { setRekapTahun(e.target.value); loadRekapBulanan(e.target.value); }} />
+          </div>
+        </div>
+        <div className="table-responsive">
+          <table className="data-table w-full">
+            <thead>
+              <tr>
+                <th>Bulan</th>
+                <th style={{ backgroundColor: '#f0fdf4', color: '#166534' }}>Jumlah Naik Kelas</th>
+                <th style={{ backgroundColor: '#fef2f2', color: '#991b1b' }}>Jumlah Remidi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingRekap ? <tr><td colSpan="3" className="text-center py-8"><Loader2 size={24} className="animate-spin mx-auto" /></td></tr>
+              : rekapBulanan.length === 0 ? <tr><td colSpan="3" className="text-center py-8 text-gray-400">Belum ada data</td></tr>
+              : rekapBulanan.map((r, i) => (
+                <tr key={r.bulan}>
+                  <td className="font-medium">{new Date(2000, r.bulan - 1).toLocaleString('id-ID', { month: 'long' })}</td>
+                  <td style={{ fontWeight: '700', color: '#166534' }}>{r.naik} orang</td>
+                  <td style={{ fontWeight: '700', color: '#991b1b' }}>{r.remidi} orang</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      )}
 
       {activeModal === 'register_exam' && (
         <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '650px' }}>

@@ -12,6 +12,7 @@ const KelasPage = () => {
   const [selectedKelas, setSelectedKelas] = useState(null);
   const [santriInKelas, setSantriInKelas] = useState([]);
   const [loadingSantri, setLoadingSantri] = useState(false);
+  const [santriTab, setSantriTab] = useState('aktif');
   const [formData, setFormData] = useState({ deskripsi: '', wali_kelas_id: '' });
 
   useEffect(() => { loadData(); }, []);
@@ -30,8 +31,14 @@ const KelasPage = () => {
   };
 
   const openViewSantri = async (kelas) => {
-    setSelectedKelas(kelas); setActiveModal('view_santri'); setLoadingSantri(true);
-    try { const data = await kelasAPI.getSantri(kelas.id); setSantriInKelas(data || []); } catch (e) { console.error(e); setSantriInKelas([]); }
+    setSelectedKelas(kelas); setActiveModal('view_santri'); setSantriTab('aktif'); setLoadingSantri(true);
+    try { const data = await kelasAPI.getSantri(kelas.id, { status: 'aktif' }); setSantriInKelas(data || []); } catch (e) { console.error(e); setSantriInKelas([]); }
+    setLoadingSantri(false);
+  };
+
+  const loadSantriByTab = async (kelas, tab) => {
+    setSantriTab(tab); setLoadingSantri(true);
+    try { const data = await kelasAPI.getSantri(kelas.id, { status: tab }); setSantriInKelas(data || []); } catch (e) { console.error(e); setSantriInKelas([]); }
     setLoadingSantri(false);
   };
 
@@ -124,16 +131,32 @@ const KelasPage = () => {
             <X className="modal-close" onClick={closeModal} />
           </div>
           <div className="modal-body">
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              {[{ id: 'aktif', label: 'Aktif' }, { id: 'keluar', label: 'Keluar' }].map(tab => (
+                <button key={tab.id} onClick={() => loadSantriByTab(selectedKelas, tab.id)} style={{
+                  padding: '6px 16px', borderRadius: '100px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+                  border: santriTab === tab.id ? '1.5px solid #10b981' : '1.5px solid #e5e7eb',
+                  backgroundColor: santriTab === tab.id ? '#f0fdf4' : '#ffffff',
+                  color: santriTab === tab.id ? '#047857' : '#6b7280'
+                }}>{tab.label}</button>
+              ))}
+            </div>
             {loadingSantri ? <div className="text-center py-8"><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></div>
-            : santriInKelas.length === 0 ? <p className="text-center text-gray-400 py-8">Belum ada santri di kelas ini</p>
+            : santriInKelas.length === 0 ? <p className="text-center text-gray-400 py-8">{santriTab === 'aktif' ? 'Belum ada santri aktif di kelas ini' : 'Belum ada santri keluar dari kelas ini'}</p>
             : <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
               {santriInKelas.map((s, i) => (
                 <div key={s.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-400 border"><User size={16} /></div>
-                    <div><p className="text-sm font-medium text-gray-800">{s.nama_lengkap}</p><p className="text-xs text-gray-400">NIS: {s.nomor_induk}</p></div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{s.nama_lengkap}</p>
+                      <p className="text-xs text-gray-400">NIS: {s.nomor_induk}{s.tanggal_keluar ? ` • Keluar: ${new Date(s.tanggal_keluar).toLocaleDateString('id-ID')}` : ''}</p>
+                    </div>
                   </div>
-                  <span className="badge badge-success text-[10px] py-1 px-2">{s.status}</span>
+                  <span className={`badge ${s.status === 'aktif' ? 'badge-success' : ''} text-[10px] py-1 px-2`} style={s.status !== 'aktif' ? { backgroundColor: s.status === 'lulus' ? '#dbeafe' : '#fef2f2', color: s.status === 'lulus' ? '#1e40af' : '#991b1b' } : {}}>
+                    {s.status === 'pindah' ? 'Keluar' : s.status === 'lulus' ? 'Khotam' : s.status}
+                  </span>
                 </div>
               ))}
             </div>}

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserCheck, AlertCircle, Wallet, TrendingUp, Loader2 } from 'lucide-react';
+import { Users, UserCheck, AlertCircle, Wallet, TrendingUp, Loader2, GraduationCap, UserX, UserMinus } from 'lucide-react';
 import { dashboardAPI } from '../../services/api';
 import './Dashboard.css';
 
-const StatCard = ({ title, value, subtext, icon: Icon, trend, loading }) => (
+const StatCard = ({ title, value, subtext, icon: Icon, trend, loading, extraInfo }) => (
   <div className="card stat-card">
     <div className="stat-card-header flex justify-between items-center mb-4">
       <div className="stat-title">{title}</div>
@@ -16,6 +16,22 @@ const StatCard = ({ title, value, subtext, icon: Icon, trend, loading }) => (
       {trend && <TrendingUp size={14} className="trend-icon" />}
       <span className="stat-subtext">{subtext}</span>
     </div>
+    {extraInfo && !loading && (
+      <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+        {extraInfo.map((info, i) => (
+          <span key={i} style={{
+            fontSize: '11px',
+            padding: '3px 8px',
+            borderRadius: '6px',
+            backgroundColor: info.bg || '#f1f5f9',
+            color: info.color || '#64748b',
+            fontWeight: '600'
+          }}>
+            {info.label}: {info.value}
+          </span>
+        ))}
+      </div>
+    )}
   </div>
 );
 
@@ -55,26 +71,34 @@ const Dashboard = () => {
 
       <div className="stats-grid grid-5-cols mb-6">
         <StatCard 
-          title="Total Santri Aktif" 
-          value={stats?.totalSantri ?? '—'} 
+          title="Total Santri" 
+          value={stats?.totalSantriAktif ?? stats?.totalSantri ?? '—'} 
           subtext="Santri aktif terdaftar" 
           icon={Users} 
           trend={true}
           loading={loading}
+          extraInfo={stats ? [
+            { label: 'Keluar', value: stats.totalSantriKeluar || 0, bg: '#fef2f2', color: '#991b1b' },
+            { label: 'Khotam', value: stats.totalSantriKhotam || 0, bg: '#f0fdf4', color: '#166534' }
+          ] : null}
         />
         <StatCard 
           title="Hadir Hari Ini (Santri)" 
-          value={stats ? `${stats.hadirHariIni} / ${stats.totalSantri}` : '—'} 
-          subtext={stats ? `Tingkat kehadiran ${stats.totalSantri > 0 ? Math.round((stats.hadirHariIni / stats.totalSantri) * 100) : 0}%` : '—'} 
+          value={stats ? `${stats.hadirHariIni} / ${stats.totalSantriAktif ?? stats.totalSantri}` : '—'} 
+          subtext={stats ? `Tingkat kehadiran ${(stats.totalSantriAktif ?? stats.totalSantri) > 0 ? Math.round((stats.hadirHariIni / (stats.totalSantriAktif ?? stats.totalSantri)) * 100) : 0}%` : '—'} 
           icon={UserCheck}
           loading={loading}
         />
         <StatCard 
-          title="Hadir Hari Ini (Guru)" 
-          value={stats ? `${stats.hadirGuruHariIni} / ${stats.totalGuru}` : '—'} 
-          subtext={stats ? `Tingkat kehadiran guru ${stats.totalGuru > 0 ? Math.round((stats.hadirGuruHariIni / stats.totalGuru) * 100) : 0}%` : '—'} 
+          title="Guru" 
+          value={stats ? `${stats.hadirGuruHariIni} / ${stats.totalGuruAktif ?? stats.totalGuru}` : '—'} 
+          subtext={stats ? `Hadir hari ini ${(stats.totalGuruAktif ?? stats.totalGuru) > 0 ? Math.round((stats.hadirGuruHariIni / (stats.totalGuruAktif ?? stats.totalGuru)) * 100) : 0}%` : '—'} 
           icon={UserCheck}
           loading={loading}
+          extraInfo={stats ? [
+            { label: 'Aktif', value: stats.totalGuruAktif || 0, bg: '#f0fdf4', color: '#166534' },
+            { label: 'Nonaktif', value: stats.totalGuruNonaktif || 0, bg: '#fef2f2', color: '#991b1b' }
+          ] : null}
         />
         <StatCard 
           title="Tunggakan Syahriah" 
@@ -96,8 +120,42 @@ const Dashboard = () => {
       <div className="charts-grid grid-2-cols mb-6">
         <div className="card chart-card featured">
           <h3 className="card-title">Tren Kehadiran (30 Hari)</h3>
-          <div className="mock-chart flex items-end justify-between mt-4">
-            {stats?.kehadiranTrend?.length > 0 ? stats.kehadiranTrend.map((h, i) => {
+          <div className="mock-chart flex items-end justify-between mt-4" style={{ position: 'relative' }}>
+            {stats?.kehadiranTrendDetail?.length > 0 ? stats.kehadiranTrendDetail.map((d, i) => {
+              const maxVal = Math.max(...stats.kehadiranTrendDetail.map(x => x.hadir), 1);
+              const height = (d.hadir / maxVal) * 100;
+              const pct = d.totalAktif > 0 ? Math.round((d.hadir / d.totalAktif) * 100) : 0;
+              const showLabel = i % 5 === 0 || i === 29;
+              return (
+                <div key={i} className="chart-bar-wrapper" style={{ position: 'relative' }}>
+                  {/* Percentage label on top */}
+                  <div style={{ 
+                    fontSize: '8px', 
+                    fontWeight: '700', 
+                    color: 'var(--color-primary-container)', 
+                    textAlign: 'center', 
+                    marginBottom: '2px',
+                    opacity: showLabel ? 1 : 0,
+                    minHeight: '12px'
+                  }}>
+                    {pct}%
+                  </div>
+                  <div className="chart-bar" style={{ height: `${height}%` }} title={`${d.tanggal}: ${d.hadir} hadir (${pct}%)`}></div>
+                  {/* Date label at bottom */}
+                  {showLabel && (
+                    <div style={{ 
+                      fontSize: '7px', 
+                      color: 'var(--color-outline)', 
+                      textAlign: 'center', 
+                      marginTop: '4px',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {new Date(d.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                    </div>
+                  )}
+                </div>
+              );
+            }) : stats?.kehadiranTrend?.length > 0 ? stats.kehadiranTrend.map((h, i) => {
               const maxVal = Math.max(...stats.kehadiranTrend, 1);
               const height = (h / maxVal) * 100;
               return (
@@ -119,6 +177,16 @@ const Dashboard = () => {
               const height = (k.value / maxVal) * 100;
               return (
                 <div key={i} style={{ height: '100%', minWidth: '36px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center' }}>
+                  {/* Count label on top of bar */}
+                  <div style={{ 
+                    fontSize: '11px', 
+                    fontWeight: '800', 
+                    color: 'var(--color-primary-container)', 
+                    marginBottom: '4px',
+                    textAlign: 'center'
+                  }}>
+                    {k.value}
+                  </div>
                   <div className="chart-bar alt" style={{ height: `${height}%`, width: '100%', minHeight: '4px' }} title={`${k.label}: ${k.value} santri`}></div>
                   <div style={{ fontSize: '10px', marginTop: '8px', color: 'var(--color-outline)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center', fontWeight: 'bold' }}>
                     {k.label.length > 5 ? k.label.substring(0, 5) + '..' : k.label}
