@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { 
   Calendar, ChevronLeft, ChevronRight, Plus, Edit2, Trash2, 
   RefreshCw, Loader2, Download, X, Check, AlertCircle,
-  Sun, BookOpen, PartyPopper, Flag, Star
+  Sun, BookOpen, PartyPopper, Flag, Star, Printer
 } from 'lucide-react';
 import { kalenderAPI } from '../../services/api';
 
@@ -29,6 +29,7 @@ const KalenderPendidikanPage = () => {
   const [editingEvent, setEditingEvent] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [viewMode, setViewMode] = useState('calendar'); // 'calendar' | 'list' | 'statistik'
+  const [filterBulan, setFilterBulan] = useState(String(new Date().getMonth()));
   const [filterJenis, setFilterJenis] = useState('all');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -40,6 +41,10 @@ const KalenderPendidikanPage = () => {
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   useEffect(() => {
     loadData();
@@ -175,15 +180,33 @@ const KalenderPendidikanPage = () => {
   }, [events]);
 
   const filteredEvents = useMemo(() => {
-    let filtered = events.filter(e => {
-      const eventMonth = new Date(e.tanggal).getMonth();
-      return eventMonth === month;
-    });
+    let filtered = events;
+    if (filterBulan !== 'all') {
+      const targetM = parseInt(filterBulan);
+      filtered = filtered.filter(e => new Date(e.tanggal + 'T00:00:00').getMonth() === targetM);
+    }
     if (filterJenis !== 'all') {
       filtered = filtered.filter(e => e.jenis === filterJenis);
     }
     return filtered;
-  }, [events, month, filterJenis]);
+  }, [events, filterBulan, filterJenis]);
+
+  const monthEventsList = useMemo(() => {
+    return events
+      .filter(e => {
+        const d = new Date(e.tanggal + 'T00:00:00');
+        return d.getFullYear() === year && d.getMonth() === month;
+      })
+      .sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+  }, [events, year, month]);
+
+  const calendarWeeks = useMemo(() => {
+    const weeks = [];
+    for (let i = 0; i < calendarDays.length; i += 7) {
+      weeks.push(calendarDays.slice(i, i + 7));
+    }
+    return weeks;
+  }, [calendarDays]);
 
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
@@ -194,127 +217,158 @@ const KalenderPendidikanPage = () => {
   const currentMonthStats = statistik?.statistik?.find(s => s.bulan === month + 1);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header */}
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Calendar size={28} />
-            Kalender Pendidikan
-          </h1>
-          <p className="page-subtitle">Kelola jadwal, hari libur nasional, agenda & kegiatan TPQ.</p>
+    <div className="kalender-page-wrapper">
+      {/* ================= ON-SCREEN INTERACTIVE UI ================= */}
+      <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* Header */}
+        <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Calendar size={28} />
+              Kalender Pendidikan
+            </h1>
+            <p className="page-subtitle">Kelola jadwal, hari libur nasional, agenda & kegiatan TPQ.</p>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button 
+              onClick={handlePrint} 
+              style={btnStyle('#0284c7', '#ffffff')}
+              title="Cetak Kalender Pendidikan Resmi (Format Cetak / PDF)"
+            >
+              <Printer size={16} /> Cetak Kalender
+            </button>
+            <button 
+              onClick={handleSync} 
+              disabled={syncing}
+              style={{
+                ...btnStyle('#f59e0b', '#ffffff'),
+                opacity: syncing ? 0.7 : 1
+              }}
+            >
+              {syncing ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              {syncing ? 'Syncing...' : 'Sync Libur Nasional'}
+            </button>
+            <button onClick={() => openAddModal()} style={btnStyle('#064e3b', '#ffffff')}>
+              <Plus size={16} /> Tambah Event
+            </button>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button 
-            onClick={handleSync} 
-            disabled={syncing}
-            style={{
-              ...btnStyle('#f59e0b', '#ffffff'),
-              opacity: syncing ? 0.7 : 1
-            }}
-          >
-            {syncing ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-            {syncing ? 'Syncing...' : 'Sync Libur Nasional'}
-          </button>
-          <button onClick={() => openAddModal()} style={btnStyle('#064e3b', '#ffffff')}>
-            <Plus size={16} /> Tambah Event
-          </button>
-        </div>
-      </div>
 
-      {/* Alerts */}
-      {error && (
-        <div style={{ padding: '12px 16px', borderRadius: '8px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <AlertCircle size={16} /> {error}
-          <button onClick={() => setError('')} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#991b1b' }}><X size={14} /></button>
-        </div>
-      )}
-      {success && (
-        <div style={{ padding: '12px 16px', borderRadius: '8px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Check size={16} /> {success}
-        </div>
-      )}
+        {/* Alerts */}
+        {error && (
+          <div style={{ padding: '12px 16px', borderRadius: '8px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AlertCircle size={16} /> {error}
+            <button onClick={() => setError('')} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#991b1b' }}><X size={14} /></button>
+          </div>
+        )}
+        {success && (
+          <div style={{ padding: '12px 16px', borderRadius: '8px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Check size={16} /> {success}
+          </div>
+        )}
 
-      {/* Stats Summary Cards */}
-      {currentMonthStats && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
-          <StatMiniCard label="Hari Efektif KBM" value={currentMonthStats.hari_efektif} color="#064e3b" bg="#f0fdf4" />
-          <StatMiniCard label="Libur Nasional" value={currentMonthStats.hari_libur} color="#dc2626" bg="#fef2f2" />
-          <StatMiniCard label="Libur Kamis" value={currentMonthStats.hari_kamis ?? currentMonthStats.hari_minggu} color="#e11d48" bg="#fff1f2" />
-          <StatMiniCard label="Total Hari" value={currentMonthStats.total_hari} color="#1d4ed8" bg="#eff6ff" />
-        </div>
-      )}
+        {/* Stats Summary Cards */}
+        {currentMonthStats && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
+            <StatMiniCard label="Hari Efektif KBM" value={currentMonthStats.hari_efektif} color="#064e3b" bg="#f0fdf4" />
+            <StatMiniCard label="Libur Nasional" value={currentMonthStats.hari_libur} color="#dc2626" bg="#fef2f2" />
+            <StatMiniCard label="Libur Kamis" value={currentMonthStats.hari_kamis ?? currentMonthStats.hari_minggu} color="#e11d48" bg="#fff1f2" />
+            <StatMiniCard label="Total Hari" value={currentMonthStats.total_hari} color="#1d4ed8" bg="#eff6ff" />
+          </div>
+        )}
 
-      {/* View Mode Tabs */}
-      <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', borderRadius: '10px', padding: '4px' }}>
-        {[
-          { key: 'calendar', label: 'Kalender' },
-          { key: 'list', label: 'Daftar Event' },
-          { key: 'statistik', label: 'Statistik Hari Efektif' }
-        ].map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setViewMode(tab.key)}
-            style={{
-              flex: 1, padding: '10px 16px', borderRadius: '8px', border: 'none',
-              cursor: 'pointer', fontWeight: '600', fontSize: '13px',
-              fontFamily: 'var(--font-family-body)',
-              backgroundColor: viewMode === tab.key ? '#ffffff' : 'transparent',
-              color: viewMode === tab.key ? '#064e3b' : '#64748b',
-              boxShadow: viewMode === tab.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              transition: 'all 0.2s'
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
-          <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto 12px' }} />
-          <p>Memuat kalender...</p>
+        {/* View Mode Tabs */}
+        <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', borderRadius: '10px', padding: '4px' }}>
+          {[
+            { key: 'calendar', label: 'Kalender' },
+            { key: 'list', label: 'Daftar Event' },
+            { key: 'statistik', label: 'Statistik Hari Efektif' }
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setViewMode(tab.key)}
+              style={{
+                flex: 1, padding: '10px 16px', borderRadius: '8px', border: 'none',
+                cursor: 'pointer', fontWeight: '600', fontSize: '13px',
+                fontFamily: 'var(--font-family-body)',
+                backgroundColor: viewMode === tab.key ? '#ffffff' : 'transparent',
+                color: viewMode === tab.key ? '#064e3b' : '#64748b',
+                boxShadow: viewMode === tab.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-      ) : (
-        <>
-          {/* Calendar View */}
-          {viewMode === 'calendar' && (
-            <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
-              {/* Calendar Header */}
-              <div style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '16px 24px', backgroundColor: '#064e3b', color: '#ffffff', flexWrap: 'wrap', gap: '12px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button onClick={prevMonth} style={navBtnStyle} title="Bulan sebelumnya"><ChevronLeft size={20} /></button>
-                  <h2 style={{ fontFamily: 'var(--font-family-display)', fontSize: '20px', fontWeight: '700', margin: 0 }}>
-                    {BULAN_NAMES[month]}
-                  </h2>
-                  <button onClick={nextMonth} style={navBtnStyle} title="Bulan berikutnya"><ChevronRight size={20} /></button>
+
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
+            <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto 12px' }} />
+            <p>Memuat kalender...</p>
+          </div>
+        ) : (
+          <>
+            {/* Calendar View */}
+            {viewMode === 'calendar' && (
+              <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+                {/* Calendar Header */}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '16px 24px', backgroundColor: '#064e3b', color: '#ffffff', flexWrap: 'wrap', gap: '12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <button onClick={prevMonth} style={navBtnStyle} title="Bulan sebelumnya"><ChevronLeft size={20} /></button>
+                    <select
+                      value={month}
+                      onChange={e => {
+                        const newM = parseInt(e.target.value);
+                        setCurrentDate(new Date(year, newM, 1));
+                        setFilterBulan(String(newM));
+                      }}
+                      style={{
+                        backgroundColor: 'rgba(255,255,255,0.18)',
+                        color: '#ffffff',
+                        border: '1px solid rgba(255,255,255,0.3)',
+                        borderRadius: '8px',
+                        padding: '6px 14px',
+                        fontSize: '18px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        fontFamily: 'var(--font-family-display)'
+                      }}
+                      title="Filter / Pilih Bulan"
+                    >
+                      {BULAN_NAMES.map((name, i) => (
+                        <option key={i} value={i} style={{ color: '#000', fontFamily: 'var(--font-family-body)' }}>{name}</option>
+                      ))}
+                    </select>
+                    <button onClick={nextMonth} style={navBtnStyle} title="Bulan berikutnya"><ChevronRight size={20} /></button>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '13px', opacity: 0.85 }}>Tahun:</span>
+                    <select
+                      value={year}
+                      onChange={e => setCurrentDate(new Date(parseInt(e.target.value), month, 1))}
+                      style={{
+                        backgroundColor: 'rgba(255,255,255,0.18)',
+                        color: '#ffffff',
+                        border: '1px solid rgba(255,255,255,0.3)',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        fontSize: '15px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                    >
+                      {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => (
+                        <option key={y} value={y} style={{ color: '#000' }}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '13px', opacity: 0.85 }}>Tahun:</span>
-                  <select
-                    value={year}
-                    onChange={e => setCurrentDate(new Date(parseInt(e.target.value), month, 1))}
-                    style={{
-                      backgroundColor: 'rgba(255,255,255,0.18)',
-                      color: '#ffffff',
-                      border: '1px solid rgba(255,255,255,0.3)',
-                      borderRadius: '8px',
-                      padding: '6px 12px',
-                      fontSize: '15px',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      outline: 'none'
-                    }}
-                  >
-                    {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => (
-                      <option key={y} value={y} style={{ color: '#000' }}>{y}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
 
               {/* Day Names (Kamis adalah Hari Libur Rutin TPQ) */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
@@ -413,16 +467,33 @@ const KalenderPendidikanPage = () => {
           {viewMode === 'list' && (
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-                <h3 style={{ margin: 0, fontSize: '16px' }}>Daftar Event — {BULAN_NAMES[month]} {year}</h3>
-                <select
-                  value={filterJenis}
-                  onChange={e => setFilterJenis(e.target.value)}
-                  className="input-field"
-                  style={{ width: 'auto', padding: '8px 12px', fontSize: '13px' }}
-                >
-                  <option value="all">Semua Jenis</option>
-                  {JENIS_OPTIONS.map(j => <option key={j.value} value={j.value}>{j.label}</option>)}
-                </select>
+                <h3 style={{ margin: 0, fontSize: '16px' }}>
+                  Daftar Event — {filterBulan === 'all' ? `Semua Bulan (${year})` : `${BULAN_NAMES[parseInt(filterBulan)]} ${year}`}
+                </h3>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <select
+                    value={filterBulan}
+                    onChange={e => setFilterBulan(e.target.value)}
+                    className="input-field"
+                    style={{ width: 'auto', padding: '8px 12px', fontSize: '13px' }}
+                    title="Filter Berdasarkan Bulan"
+                  >
+                    <option value="all">Semua Bulan ({year})</option>
+                    {BULAN_NAMES.map((name, i) => (
+                      <option key={i} value={String(i)}>{name}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={filterJenis}
+                    onChange={e => setFilterJenis(e.target.value)}
+                    className="input-field"
+                    style={{ width: 'auto', padding: '8px 12px', fontSize: '13px' }}
+                    title="Filter Berdasarkan Kategori"
+                  >
+                    <option value="all">Semua Jenis</option>
+                    {JENIS_OPTIONS.map(j => <option key={j.value} value={j.value}>{j.label}</option>)}
+                  </select>
+                </div>
               </div>
               {filteredEvents.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -431,7 +502,9 @@ const KalenderPendidikanPage = () => {
                   ))}
                 </div>
               ) : (
-                <p style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>Tidak ada event di bulan ini.</p>
+                <p style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
+                  Tidak ada event pada {filterBulan === 'all' ? `tahun ${year}` : `bulan ${BULAN_NAMES[parseInt(filterBulan)]}`}.
+                </p>
               )}
             </div>
           )}
@@ -557,16 +630,257 @@ const KalenderPendidikanPage = () => {
         </div>
       )}
 
-      {/* Legend */}
-      <div className="card" style={{ padding: '16px 20px' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
-          <span style={{ fontSize: '13px', fontWeight: '600', color: '#64748b' }}>Keterangan:</span>
-          {JENIS_OPTIONS.map(j => (
-            <div key={j.value} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
-              <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: j.color }} />
-              <span style={{ color: '#374151' }}>{j.label}</span>
+        {/* Legend */}
+        <div className="card" style={{ padding: '16px 20px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', fontWeight: '600', color: '#64748b' }}>Keterangan:</span>
+            {JENIS_OPTIONS.map(j => (
+              <div key={j.value} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: j.color }} />
+                <span style={{ color: '#374151' }}>{j.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ================= PRINT-ONLY KALENDER PENDIDIKAN ================= */}
+      <div id="print-calendar-area" className="print-only" style={{ padding: '20px 24px', fontFamily: 'serif', backgroundColor: '#ffffff', color: '#000000' }}>
+        {/* KOP RESMI */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '18px', borderBottom: '3px double #064e3b', paddingBottom: '14px', marginBottom: '16px' }}>
+          <img src="/assets/logoapp.png" alt="Logo" style={{ height: '65px', width: 'auto' }} />
+          <div style={{ textAlign: 'center' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#064e3b', margin: 0, textTransform: 'uppercase', letterSpacing: '1px' }}>
+              TPQ ANFAK AL AZIZAH
+            </h1>
+            <h2 style={{ fontSize: '16px', fontWeight: 'bold', margin: '4px 0', textDecoration: 'underline' }}>
+              {viewMode === 'statistik' ? 'REKAPITULASI HARI EFEKTIF KBM TAHUNAN' : 'KALENDER PENDIDIKAN & AGENDA KEGIATAN'}
+            </h2>
+            <p style={{ fontSize: '12px', color: '#475569', margin: 0, fontFamily: 'sans-serif' }}>
+              {viewMode === 'statistik' 
+                ? `Periode Tahun: ${year}`
+                : `Tahun: ${year} — Bulan: ${BULAN_NAMES[month]} ${year}`
+              }
+            </p>
+          </div>
+        </div>
+
+        {viewMode === 'statistik' && statistik ? (
+          /* PRINT STATISTIK REKAP TAHUNAN */
+          <div>
+            <div style={{ border: '1.5px solid #064e3b', borderRadius: '6px', padding: '10px 16px', marginBottom: '16px', backgroundColor: '#f0fdf4', fontFamily: 'sans-serif' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', textAlign: 'center', gap: '10px' }}>
+                <div>
+                  <span style={{ fontSize: '11px', color: '#166534', fontWeight: 'bold' }}>TOTAL HARI EFEKTIF KBM</span>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#064e3b' }}>{statistik.ringkasan.total_hari_efektif} Hari</div>
+                </div>
+                <div>
+                  <span style={{ fontSize: '11px', color: '#991b1b', fontWeight: 'bold' }}>TOTAL LIBUR RUTIN KAMIS</span>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#dc2626' }}>{statistik.ringkasan.total_hari_kamis ?? statistik.ringkasan.total_hari_minggu} Hari</div>
+                </div>
+                <div>
+                  <span style={{ fontSize: '11px', color: '#b91c1c', fontWeight: 'bold' }}>TOTAL LIBUR NASIONAL & CUTI</span>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#b91c1c' }}>{statistik.ringkasan.total_hari_libur} Hari</div>
+                </div>
+              </div>
             </div>
-          ))}
+
+            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1.5px solid #000', marginBottom: '20px', fontFamily: 'sans-serif', fontSize: '11px' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '1.5px solid #000' }}>
+                  <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'left' }}>Bulan</th>
+                  <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>Total Hari</th>
+                  <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#dc2626' }}>Libur Kamis</th>
+                  <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#dc2626' }}>Libur Nasional</th>
+                  <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#064e3b', fontWeight: 'bold' }}>Hari Efektif KBM</th>
+                </tr>
+              </thead>
+              <tbody>
+                {statistik.statistik.map(s => (
+                  <tr key={s.bulan} style={{ backgroundColor: s.bulan % 2 === 0 ? '#f8fafc' : '#ffffff' }}>
+                    <td style={{ border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}>{s.nama_bulan}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{s.total_hari}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#dc2626' }}>{s.hari_kamis ?? s.hari_minggu}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#dc2626' }}>{s.hari_libur}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', fontWeight: 'bold', color: '#064e3b' }}>{s.hari_efektif}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr style={{ backgroundColor: '#e2e8f0', fontWeight: 'bold', borderTop: '2px solid #000' }}>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>TOTAL SETAHUN ({year})</td>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{statistik.statistik.reduce((s,r) => s + r.total_hari, 0)}</td>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#dc2626' }}>{statistik.ringkasan.total_hari_kamis ?? statistik.ringkasan.total_hari_minggu}</td>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#dc2626' }}>{statistik.ringkasan.total_hari_libur}</td>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#064e3b' }}>{statistik.ringkasan.total_hari_efektif}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        ) : (
+          /* PRINT KALENDER BULANAN */
+          <div>
+            {/* RINGKASAN HARI EFEKTIF BULANAN */}
+            {currentMonthStats && (
+              <div style={{ border: '1.5px solid #064e3b', borderRadius: '6px', padding: '8px 14px', marginBottom: '14px', backgroundColor: '#f0fdf4', fontFamily: 'sans-serif' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', textAlign: 'center', gap: '8px', fontSize: '11px' }}>
+                  <div>
+                    <span style={{ color: '#166534', fontWeight: 'bold' }}>HARI EFEKTIF KBM</span>
+                    <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#064e3b' }}>{currentMonthStats.hari_efektif} Hari</div>
+                  </div>
+                  <div>
+                    <span style={{ color: '#991b1b', fontWeight: 'bold' }}>LIBUR RUTIN KAMIS</span>
+                    <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#dc2626' }}>{currentMonthStats.hari_kamis ?? currentMonthStats.hari_minggu} Hari</div>
+                  </div>
+                  <div>
+                    <span style={{ color: '#b91c1c', fontWeight: 'bold' }}>LIBUR NASIONAL</span>
+                    <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#b91c1c' }}>{currentMonthStats.hari_libur} Hari</div>
+                  </div>
+                  <div>
+                    <span style={{ color: '#1e40af', fontWeight: 'bold' }}>TOTAL HARI BULAN INI</span>
+                    <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#1d4ed8' }}>{currentMonthStats.total_hari} Hari</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: '9.5px', color: '#475569', textAlign: 'center', marginTop: '4px', fontStyle: 'italic', borderTop: '1px dashed #bbf7d0', paddingTop: '4px' }}>
+                  * Catatan: Libur mingguan rutin TPQ Anfak Al Azizah adalah hari <strong>KAMIS</strong>. Hari Minggu KBM aktif.
+                </div>
+              </div>
+            )}
+
+            {/* TABEL KALENDER BULANAN */}
+            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1.5px solid #000', marginBottom: '16px', fontFamily: 'sans-serif' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f1f5f9' }}>
+                  {HARI_NAMES.map((name, i) => (
+                    <th key={name} style={{
+                      border: '1px solid #000',
+                      padding: '6px 4px',
+                      textAlign: 'center',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      width: '14.28%',
+                      color: i === 4 ? '#dc2626' : '#000000',
+                      backgroundColor: i === 4 ? '#fee2e2' : '#f1f5f9'
+                    }}>
+                      {name} {i === 4 ? '(LIBUR)' : ''}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {calendarWeeks.map((week, wIdx) => (
+                  <tr key={wIdx}>
+                    {week.map((day, dIdx) => {
+                      const dayEvents = day.date ? (eventsByDate[day.date] || []) : [];
+                      const isKamis = dIdx === 4;
+                      const hasLibur = dayEvents.some(e => e.is_libur);
+                      return (
+                        <td
+                          key={dIdx}
+                          style={{
+                            border: '1px solid #000',
+                            height: '56px',
+                            verticalAlign: 'top',
+                            padding: '4px',
+                            backgroundColor: !day.isCurrentMonth ? '#f8fafc' : isKamis ? '#fff5f5' : '#ffffff'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                            <span style={{
+                              fontSize: '12px',
+                              fontWeight: (isKamis || hasLibur) ? 'bold' : 'normal',
+                              color: !day.isCurrentMonth ? '#94a3b8' : (isKamis || hasLibur) ? '#dc2626' : '#000000'
+                            }}>
+                              {day.day}
+                            </span>
+                            {isKamis && day.isCurrentMonth && (
+                              <span style={{ fontSize: '8px', color: '#dc2626', fontWeight: 'bold' }}>Libur</span>
+                            )}
+                          </div>
+                          {dayEvents.map((e, eIdx) => (
+                            <div
+                              key={eIdx}
+                              style={{
+                                fontSize: '8px',
+                                lineHeight: 1.15,
+                                padding: '1px 3px',
+                                marginBottom: '1px',
+                                borderRadius: '2px',
+                                borderLeft: `2px solid ${e.is_libur ? '#dc2626' : '#064e3b'}`,
+                                backgroundColor: e.is_libur ? '#fef2f2' : '#f0fdf4',
+                                color: e.is_libur ? '#991b1b' : '#064e3b',
+                                fontWeight: '600'
+                              }}
+                            >
+                              {e.judul}
+                            </div>
+                          ))}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* DAFTAR AGENDA & LIBUR BULAN INI */}
+            <div style={{ marginBottom: '16px', pageBreakInside: 'avoid' }}>
+              <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#064e3b', marginBottom: '6px', borderBottom: '1px solid #000', paddingBottom: '3px', textTransform: 'uppercase' }}>
+                Rincian Agenda & Libur Nasional — {BULAN_NAMES[month]} {year}
+              </div>
+              {monthEventsList.length > 0 ? (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px', fontFamily: 'sans-serif' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '1px solid #000' }}>
+                      <th style={{ border: '1px solid #cbd5e1', padding: '4px', textAlign: 'center', width: '30px' }}>No</th>
+                      <th style={{ border: '1px solid #cbd5e1', padding: '4px', textAlign: 'left', width: '90px' }}>Tanggal</th>
+                      <th style={{ border: '1px solid #cbd5e1', padding: '4px', textAlign: 'left' }}>Nama Kegiatan / Libur</th>
+                      <th style={{ border: '1px solid #cbd5e1', padding: '4px', textAlign: 'center', width: '110px' }}>Kategori</th>
+                      <th style={{ border: '1px solid #cbd5e1', padding: '4px', textAlign: 'center', width: '70px' }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthEventsList.map((e, idx) => {
+                      const info = getJenisInfo(e.jenis);
+                      return (
+                        <tr key={e.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
+                          <td style={{ border: '1px solid #cbd5e1', padding: '4px', textAlign: 'center' }}>{idx + 1}</td>
+                          <td style={{ border: '1px solid #cbd5e1', padding: '4px' }}>
+                            {new Date(e.tanggal + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} ({new Date(e.tanggal + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'short' })})
+                          </td>
+                          <td style={{ border: '1px solid #cbd5e1', padding: '4px', fontWeight: e.is_libur ? 'bold' : 'normal', color: e.is_libur ? '#dc2626' : '#1f2937' }}>
+                            {e.judul} {e.deskripsi ? `— ${e.deskripsi}` : ''}
+                          </td>
+                          <td style={{ border: '1px solid #cbd5e1', padding: '4px', textAlign: 'center' }}>{info.label}</td>
+                          <td style={{ border: '1px solid #cbd5e1', padding: '4px', textAlign: 'center', fontWeight: 'bold', color: e.is_libur ? '#dc2626' : '#166534' }}>
+                            {e.is_libur ? 'LIBUR' : 'MASUK'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <div style={{ fontSize: '10px', color: '#64748b', fontStyle: 'italic', padding: '4px 0' }}>
+                  Tidak ada agenda khusus atau hari libur nasional tercatat di bulan ini.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TANDA TANGAN PENGESAHAN */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px', fontSize: '11px', fontFamily: 'serif', pageBreakInside: 'avoid' }}>
+          <div style={{ textAlign: 'center', width: '220px' }}>
+            <p style={{ margin: 0 }}>Mengetahui,</p>
+            <p style={{ margin: '2px 0 50px 0' }}>Koordinator Pendidikan / Kurikulum</p>
+            <p style={{ fontWeight: 'bold', textDecoration: 'underline', margin: 0 }}>( ..................................................... )</p>
+          </div>
+          <div style={{ textAlign: 'center', width: '230px' }}>
+            <p style={{ margin: 0 }}>Banjarbaru, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p style={{ margin: '2px 0 50px 0' }}>Kepala TPQ Anfak Al Azizah</p>
+            <p style={{ fontWeight: 'bold', textDecoration: 'underline', margin: 0 }}>( ..................................................... )</p>
+          </div>
         </div>
       </div>
     </div>

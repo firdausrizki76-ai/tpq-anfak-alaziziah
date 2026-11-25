@@ -255,7 +255,14 @@ a:hover {
 }
 
 /* Print Utilities */
+.print-only {
+  display: none !important;
+}
+
 @media print {
+  .print-only {
+    display: block !important;
+  }
   .no-print, 
   .sidebar, 
   .topbar, 
