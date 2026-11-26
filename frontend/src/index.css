@@ -297,4 +297,24 @@ a:hover {
   .content-area {
     padding: 0 !important;
   }
+
+  /* Layout aplikasi memakai tinggi tetap + overflow tersembunyi; saat cetak harus
+     dilepas agar tabel panjang mengalir ke halaman berikutnya. */
+  html,
+  body,
+  #root,
+  .app-layout,
+  .main-wrapper,
+  .content-area,
+  .content-container {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+
+  .print-only table { page-break-inside: auto; }
+  .print-only thead { display: table-header-group; }
+  .print-only tr { page-break-inside: avoid; }
 }
