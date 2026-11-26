@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, QrCode, Download, Printer, X, Calendar, Users, FileText, Loader2, BarChart3 } from 'lucide-react';
+import { Search, QrCode, Download, Printer, X, Calendar, Users, FileText, Loader2, BarChart3, Trophy } from 'lucide-react';
 import { absensiAPI, kelasAPI, santriAPI, guruAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 import { Link } from 'react-router-dom';
 import StatisticsCards from '../../components/StatisticsCards';
 import { dateInputValue, formatDuration } from '../../utils/date';
+import PeringkatTepatWaktu from './PeringkatTepatWaktu';
 
 const AbsensiPage = () => {
   const [absensiList, setAbsensiList] = useState([]);
@@ -32,7 +33,7 @@ const AbsensiPage = () => {
 
   const loadAbsensi = useCallback(async () => {
     const requestId = ++attendanceRequest.current.version;
-    if (activeTab === 'rekap' || !filterTanggal) return;
+    if (activeTab === 'rekap' || activeTab === 'peringkat' || !filterTanggal) return;
     setError('');
     setLoading(true);
     try { 
@@ -159,7 +160,8 @@ const AbsensiPage = () => {
         {[
           { id: 'santri', label: 'Absensi Santri', icon: Users },
           { id: 'guru', label: 'Absensi Guru', icon: FileText },
-          { id: 'rekap', label: 'Rekap Kehadiran', icon: BarChart3 }
+          { id: 'rekap', label: 'Rekap Kehadiran', icon: BarChart3 },
+          { id: 'peringkat', label: 'Peringkat Tepat Waktu', icon: Trophy }
         ].map(tab => (
           <button key={tab.id} type="button" className="flex items-center gap-2 transition-all duration-200" style={{
             padding: '10px 24px', borderRadius: '100px', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
@@ -175,6 +177,8 @@ const AbsensiPage = () => {
 
 
       {error && <p role="alert" className="text-red-600 mb-4">{error}</p>}
+      {activeTab === 'peringkat' && <PeringkatTepatWaktu kelasList={kelasList} />}
+      <div style={{ display: activeTab === 'peringkat' ? 'none' : 'contents' }}>
       <StatisticsCards loading={activeTab === 'rekap' ? loadingRekap : loading} items={[
         { label: 'Hadir', value: summary.hadir }, { label: 'Izin', value: summary.izin, color: '#2563eb' },
         { label: 'Sakit', value: summary.sakit, color: '#a16207' }, { label: 'Alfa', value: summary.alfa, color: '#dc2626' },
@@ -346,6 +350,7 @@ const AbsensiPage = () => {
         </div>
       </div>
       )}
+      </div>
 
       {activeModal === 'qr_massal' && (
         <div className="modal-overlay">

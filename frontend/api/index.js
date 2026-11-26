@@ -432,7 +432,20 @@ app.get('/api/kelas', async (req, res) => {
 
 app.post('/api/kelas', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('kelas').insert(req.body).select().single();
+    const body = { ...req.body };
+    body.kode_kelas = String(body.kode_kelas || '').trim().toUpperCase();
+    body.nama_kelas = String(body.nama_kelas || '').trim();
+    if (!body.kode_kelas || !body.nama_kelas) return fail(res, 'Kode dan nama kelas wajib diisi');
+    if (!Number.isInteger(Number(body.urutan)) || Number(body.urutan) < 1) return fail(res, 'Urutan harus berupa angka positif');
+    body.urutan = Number(body.urutan);
+    if (body.shift_id) {
+      const { data: shift } = await supabase.from('shift_jadwal').select('*').eq('id', body.shift_id).single();
+      if (!shift) return fail(res, 'Shift tidak ditemukan');
+      body.jadwal = shiftSessions([shift]).map(({ hari, mulai, selesai }) => ({ hari, mulai, selesai }));
+      body.zona_waktu = shift.zona_waktu;
+    } else { delete body.shift_id; }
+    const { data, error } = await supabase.from('kelas').insert(body).select().single();
+    if (error?.code === '23505') return fail(res, 'Kode kelas sudah dipakai');
     if (error) throw error;
     ok(res, data, 'Kelas berhasil ditambahkan');
   } catch (e) { fail(res, e.message, 500); }
@@ -967,6 +980,27 @@ app.get('/api/tabungan/rekap-admin', async (req, res) => {
       .order('created_at', { ascending: false });
     if (error) throw error;
     ok(res, data);
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+// Riwayat transaksi tabungan yang diinput oleh seorang guru + setoran guru ke pusat
+app.get('/api/tabungan/riwayat-guru', async (req, res) => {
+  try {
+    const { guru_id, dari, sampai } = req.query;
+    if (!guru_id) return fail(res, 'guru_id wajib diisi');
+    let q = supabase.from('tabungan_santri')
+      .select('id, jenis, nominal, keterangan, tanggal, created_at, santri:santri_id(nama_lengkap, nomor_induk, kelas:kelas_id(nama_kelas))')
+      .eq('recorded_by', guru_id);
+    let s = supabase.from('setoran_guru').select('id, nominal, tanggal, keterangan, status').eq('guru_id', guru_id);
+    if (dari) { q = q.gte('tanggal', dari); s = s.gte('tanggal', dari); }
+    if (sampai) { q = q.lte('tanggal', sampai); s = s.lte('tanggal', sampai); }
+    const [inputs, setoran] = await Promise.all([
+      q.order('tanggal', { ascending: false }).order('created_at', { ascending: false }).limit(1000),
+      s.order('tanggal', { ascending: false }).limit(500),
+    ]);
+    if (inputs.error) throw inputs.error;
+    if (setoran.error) throw setoran.error;
+    ok(res, { inputs: inputs.data || [], setoran: setoran.data || [] });
   } catch (e) { fail(res, e.message, 500); }
 });
 

@@ -94,6 +94,7 @@ export const kelasAPI = {
     const qs = new URLSearchParams(params).toString();
     return request(`/kelas/${id}/santri${qs ? `?${qs}` : ''}`);
   },
+  create: (body) => request('/kelas', { method: 'POST', body }),
   update: (id, body) => request(`/kelas/${id}`, { method: 'PUT', body }),
 };
 
@@ -160,6 +161,7 @@ export const tabunganAPI = {
   setorKeAdmin: (body) => request('/tabungan/setor-admin', { method: 'POST', body }),
   getRekapAdmin: () => request('/tabungan/rekap-admin'),
   getRekapGuru: () => request('/tabungan/rekap-guru'),
+  getRiwayatGuru: (params = {}) => request('/tabungan/riwayat-guru?' + new URLSearchParams(params).toString()),
   transact: (body) => request('/tabungan', { method: 'POST', body }),
   delete: (id) => request(`/tabungan/${id}`, { method: 'DELETE' }),
 };

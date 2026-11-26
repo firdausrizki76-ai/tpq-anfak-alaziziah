@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Filter, Award, ArrowRight, Save, X, Calendar, Loader2, Plus, CheckCircle2, Printer, History, BarChart3, GraduationCap } from 'lucide-react';
+import { Search, Filter, Award, ArrowRight, Save, X, Calendar, Loader2, Plus, CheckCircle2, Printer, History, BarChart3, GraduationCap, Trophy, BookOpen } from 'lucide-react';
 import { ujianAPI, kelasAPI, santriAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 import WhatsAppLink from '../../components/WhatsAppLink';
@@ -25,6 +25,10 @@ const UjianPage = () => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [editingHistory, setEditingHistory] = useState(null);
   const [printSantri, setPrintSantri] = useState(null);
+  const [expandedTempuh, setExpandedTempuh] = useState(null); // { key, type: 'tepat' | 'lebih' }
+  const [rankMonth, setRankMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [ledgerSearch, setLedgerSearch] = useState('');
+  const [ledgerSantriId, setLedgerSantriId] = useState(null);
   const [selectedSantriIds, setSelectedSantriIds] = useState([]);
   const [nextKelas, setNextKelas] = useState('');
   const [nextKelasId, setNextKelasId] = useState('');
@@ -246,10 +250,10 @@ const UjianPage = () => {
     const byKelas = new Map();
     rows.forEach(({ r, t }) => {
       const key = r.kelas_dari_id;
-      if (!byKelas.has(key)) byKelas.set(key, { nama: r.kelas_dari?.nama_kelas || '-', urutan: r.kelas_dari?.urutan || 0, target: t.target, n: 0, sumDays: 0, tepat: 0, lebih: 0, sumOver: 0 });
+      if (!byKelas.has(key)) byKelas.set(key, { nama: r.kelas_dari?.nama_kelas || '-', urutan: r.kelas_dari?.urutan || 0, target: t.target, id: key, n: 0, sumDays: 0, tepat: 0, lebih: 0, sumOver: 0, tepatList: [], lebihList: [] });
       const g = byKelas.get(key);
       g.n++; g.sumDays += t.actual;
-      if (t.over) { g.lebih++; g.sumOver += t.overDays; } else g.tepat++;
+      if (t.over) { g.lebih++; g.sumOver += t.overDays; g.lebihList.push({ r, t }); } else { g.tepat++; g.tepatList.push({ r, t }); }
     });
     const total = rows.length;
     const lebih = rows.filter(x => x.t.over).length;
@@ -260,6 +264,41 @@ const UjianPage = () => {
       perKelas: [...byKelas.values()].sort((a, b) => a.urutan - b.urutan),
     };
   })();
+
+  // ===== Capaian terbaik per bulan =====
+  const isPassed = (r) => ['lulus', 'lulus_bersyarat'].includes(r.status_tes);
+  const monthRanking = riwayatAll
+    .filter(r => r.tanggal_naik?.startsWith(rankMonth) && isPassed(r))
+    .map(r => ({ r, t: tempuhInfo(r) }));
+  const rankedMonth = monthRanking.filter(x => x.t.pct !== null)
+    .sort((a, b) => a.t.pct - b.t.pct || a.t.actual - b.t.actual);
+  const unrankedMonth = monthRanking.length - rankedMonth.length;
+
+  // ===== Ledger per santri =====
+  const ledgerList = (() => {
+    const map = new Map();
+    riwayatAll.forEach(r => {
+      if (!map.has(r.santri_id)) map.set(r.santri_id, { id: r.santri_id, nama: r.santri?.nama_lengkap || '-', nis: r.santri?.nomor_induk || '-', entries: [] });
+      map.get(r.santri_id).entries.push({ r, t: tempuhInfo(r) });
+    });
+    return [...map.values()].map(l => {
+      l.entries.sort((a, b) => String(a.r.tanggal_naik || '').localeCompare(String(b.r.tanggal_naik || '')));
+      const measured = l.entries.filter(e => e.t.pct !== null);
+      return {
+        ...l,
+        measured: measured.length,
+        lebih: measured.filter(e => e.t.over).length,
+        tepat: measured.filter(e => !e.t.over).length,
+        avgPct: measured.length ? Math.round(measured.reduce((a, e) => a + e.t.pct, 0) / measured.length) : null,
+        last: l.entries[l.entries.length - 1],
+      };
+    }).sort((a, b) => a.nama.localeCompare(b.nama));
+  })();
+  const ledgerFiltered = ledgerList.filter(l => !ledgerSearch || l.nama.toLowerCase().includes(ledgerSearch.toLowerCase()) || String(l.nis).includes(ledgerSearch));
+  const ledgerSantri = ledgerList.find(l => l.id === ledgerSantriId);
+  const ledgerRunning = ledgerSantri ? examData.find(e => (e.santri_id || e.santri?.id) === ledgerSantri.id) : null;
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('id-ID') : '-';
+  const monthLabel = (ym) => { const [y, m] = ym.split('-'); return new Date(Number(y), Number(m) - 1).toLocaleString('id-ID', { month: 'long', year: 'numeric' }); };
 
   const getStatus = (item) => {
     const pct = item.target_hari > 0 ? (item.aktual_hari / item.target_hari) * 100 : 0;
@@ -427,6 +466,8 @@ const UjianPage = () => {
         {[
           { id: 'evaluasi', label: 'Evaluasi & Ujian', icon: GraduationCap },
           { id: 'riwayat', label: 'Riwayat Real-Time', icon: History },
+          { id: 'terbaik', label: 'Capaian Terbaik', icon: Trophy },
+          { id: 'ledger', label: 'Ledger Santri', icon: BookOpen },
           { id: 'rekap', label: 'Rekap Bulanan', icon: BarChart3 }
         ].map(tab => (
           <button key={tab.id} type="button" className="flex items-center gap-2 transition-all duration-200" style={{
@@ -437,7 +478,7 @@ const UjianPage = () => {
             boxShadow: activeTab === tab.id ? '0 4px 6px -1px rgba(16, 185, 129, 0.1)' : 'none'
           }} onClick={() => { 
             setActiveTab(tab.id); 
-            if (tab.id === 'riwayat') loadRiwayatAll();
+            if (['riwayat', 'terbaik', 'ledger'].includes(tab.id)) loadRiwayatAll();
             if (tab.id === 'rekap') loadRekapBulanan();
           }}>
             <tab.icon size={18} /> {tab.label}
@@ -558,7 +599,8 @@ const UjianPage = () => {
                   {tempuhStats.perKelas.map(g => {
                     const avg = g.sumDays / g.n; const pct = Math.round(avg / g.target * 100);
                     return (
-                      <tr key={g.nama}>
+                      <React.Fragment key={g.id}>
+                      <tr>
                         <td className="font-medium">{g.nama}</td>
                         <td>{g.target} hari</td>
                         <td>{g.n}</td>
@@ -569,10 +611,39 @@ const UjianPage = () => {
                             <span style={{ fontSize: 12, fontWeight: 700, color: pct > 100 ? '#991b1b' : '#166534' }}>{pct}%</span>
                           </div>
                         </td>
-                        <td style={{ color: '#166534', fontWeight: 700 }}>{g.tepat}</td>
-                        <td style={{ color: '#991b1b', fontWeight: 700 }}>{g.lebih}{g.lebih ? <span className="text-xs text-gray-500"> (rata-rata +{Math.round(g.sumOver / g.lebih)} hari)</span> : null}</td>
+                        <td style={{ fontWeight: 700 }}>
+                          <button type="button" disabled={!g.tepat} onClick={() => setExpandedTempuh(expandedTempuh?.key === g.id && expandedTempuh.type === 'tepat' ? null : { key: g.id, type: 'tepat' })} style={{ color: '#166534', fontWeight: 700, textDecoration: g.tepat ? 'underline' : 'none', cursor: g.tepat ? 'pointer' : 'default', background: 'none', border: 'none', padding: 0 }} title="Lihat daftar santri">{g.tepat}</button>
+                        </td>
+                        <td style={{ fontWeight: 700 }}>
+                          <button type="button" disabled={!g.lebih} onClick={() => setExpandedTempuh(expandedTempuh?.key === g.id && expandedTempuh.type === 'lebih' ? null : { key: g.id, type: 'lebih' })} style={{ color: '#991b1b', fontWeight: 700, textDecoration: g.lebih ? 'underline' : 'none', cursor: g.lebih ? 'pointer' : 'default', background: 'none', border: 'none', padding: 0 }} title="Lihat daftar santri">{g.lebih}</button>
+                          {g.lebih ? <span className="text-xs text-gray-500"> (rata-rata +{Math.round(g.sumOver / g.lebih)} hari)</span> : null}
+                        </td>
                         <td style={{ fontWeight: 700 }}>{Math.round(g.lebih / g.n * 100)}%</td>
                       </tr>
+                      {expandedTempuh?.key === g.id && (
+                        <tr><td colSpan="8" style={{ backgroundColor: expandedTempuh.type === 'lebih' ? '#fef2f2' : '#f0fdf4', padding: 12 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: expandedTempuh.type === 'lebih' ? '#991b1b' : '#166534' }}>
+                            Santri {g.nama} yang {expandedTempuh.type === 'lebih' ? 'melebihi target' : 'tepat / sesuai target'} ({expandedTempuh.type === 'lebih' ? g.lebih : g.tepat} orang)
+                          </div>
+                          <table className="data-table w-full" style={{ backgroundColor: '#fff' }}>
+                            <thead><tr><th>Nama Santri</th><th>NIS</th><th>Tanggal Naik</th><th>Masa Tempuh</th><th>Capaian</th><th>{expandedTempuh.type === 'lebih' ? 'Kelebihan' : 'Selisih'}</th><th></th></tr></thead>
+                            <tbody>
+                              {(expandedTempuh.type === 'lebih' ? g.lebihList : g.tepatList).slice().sort((a, b) => expandedTempuh.type === 'lebih' ? b.t.overDays - a.t.overDays : a.t.pct - b.t.pct).map(({ r, t }) => (
+                                <tr key={r.id}>
+                                  <td className="font-medium">{r.santri?.nama_lengkap || '-'}</td>
+                                  <td>{r.santri?.nomor_induk || '-'}</td>
+                                  <td>{fmtDate(r.tanggal_naik)}</td>
+                                  <td>{t.actual} hari</td>
+                                  <td style={{ fontWeight: 700, color: t.over ? '#991b1b' : '#166534' }}>{t.pct}%</td>
+                                  <td>{t.over ? `+${t.overDays} hari (+${t.overPct}%)` : `${t.target - t.actual} hari lebih cepat`}</td>
+                                  <td><button type="button" className="text-xs" style={{ color: '#2563eb', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => setLedgerSantriId(r.santri_id)}>Ledger</button></td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </td></tr>
+                      )}
+                      </React.Fragment>
                     );
                   })}
                 </tbody>
@@ -649,6 +720,148 @@ const UjianPage = () => {
           </table>
         </div>
       </div>
+      )}
+
+      {activeTab === 'terbaik' && (
+      <div className="card w-full">
+        <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
+          <h3 className="card-title">Capaian Target Terbaik per Bulan</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-gray-600">Bulan:</span>
+            <input type="month" className="input-field py-1.5 px-3 text-sm" value={rankMonth} onChange={e => setRankMonth(e.target.value)} />
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mb-4">Peringkat berdasarkan <strong>persentase masa tempuh terhadap target</strong> (makin kecil makin cepat) untuk santri yang naik jilid pada {monthLabel(rankMonth)}. Santri yang lulus dengan jilid tanpa target tidak ikut diperingkat.</p>
+        {loadingRiwayat ? <div className="text-center py-8"><Loader2 size={24} className="animate-spin mx-auto" /></div>
+        : rankedMonth.length === 0 ? <p className="text-center text-gray-400 py-8">Belum ada santri yang naik jilid dengan data target pada bulan ini</p>
+        : (<>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+            {rankedMonth.slice(0, 3).map(({ r, t }, i) => (
+              <div key={r.id} style={{ padding: 14, borderRadius: 16, border: '1px solid #fde68a', backgroundColor: ['#fffbeb', '#f8fafc', '#fff7ed'][i] }}>
+                <div style={{ fontSize: 22 }}>{['🥇', '🥈', '🥉'][i]}</div>
+                <div style={{ fontWeight: 800, color: '#1e293b' }}>{r.santri?.nama_lengkap}</div>
+                <div className="text-xs text-gray-500">{r.kelas_dari?.nama_kelas} → {r.kelas_ke?.nama_kelas}</div>
+                <div style={{ fontWeight: 800, color: '#166534', marginTop: 4 }}>{t.pct}% dari target</div>
+                <div className="text-xs text-gray-500">{t.actual} hari (target {t.target})</div>
+              </div>
+            ))}
+          </div>
+          <div className="table-responsive">
+            <table className="data-table w-full">
+              <thead><tr><th>Peringkat</th><th>Nama Santri</th><th>Jilid</th><th>Tanggal Naik</th><th>Masa Tempuh</th><th>Target</th><th>Capaian</th><th>Keterangan</th></tr></thead>
+              <tbody>
+                {rankedMonth.map(({ r, t }, i) => (
+                  <tr key={r.id}>
+                    <td style={{ fontWeight: 800 }}>{i + 1}</td>
+                    <td className="font-medium"><button type="button" onClick={() => setLedgerSantriId(r.santri_id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, color: '#1e293b', textDecoration: 'underline' }}>{r.santri?.nama_lengkap || '-'}</button></td>
+                    <td>{r.kelas_dari?.nama_kelas} → <strong>{r.kelas_ke?.nama_kelas}</strong></td>
+                    <td>{fmtDate(r.tanggal_naik)}</td>
+                    <td>{t.actual} hari</td>
+                    <td>{t.target} hari</td>
+                    <td style={{ fontWeight: 800, color: t.over ? '#991b1b' : '#166534' }}>{t.pct}%</td>
+                    <td className="text-xs">{t.over ? `Melebihi ${t.overDays} hari` : t.target === t.actual ? 'Tepat target' : `${t.target - t.actual} hari lebih cepat`}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>)}
+        {unrankedMonth > 0 && <p className="text-xs text-amber-600 mt-3">{unrankedMonth} kenaikan bulan ini tidak diperingkat karena target masa tempuh atau tanggal mulai/selesai belum terisi.</p>}
+      </div>
+      )}
+
+      {activeTab === 'ledger' && (
+      <div className="card w-full">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <h3 className="card-title">Ledger Pencapaian Santri</h3>
+          <div className="input-with-icon" style={{ maxWidth: 300, width: '100%' }}>
+            <Search className="icon" size={18} />
+            <input type="text" className="input-field" placeholder="Cari nama atau NIS..." value={ledgerSearch} onChange={e => setLedgerSearch(e.target.value)} />
+          </div>
+        </div>
+        <div className="table-responsive">
+          <table className="data-table w-full">
+            <thead><tr><th>Nama Santri</th><th>NIS</th><th>Jilid Dilalui</th><th>Rata-rata Capaian</th><th>Tepat</th><th>Melebihi</th><th>Jilid Terakhir</th><th className="text-center">Aksi</th></tr></thead>
+            <tbody>
+              {loadingRiwayat ? <tr><td colSpan="8" className="text-center py-8"><Loader2 size={24} className="animate-spin mx-auto" /></td></tr>
+              : ledgerFiltered.length === 0 ? <tr><td colSpan="8" className="text-center py-8 text-gray-400">Belum ada riwayat kenaikan</td></tr>
+              : ledgerFiltered.map(l => (
+                <tr key={l.id}>
+                  <td className="font-medium">{l.nama}</td>
+                  <td>{l.nis}</td>
+                  <td>{l.entries.length}</td>
+                  <td style={{ fontWeight: 700, color: l.avgPct > 100 ? '#991b1b' : '#166534' }}>{l.avgPct !== null ? `${l.avgPct}%` : '-'}</td>
+                  <td style={{ color: '#166534', fontWeight: 700 }}>{l.tepat}</td>
+                  <td style={{ color: '#991b1b', fontWeight: 700 }}>{l.lebih}</td>
+                  <td className="text-xs">{l.last?.r.kelas_dari?.nama_kelas} → {l.last?.r.kelas_ke?.nama_kelas}<div className="text-gray-400">{fmtDate(l.last?.r.tanggal_naik)}</div></td>
+                  <td className="text-center"><button className="btn-primary" style={{ padding: '4px 12px', fontSize: 12 }} onClick={() => setLedgerSantriId(l.id)}>Lihat Ledger</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      )}
+
+      {ledgerSantri && (
+        <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: 900 }}>
+          <div className="modal-header">
+            <div><h2 className="modal-title">Ledger Pencapaian: {ledgerSantri.nama}</h2><p className="text-xs text-gray-500">NIS {ledgerSantri.nis}</p></div>
+            <X className="modal-close" onClick={() => setLedgerSantriId(null)} />
+          </div>
+          <div className="modal-body">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 16 }}>
+              {[
+                { label: 'Jilid Dilalui', value: ledgerSantri.entries.length, color: '#334155' },
+                { label: 'Rata-rata Capaian', value: ledgerSantri.avgPct !== null ? `${ledgerSantri.avgPct}%` : '-', color: ledgerSantri.avgPct > 100 ? '#991b1b' : '#166534' },
+                { label: 'Tepat Target', value: ledgerSantri.tepat, color: '#166534' },
+                { label: 'Melebihi Target', value: ledgerSantri.lebih, color: '#991b1b' },
+              ].map(c => (
+                <div key={c.label} style={{ padding: 12, borderRadius: 12, backgroundColor: '#f8fafc', border: '1px solid #f1f5f9' }}>
+                  <div className="text-xs" style={{ color: '#64748b', fontWeight: 600 }}>{c.label}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <div className="table-responsive">
+              <table className="data-table w-full">
+                <thead><tr><th>Jilid</th><th>Mulai</th><th>Selesai</th><th>Naik</th><th>Tempuh / Target</th><th>Capaian</th><th>Keterangan</th><th>Nilai</th></tr></thead>
+                <tbody>
+                  {ledgerSantri.entries.map(({ r, t }) => (
+                    <tr key={r.id}>
+                      <td className="font-medium">{r.kelas_dari?.nama_kelas || '-'} → <strong>{r.kelas_ke?.nama_kelas || '-'}</strong></td>
+                      <td>{fmtDate(r.tanggal_mulai)}</td>
+                      <td>{fmtDate(r.tanggal_selesai)}</td>
+                      <td>{fmtDate(r.tanggal_naik)}</td>
+                      <td>{t.actual ? `${t.actual} hari` : '-'}{t.target ? ` / ${t.target}` : ''}</td>
+                      <td style={{ minWidth: 140 }}>
+                        {t.pct !== null ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ flex: 1, height: 8, backgroundColor: '#e5e7eb', borderRadius: 100, overflow: 'hidden' }}><div style={{ width: `${Math.min(t.pct, 100)}%`, height: '100%', backgroundColor: t.over ? '#dc2626' : '#10b981' }} /></div>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: t.over ? '#991b1b' : '#166534' }}>{t.pct}%</span>
+                          </div>
+                        ) : <span className="text-xs text-gray-400">Target belum diatur</span>}
+                      </td>
+                      <td className="text-xs">{t.pct === null ? '-' : t.over ? `Melebihi ${t.overDays} hari` : t.target === t.actual ? 'Tepat target' : `${t.target - t.actual} hari lebih cepat`}</td>
+                      <td>{r.nilai_tes ?? '-'}</td>
+                    </tr>
+                  ))}
+                  {ledgerRunning && (
+                    <tr style={{ backgroundColor: '#eff6ff' }}>
+                      <td className="font-medium">{ledgerRunning.santri?.kelas?.nama_kelas || ledgerRunning.kelas?.nama_kelas || '-'} <span className="badge" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>Sedang berjalan</span></td>
+                      <td>{fmtDate(ledgerRunning.tanggal_mulai || ledgerRunning.tanggal_masuk)}</td>
+                      <td>-</td><td>-</td>
+                      <td>{ledgerRunning.aktual_hari || 0} hari / {ledgerRunning.target_hari || '-'}</td>
+                      <td>{ledgerRunning.target_hari > 0 ? `${Math.round((ledgerRunning.aktual_hari || 0) / ledgerRunning.target_hari * 100)}%` : '-'}</td>
+                      <td className="text-xs">Belum ujian</td><td>-</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="modal-footer"><button className="btn-primary" onClick={() => setLedgerSantriId(null)}>Tutup</button></div>
+        </div></div>
       )}
 
       {activeModal === 'register_exam' && (
