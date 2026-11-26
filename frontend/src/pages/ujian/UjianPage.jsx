@@ -25,6 +25,7 @@ const UjianPage = () => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [editingHistory, setEditingHistory] = useState(null);
   const [printSantri, setPrintSantri] = useState(null);
+  const [printMode, setPrintMode] = useState(null); // 'kartu' | 'ledger' — menentukan aturan cetak yang aktif
   const [expandedTempuh, setExpandedTempuh] = useState(null); // { key, type: 'tepat' | 'lebih' }
   const [rankMonth, setRankMonth] = useState(new Date().toISOString().slice(0, 7));
   const [ledgerSearch, setLedgerSearch] = useState('');
@@ -63,6 +64,13 @@ const UjianPage = () => {
   }, [regFormData.tanggal_mulai, regFormData.tanggal_selesai]);
 
   useEffect(() => { loadData(); }, []);
+
+  // Setelah dialog cetak ditutup, lepaskan aturan cetak khusus agar tidak bocor ke cetak berikutnya.
+  useEffect(() => {
+    const reset = () => setPrintMode(null);
+    window.addEventListener('afterprint', reset);
+    return () => window.removeEventListener('afterprint', reset);
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
@@ -233,6 +241,7 @@ const UjianPage = () => {
 
   const handlePrintKartu = (item) => {
     setPrintSantri(item);
+    setPrintMode('kartu');
     setTimeout(() => window.print(), 100);
   };
 
@@ -297,6 +306,10 @@ const UjianPage = () => {
   const ledgerFiltered = ledgerList.filter(l => !ledgerSearch || l.nama.toLowerCase().includes(ledgerSearch.toLowerCase()) || String(l.nis).includes(ledgerSearch));
   const ledgerSantri = ledgerList.find(l => l.id === ledgerSantriId);
   const ledgerRunning = ledgerSantri ? examData.find(e => (e.santri_id || e.santri?.id) === ledgerSantri.id) : null;
+  const handlePrintLedger = () => {
+    setPrintMode('ledger');
+    setTimeout(() => window.print(), 100);
+  };
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString('id-ID') : '-';
   const monthLabel = (ym) => { const [y, m] = ym.split('-'); return new Date(Number(y), Number(m) - 1).toLocaleString('id-ID', { month: 'long', year: 'numeric' }); };
 
@@ -327,7 +340,71 @@ const UjianPage = () => {
 
   return (
     <div className="flex-col gap-6 w-full relative">
-      {printSantri && (
+      {printMode === 'ledger' && ledgerSantri && (
+        <div id="print-ledger" className="print-only" style={{ padding: '10mm 12mm', backgroundColor: '#fff', color: '#000', fontFamily: 'serif' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, borderBottom: '3px double #000', paddingBottom: 12, marginBottom: 16 }}>
+            <img src="/assets/logoapp.png" alt="Logo TPQ" style={{ width: 70, height: 70, objectFit: 'contain' }} />
+            <div style={{ textAlign: 'center', flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 'bold', textTransform: 'uppercase' }}>KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
+              <div style={{ fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase' }}>KANTOR KEMENTERIAN AGAMA KABUPATEN MAGELANG</div>
+              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#064e3b', textTransform: 'uppercase' }}>TPQ ANFAK AL AZIZAH MAGELANG</div>
+              <div style={{ fontSize: 10, fontStyle: 'italic' }}>Alamat: Tepus Wetan, Surodadi, Candimulyo, Magelang • Kontak: 0812-2770-5767</div>
+            </div>
+          </div>
+          <div style={{ textAlign: 'center', marginBottom: 14 }}>
+            <div style={{ fontSize: 15, fontWeight: 'bold', textDecoration: 'underline', textTransform: 'uppercase' }}>Ledger Pencapaian Santri</div>
+          </div>
+          <table style={{ fontSize: 12, marginBottom: 14 }}><tbody>
+            <tr><td style={{ paddingRight: 16 }}>Nama</td><td>: <strong>{ledgerSantri.nama}</strong></td></tr>
+            <tr><td>NIS</td><td>: {ledgerSantri.nis}</td></tr>
+            <tr><td>Jilid dilalui</td><td>: {ledgerSantri.entries.length}</td></tr>
+            <tr><td>Rata-rata capaian</td><td>: {ledgerSantri.avgPct !== null ? `${ledgerSantri.avgPct}%` : '-'} (tepat target {ledgerSantri.tepat}, melebihi {ledgerSantri.lebih})</td></tr>
+          </tbody></table>
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: '1.5px solid #000', fontSize: 10.5, fontFamily: 'sans-serif' }}>
+            <thead><tr style={{ backgroundColor: '#f1f5f9' }}>
+              {['No', 'Jilid', 'Mulai', 'Selesai', 'Naik', 'Tempuh / Target', 'Capaian', 'Keterangan', 'Nilai'].map(h => <th key={h} style={{ border: '1px solid #000', padding: '5px 4px' }}>{h}</th>)}
+            </tr></thead>
+            <tbody>
+              {ledgerSantri.entries.map(({ r, t }, i) => (
+                <tr key={r.id}>
+                  <td style={{ border: '1px solid #000', padding: 4, textAlign: 'center' }}>{i + 1}</td>
+                  <td style={{ border: '1px solid #000', padding: 4 }}>{r.kelas_dari?.nama_kelas || '-'} → {r.kelas_ke?.nama_kelas || '-'}</td>
+                  <td style={{ border: '1px solid #000', padding: 4, textAlign: 'center' }}>{fmtDate(r.tanggal_mulai)}</td>
+                  <td style={{ border: '1px solid #000', padding: 4, textAlign: 'center' }}>{fmtDate(r.tanggal_selesai)}</td>
+                  <td style={{ border: '1px solid #000', padding: 4, textAlign: 'center' }}>{fmtDate(r.tanggal_naik)}</td>
+                  <td style={{ border: '1px solid #000', padding: 4, textAlign: 'center' }}>{t.actual ? `${t.actual} hari` : '-'}{t.target ? ` / ${t.target}` : ''}</td>
+                  <td style={{ border: '1px solid #000', padding: 4, textAlign: 'center', fontWeight: 'bold' }}>{t.pct !== null ? `${t.pct}%` : '-'}</td>
+                  <td style={{ border: '1px solid #000', padding: 4 }}>{t.pct === null ? '-' : t.over ? `Melebihi ${t.overDays} hari` : t.target === t.actual ? 'Tepat target' : `${t.target - t.actual} hari lebih cepat`}</td>
+                  <td style={{ border: '1px solid #000', padding: 4, textAlign: 'center' }}>{r.nilai_tes ?? '-'}</td>
+                </tr>
+              ))}
+              {ledgerRunning && (
+                <tr>
+                  <td style={{ border: '1px solid #000', padding: 4, textAlign: 'center' }}>{ledgerSantri.entries.length + 1}</td>
+                  <td style={{ border: '1px solid #000', padding: 4 }}>{ledgerRunning.santri?.kelas?.nama_kelas || ledgerRunning.kelas?.nama_kelas || '-'} (sedang berjalan)</td>
+                  <td style={{ border: '1px solid #000', padding: 4, textAlign: 'center' }}>{fmtDate(ledgerRunning.tanggal_mulai || ledgerRunning.tanggal_masuk)}</td>
+                  <td style={{ border: '1px solid #000', padding: 4, textAlign: 'center' }}>-</td>
+                  <td style={{ border: '1px solid #000', padding: 4, textAlign: 'center' }}>-</td>
+                  <td style={{ border: '1px solid #000', padding: 4, textAlign: 'center' }}>{ledgerRunning.aktual_hari || 0} hari / {ledgerRunning.target_hari || '-'}</td>
+                  <td style={{ border: '1px solid #000', padding: 4, textAlign: 'center' }}>{ledgerRunning.target_hari > 0 ? `${Math.round((ledgerRunning.aktual_hari || 0) / ledgerRunning.target_hari * 100)}%` : '-'}</td>
+                  <td style={{ border: '1px solid #000', padding: 4 }}>Belum ujian</td>
+                  <td style={{ border: '1px solid #000', padding: 4, textAlign: 'center' }}>-</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28, fontSize: 11, pageBreakInside: 'avoid' }}>
+            <div style={{ textAlign: 'center', width: 230 }}>
+              <p style={{ margin: 0 }}>Magelang, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              <p style={{ margin: '2px 0 55px 0' }}>Kepala TPQ Anfak Al Azizah</p>
+              <p style={{ fontWeight: 'bold', textDecoration: 'underline', margin: 0 }}>( ..................................................... )</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {printMode === 'kartu' && printSantri && (
         <div id="print-kartu-tes" className="print-only">
           <div className="a5-card">
             
@@ -860,7 +937,10 @@ const UjianPage = () => {
               </table>
             </div>
           </div>
-          <div className="modal-footer"><button className="btn-primary" onClick={() => setLedgerSantriId(null)}>Tutup</button></div>
+          <div className="modal-footer">
+            <button className="btn-primary" style={{ backgroundColor: '#0284c7', color: '#fff' }} onClick={handlePrintLedger}><Printer size={18} /> Cetak Ledger</button>
+            <button className="btn-primary" onClick={() => setLedgerSantriId(null)}>Tutup</button>
+          </div>
         </div></div>
       )}
 
@@ -1116,6 +1196,20 @@ const UjianPage = () => {
         @media screen {
           .print-only { display: none; }
         }
+      `}</style>
+      {printMode === 'ledger' && <style>{`
+        @media print {
+          @page { size: A4 portrait; margin: 8mm; }
+          body * { visibility: hidden; }
+          #print-ledger, #print-ledger * { visibility: visible; }
+          #print-ledger { position: absolute; left: 0; top: 0; width: 100%; margin: 0; }
+          html, body, #root, .app-layout, .main-wrapper, .content-area, .content-container, .flex-col {
+            overflow: visible !important; height: auto !important; min-height: 0 !important;
+            background: transparent !important; box-shadow: none !important;
+          }
+        }
+      `}</style>}
+      {printMode === 'kartu' && <style>{`
         @media print {
           @page { size: A5 portrait; margin: 10mm; }
           
@@ -1163,7 +1257,7 @@ const UjianPage = () => {
           .ptable { width: 100%; border-collapse: collapse; margin-bottom: 0; }
           .ptable th, .ptable td { border: 1px solid #000 !important; padding: 4px 8px; font-size: 11px; vertical-align: middle; }
         }
-      `}</style>
+      `}</style>}
     </div>
   );
 };
