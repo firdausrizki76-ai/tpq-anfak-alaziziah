@@ -232,6 +232,35 @@ const UjianPage = () => {
     setTimeout(() => window.print(), 100);
   };
 
+  // ===== Statistik masa tempuh per kenaikan =====
+  const tempuhInfo = (r) => {
+    const actual = Number(r.masa_tempuh);
+    const target = Number(r.kelas_dari?.target_masa_tempuh);
+    if (!actual || !target) return { actual: actual || null, target: target || null, pct: null, over: false, overDays: 0, overPct: 0 };
+    const overDays = Math.max(0, actual - target);
+    return { actual, target, pct: Math.round((actual / target) * 100), over: actual > target, overDays, overPct: Math.round((overDays / target) * 100) };
+  };
+
+  const tempuhStats = (() => {
+    const rows = riwayatAll.map(r => ({ r, t: tempuhInfo(r) })).filter(x => x.t.pct !== null);
+    const byKelas = new Map();
+    rows.forEach(({ r, t }) => {
+      const key = r.kelas_dari_id;
+      if (!byKelas.has(key)) byKelas.set(key, { nama: r.kelas_dari?.nama_kelas || '-', urutan: r.kelas_dari?.urutan || 0, target: t.target, n: 0, sumDays: 0, tepat: 0, lebih: 0, sumOver: 0 });
+      const g = byKelas.get(key);
+      g.n++; g.sumDays += t.actual;
+      if (t.over) { g.lebih++; g.sumOver += t.overDays; } else g.tepat++;
+    });
+    const total = rows.length;
+    const lebih = rows.filter(x => x.t.over).length;
+    return {
+      total, lebih, tepat: total - lebih,
+      avgPct: total ? Math.round(rows.reduce((a, x) => a + x.t.pct, 0) / total) : 0,
+      noTarget: riwayatAll.filter(r => r.masa_tempuh && !r.kelas_dari?.target_masa_tempuh).length,
+      perKelas: [...byKelas.values()].sort((a, b) => a.urutan - b.urutan),
+    };
+  })();
+
   const getStatus = (item) => {
     const pct = item.target_hari > 0 ? (item.aktual_hari / item.target_hari) * 100 : 0;
     if (pct >= 100) return 'Siap Ujian';
@@ -502,6 +531,57 @@ const UjianPage = () => {
       {activeTab === 'riwayat' && (
       <div className="card w-full">
         <h3 className="card-title mb-4">Riwayat Kenaikan Kelas (Real-Time)</h3>
+
+        {/* Statistik Masa Tempuh */}
+        <div className="mb-6" style={{ padding: 16, borderRadius: 16, border: '1px solid #e5e7eb', backgroundColor: '#fafafa' }}>
+          <h4 style={{ fontSize: 14, fontWeight: 700, color: '#334155', marginBottom: 12 }}>Statistik Capaian Masa Tempuh</h4>
+          {tempuhStats.total === 0 ? (
+            <p className="text-sm text-gray-500">Belum ada data. Isi <strong>Target Masa Tempuh</strong> tiap kelas di menu Kelas, dan pastikan riwayat kenaikan memiliki tanggal mulai/selesai.</p>
+          ) : (<>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 16 }}>
+              {[
+                { label: 'Kenaikan Terukur', value: tempuhStats.total, color: '#334155' },
+                { label: 'Tepat / Sesuai Target', value: `${tempuhStats.tepat} (${Math.round(tempuhStats.tepat / tempuhStats.total * 100)}%)`, color: '#166534' },
+                { label: 'Melebihi Target', value: `${tempuhStats.lebih} (${Math.round(tempuhStats.lebih / tempuhStats.total * 100)}%)`, color: '#991b1b' },
+                { label: 'Rata-rata Capaian', value: `${tempuhStats.avgPct}%`, color: tempuhStats.avgPct > 100 ? '#991b1b' : '#166534' },
+              ].map(c => (
+                <div key={c.label} style={{ backgroundColor: '#fff', borderRadius: 12, padding: 12, border: '1px solid #f1f5f9' }}>
+                  <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{c.label}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <div className="table-responsive">
+              <table className="data-table w-full">
+                <thead><tr><th>Jilid / Kelas</th><th>Target</th><th>Jumlah Naik</th><th>Rata-rata Tempuh</th><th>Capaian Rata-rata</th><th style={{ color: '#166534' }}>Tepat</th><th style={{ color: '#991b1b' }}>Melebihi</th><th>% Melebihi</th></tr></thead>
+                <tbody>
+                  {tempuhStats.perKelas.map(g => {
+                    const avg = g.sumDays / g.n; const pct = Math.round(avg / g.target * 100);
+                    return (
+                      <tr key={g.nama}>
+                        <td className="font-medium">{g.nama}</td>
+                        <td>{g.target} hari</td>
+                        <td>{g.n}</td>
+                        <td>{Math.round(avg)} hari</td>
+                        <td style={{ minWidth: 150 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ flex: 1, height: 8, backgroundColor: '#e5e7eb', borderRadius: 100, overflow: 'hidden' }}><div style={{ width: `${Math.min(pct, 100)}%`, height: '100%', backgroundColor: pct > 100 ? '#dc2626' : '#10b981' }} /></div>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: pct > 100 ? '#991b1b' : '#166534' }}>{pct}%</span>
+                          </div>
+                        </td>
+                        <td style={{ color: '#166534', fontWeight: 700 }}>{g.tepat}</td>
+                        <td style={{ color: '#991b1b', fontWeight: 700 }}>{g.lebih}{g.lebih ? <span className="text-xs text-gray-500"> (rata-rata +{Math.round(g.sumOver / g.lebih)} hari)</span> : null}</td>
+                        <td style={{ fontWeight: 700 }}>{Math.round(g.lebih / g.n * 100)}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {tempuhStats.noTarget > 0 && <p className="text-xs text-amber-600 mt-3">{tempuhStats.noTarget} riwayat belum bisa dihitung karena kelas asalnya belum memiliki target masa tempuh.</p>}
+          </>)}
+        </div>
+
         <div className="table-responsive">
           <table className="data-table w-full">
             <thead>
@@ -510,20 +590,22 @@ const UjianPage = () => {
                 <th>Nama Santri</th>
                 <th>Dari Kelas</th>
                 <th>Ke Kelas</th>
+                <th>Masa Tempuh</th>
                 <th>Nilai Tes</th>
                 <th>Status</th>
                 <th>Pemberitahuan</th>
               </tr>
             </thead>
             <tbody>
-              {loadingRiwayat ? <tr><td colSpan="7" className="text-center py-8"><Loader2 size={24} className="animate-spin mx-auto" /></td></tr>
-              : riwayatAll.length === 0 ? <tr><td colSpan="7" className="text-center py-8 text-gray-400">Belum ada riwayat kenaikan kelas</td></tr>
+              {loadingRiwayat ? <tr><td colSpan="8" className="text-center py-8"><Loader2 size={24} className="animate-spin mx-auto" /></td></tr>
+              : riwayatAll.length === 0 ? <tr><td colSpan="8" className="text-center py-8 text-gray-400">Belum ada riwayat kenaikan kelas</td></tr>
               : riwayatAll.map((r, i) => (
                 <tr key={r.id}>
                   <td>{r.tanggal_naik ? new Date(r.tanggal_naik).toLocaleDateString('id-ID') : '-'}</td>
                   <td className="font-medium">{r.santri?.nama_lengkap || '-'}</td>
                   <td>{r.kelas_dari?.nama_kelas || '-'}</td>
                   <td className="font-bold text-emerald-600">{r.kelas_ke?.nama_kelas || '-'}</td>
+                  <td>{(() => { const t = tempuhInfo(r); return t.actual ? (<div><div className="font-semibold">{t.actual} hari{t.target ? <span className="text-xs text-gray-400"> / target {t.target}</span> : null}</div>{t.pct !== null && <span className="text-xs font-bold" style={{ color: t.over ? '#991b1b' : '#166534' }}>{t.over ? `Melebihi ${t.overDays} hari (+${t.overPct}%)` : `Sesuai target (${t.pct}%)`}</span>}</div>) : '-'; })()}</td>
                   <td>{r.nilai_tes || '-'}</td>
                   <td><span className={`badge ${r.status_tes === 'lulus' ? 'badge-success' : 'badge-info'}`}>{r.status_tes}</span></td>
                   <td><WhatsAppLink santri={r.santri} message={promotionMessage(r)} label="WA Kenaikan" enabled={['lulus', 'lulus_bersyarat'].includes(r.status_tes) && !!r.kelas_ke?.nama_kelas && !!r.tanggal_naik} /></td>

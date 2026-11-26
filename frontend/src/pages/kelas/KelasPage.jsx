@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Edit, X, Save, Download, Users, Plus, BookOpen, User, Loader2 } from 'lucide-react';
-import { kelasAPI, guruAPI } from '../../services/api';
+import { Search, Edit, X, Save, Download, Users, BookOpen, User, Loader2 } from 'lucide-react';
+import { kelasAPI, guruAPI, shiftAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 const DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 const ZONES = { 'Asia/Jakarta': 'WIB', 'Asia/Makassar': 'WITA', 'Asia/Jayapura': 'WIT' };
@@ -8,6 +8,7 @@ const ZONES = { 'Asia/Jakarta': 'WIB', 'Asia/Makassar': 'WITA', 'Asia/Jayapura':
 const KelasPage = () => {
   const [kelasList, setKelasList] = useState([]);
   const [guruList, setGuruList] = useState([]);
+  const [shiftList, setShiftList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -24,12 +25,14 @@ const KelasPage = () => {
   const loadData = async () => {
     setLoading(true);
     try { 
-      const [data, guruData] = await Promise.all([
+      const [data, guruData, shiftData] = await Promise.all([
         kelasAPI.getAll().catch(() => []),
-        guruAPI.getAll().catch(() => [])
+        guruAPI.getAll().catch(() => []),
+        shiftAPI.getAll().catch(() => [])
       ]);
       setKelasList(data || []); 
       setGuruList(guruData || []);
+      setShiftList(shiftData || []);
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -47,7 +50,7 @@ const KelasPage = () => {
   };
 
   const openEdit = (kelas) => {
-    setSelectedKelas(kelas); setError(''); setFormData({ deskripsi: kelas.deskripsi || '', wali_kelas_id: kelas.wali_kelas_id || '', jadwal: kelas.jadwal || [], zona_waktu: kelas.zona_waktu || 'Asia/Makassar' }); setActiveModal('edit');
+    setSelectedKelas(kelas); setError(''); setFormData({ deskripsi: kelas.deskripsi || '', wali_kelas_id: kelas.wali_kelas_id || '', shift_id: kelas.shift_id || '', target_masa_tempuh: kelas.target_masa_tempuh ?? '' }); setActiveModal('edit');
   };
 
   const closeModal = () => { setActiveModal(null); setSelectedKelas(null); setSantriInKelas([]); };
@@ -84,14 +87,15 @@ const KelasPage = () => {
 
         <div className="table-responsive">
           <table className="data-table w-full">
-            <thead><tr><th>Urutan</th><th>Kode Kelas</th><th>Nama Kelas</th><th>Wali Kelas</th><th>Jadwal</th><th>Jumlah Santri</th><th className="text-center">Aksi</th></tr></thead>
+            <thead><tr><th>Urutan</th><th>Kode Kelas</th><th>Nama Kelas</th><th>Wali Kelas</th><th>Shift / Jadwal</th><th>Target Masa Tempuh</th><th>Jumlah Santri</th><th className="text-center">Aksi</th></tr></thead>
             <tbody>
-              {loading ? <tr><td colSpan="7" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
+              {loading ? <tr><td colSpan="8" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
               : kelasList.filter(k => k.nama_kelas.toLowerCase().includes(search.toLowerCase())).map(kelas => (
                 <tr key={kelas.id}>
                   <td>{kelas.urutan}</td><td>{kelas.kode_kelas}</td><td className="font-medium">{kelas.nama_kelas}</td>
                   <td>{kelas.wali_kelas?.nama_lengkap || '-'}</td>
-                  <td>{kelas.jadwal?.length ? kelas.jadwal.map((j, i) => <div key={i} className="text-xs">{DAYS[j.hari]} {j.mulai}–{j.selesai} {ZONES[kelas.zona_waktu || 'Asia/Makassar']}</div>) : <span className="text-xs text-gray-400">Belum diatur</span>}</td>
+                  <td>{shiftList.find(sh => sh.id === kelas.shift_id) ? <div className="text-xs font-semibold" style={{ color: '#047857' }}>{shiftList.find(sh => sh.id === kelas.shift_id).nama}</div> : null}{kelas.jadwal?.length ? kelas.jadwal.map((j, i) => <div key={i} className="text-xs">{DAYS[j.hari]} {j.mulai}–{j.selesai} {ZONES[kelas.zona_waktu || 'Asia/Makassar']}</div>) : <span className="text-xs text-gray-400">Belum diatur</span>}</td>
+                  <td>{kelas.target_masa_tempuh ? `${kelas.target_masa_tempuh} hari` : <span className="text-xs text-gray-400">Belum diatur</span>}</td>
                   <td>{kelas.jumlah_santri || 0} Santri</td>
                   <td>
                     <div className="flex justify-center gap-2">
@@ -118,17 +122,18 @@ const KelasPage = () => {
               </select>
             </div>
             <div className="form-group"><label className="form-label">Deskripsi</label><textarea name="deskripsi" value={formData.deskripsi} onChange={handleInputChange} className="input-field" rows="3" style={{ resize: 'none' }}></textarea></div>
-            <div className="form-group"><label className="form-label">Zona Waktu</label><select name="zona_waktu" className="input-field" value={formData.zona_waktu} onChange={handleInputChange}>{Object.entries(ZONES).map(([zone, label]) => <option key={zone} value={zone}>{label}</option>)}</select></div>
             <div className="form-group">
-              <label className="form-label">Jadwal Hari dan Jam</label>
-              <p className="text-xs text-gray-500 mb-3">Tambah sesi sesuai kebutuhan. Jam selesai pada hari yang sama. Absensi guru dihitung dari awal sesi pertama sampai akhir sesi terakhir kelas yang diampu.</p>
-              {formData.jadwal.map((j, i) => <div className="schedule-session" key={i}>
-                <select className="input-field" aria-label={`Hari sesi ${i + 1}`} value={j.hari} onChange={e => setFormData(f => ({ ...f, jadwal: f.jadwal.map((v, idx) => idx === i ? { ...v, hari: Number(e.target.value) } : v) }))}>{DAYS.map((day, index) => <option key={day} value={index}>{day}</option>)}</select>
-                <input required type="time" className="input-field" aria-label={`Jam mulai sesi ${i + 1}`} value={j.mulai} onChange={e => setFormData(f => ({ ...f, jadwal: f.jadwal.map((v, idx) => idx === i ? { ...v, mulai: e.target.value } : v) }))} />
-                <input required type="time" className="input-field" aria-label={`Jam selesai sesi ${i + 1}`} value={j.selesai} onChange={e => setFormData(f => ({ ...f, jadwal: f.jadwal.map((v, idx) => idx === i ? { ...v, selesai: e.target.value } : v) }))} />
-                <button type="button" title="Hapus sesi" onClick={() => setFormData(f => ({ ...f, jadwal: f.jadwal.filter((_, idx) => idx !== i) }))}><X size={18} /></button>
-              </div>)}
-              <button type="button" className="btn-primary" onClick={() => setFormData(f => ({ ...f, jadwal: [...f.jadwal, { hari: 1, mulai: '16:00', selesai: '17:00' }] }))}><Plus size={16} /> Tambah Sesi</button>
+              <label className="form-label">Shift Jadwal</label>
+              <select name="shift_id" className="input-field" value={formData.shift_id} onChange={handleInputChange}>
+                <option value="">-- Belum ada shift --</option>
+                {shiftList.map(sh => <option key={sh.id} value={sh.id}>{sh.nama} • {sh.hari.map(h => DAYS[h].slice(0, 3)).join(', ')} • {sh.jam_mulai}–{sh.jam_selesai} {ZONES[sh.zona_waktu]}</option>)}
+              </select>
+              <p className="text-xs text-gray-500 mt-2">Hari dan jam diatur di menu <strong>Jadwal & Shift</strong>. Absensi guru wali dihitung dari jadwal shift ini.</p>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Target Masa Tempuh (hari)</label>
+              <input type="number" min="1" name="target_masa_tempuh" className="input-field" value={formData.target_masa_tempuh} onChange={handleInputChange} placeholder="Contoh: 30" />
+              <p className="text-xs text-gray-500 mt-2">Lama belajar yang ditargetkan untuk menyelesaikan jilid/kelas ini. Dipakai untuk statistik di Ujian & Kenaikan.</p>
             </div>
             {error && <p role="alert" className="text-red-600 text-sm">{error}</p>}
           </div>

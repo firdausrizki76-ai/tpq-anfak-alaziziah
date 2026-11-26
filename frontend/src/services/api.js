@@ -76,6 +76,15 @@ export const guruAPI = {
   create: (body) => request('/guru', { method: 'POST', body }),
   update: (id, body) => request(`/guru/${id}`, { method: 'PUT', body }),
   delete: (id) => request(`/guru/${id}`, { method: 'DELETE' }),
+  setShift: (id, shift_ids) => request(`/guru/${id}/shift`, { method: 'PUT', body: { shift_ids } }),
+};
+
+// Shift Jadwal
+export const shiftAPI = {
+  getAll: () => request('/shift'),
+  create: (body) => request('/shift', { method: 'POST', body }),
+  update: (id, body) => request(`/shift/${id}`, { method: 'PUT', body }),
+  delete: (id) => request(`/shift/${id}`, { method: 'DELETE' }),
 };
 
 // Kelas

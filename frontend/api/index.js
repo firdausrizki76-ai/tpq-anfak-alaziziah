@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
-import { attendanceMetrics, localDate, scheduleBounds, summarizeAttendance, validateSchedule } from './attendance.js';
+import { attendanceMetrics, localDate, scheduleBounds, shiftSessions, summarizeAttendance, validateSchedule, validateShift } from './attendance.js';
 
 const app = express();
 app.use(cors());
@@ -457,13 +457,104 @@ app.get('/api/kelas/:id/santri', async (req, res) => {
 
 app.put('/api/kelas/:id', async (req, res) => {
   try {
-    if (Object.hasOwn(req.body, 'jadwal')) {
+    if (Object.hasOwn(req.body, 'shift_id') && req.body.shift_id) {
+      const { data: shift, error: shiftError } = await supabase.from('shift_jadwal').select('*').eq('id', req.body.shift_id).single();
+      if (shiftError || !shift) return fail(res, 'Shift tidak ditemukan');
+      req.body.jadwal = shiftSessions([shift]).map(({ hari, mulai, selesai }) => ({ hari, mulai, selesai }));
+      req.body.zona_waktu = shift.zona_waktu;
+    } else if (Object.hasOwn(req.body, 'shift_id')) {
+      // Shift dilepas: kosongkan jadwal hanya jika sebelumnya berasal dari shift (jadwal manual lama tidak dihapus).
+      const { data: current } = await supabase.from('kelas').select('shift_id').eq('id', req.params.id).single();
+      if (current?.shift_id) req.body.jadwal = [];
+    } else if (Object.hasOwn(req.body, 'jadwal')) {
       try { req.body.jadwal = validateSchedule(req.body.jadwal, req.body.zona_waktu || 'Asia/Makassar'); }
       catch (e) { return fail(res, e.message); }
     }
     const { data, error } = await supabase.from('kelas').update(req.body).eq('id', req.params.id).select().single();
     if (error) throw error;
     ok(res, data);
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+// ==================== SHIFT JADWAL ====================
+// Menghitung ulang jadwal guru dari shift yang dipilih.
+async function syncGuruSchedule(guruId, shiftIds) {
+  let ids = shiftIds;
+  if (!ids) {
+    const { data: g } = await supabase.from('guru').select('shift_ids').eq('id', guruId).single();
+    ids = g?.shift_ids || [];
+  }
+  const { data: shifts } = ids.length ? await supabase.from('shift_jadwal').select('*').in('id', ids) : { data: [] };
+  const jadwal = shiftSessions(shifts || []);
+  const { data, error } = await supabase.from('guru').update({ shift_ids: ids, jadwal }).eq('id', guruId).select('id, shift_ids, jadwal').single();
+  if (error) throw error;
+  return data;
+}
+
+// Menghitung ulang jadwal kelas & guru yang memakai shift tertentu.
+async function syncShiftUsers(shiftId) {
+  const { data: shift } = await supabase.from('shift_jadwal').select('*').eq('id', shiftId).maybeSingle();
+  if (!shift) return;
+  const jadwal = shiftSessions([shift]).map(({ hari, mulai, selesai }) => ({ hari, mulai, selesai }));
+  await supabase.from('kelas').update({ jadwal, zona_waktu: shift.zona_waktu }).eq('shift_id', shiftId);
+  const { data: gurus } = await supabase.from('guru').select('id').contains('shift_ids', [shiftId]);
+  for (const g of gurus || []) await syncGuruSchedule(g.id);
+}
+
+app.get('/api/shift', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('shift_jadwal').select('*').order('urutan').order('nama');
+    if (error) throw error;
+    const [{ data: kelas }, { data: gurus }] = await Promise.all([
+      supabase.from('kelas').select('id, nama_kelas, shift_id'),
+      supabase.from('guru').select('id, shift_ids'),
+    ]);
+    ok(res, (data || []).map(s => ({
+      ...s,
+      kelas: (kelas || []).filter(k => k.shift_id === s.id).map(k => ({ id: k.id, nama_kelas: k.nama_kelas })),
+      jumlah_guru: (gurus || []).filter(g => (g.shift_ids || []).includes(s.id)).length,
+    })));
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+app.post('/api/shift', async (req, res) => {
+  try {
+    let payload;
+    try { payload = validateShift(req.body); } catch (e) { return fail(res, e.message); }
+    const { data, error } = await supabase.from('shift_jadwal').insert({ ...payload, urutan: Number(req.body.urutan) || 1 }).select().single();
+    if (error) throw error;
+    ok(res, data, 'Shift berhasil ditambahkan');
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+app.put('/api/shift/:id', async (req, res) => {
+  try {
+    let payload;
+    try { payload = validateShift(req.body); } catch (e) { return fail(res, e.message); }
+    const { data, error } = await supabase.from('shift_jadwal').update({ ...payload, urutan: Number(req.body.urutan) || 1 }).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    await syncShiftUsers(req.params.id);
+    ok(res, data, 'Shift diperbarui. Jadwal kelas dan guru yang memakai shift ini ikut berubah.');
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+app.delete('/api/shift/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { data: gurus } = await supabase.from('guru').select('id, shift_ids').contains('shift_ids', [id]);
+    const { error } = await supabase.from('shift_jadwal').delete().eq('id', id);
+    if (error) throw error;
+    // kelas.shift_id otomatis NULL; jadwal kelas lama dipertahankan.
+    for (const g of gurus || []) await syncGuruSchedule(g.id, (g.shift_ids || []).filter(s => s !== id));
+    ok(res, null, 'Shift dihapus');
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+// Atur shift guru (terutama guru yang bukan wali kelas)
+app.put('/api/guru/:id/shift', async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body.shift_ids) ? req.body.shift_ids.filter(Boolean) : [];
+    ok(res, await syncGuruSchedule(req.params.id, ids), 'Shift guru disimpan');
   } catch (e) { fail(res, e.message, 500); }
 });
 
@@ -504,10 +595,12 @@ app.post('/api/absensi', async (req, res) => {
     const { data: person, error: personError } = await supabase.from(tipe === 'santri' ? 'santri' : 'guru').select('*').eq('id', personId).single();
     if (personError) throw personError;
     if (person.status !== 'aktif') return fail(res, 'Absensi hanya untuk santri/guru aktif');
-    const { data: classes, error: classError } = await (tipe === 'guru'
+    const { data: classRows, error: classError } = await (tipe === 'guru'
       ? supabase.from('kelas').select('*').eq('wali_kelas_id', personId)
       : supabase.from('kelas').select('*').eq('id', person.kelas_id || '00000000-0000-0000-0000-000000000000'));
     if (classError) throw classError;
+    // Guru juga punya jadwal sendiri dari shift (guru non-wali atau tugas tambahan).
+    const classes = tipe === 'guru' && person.jadwal?.length ? [...(classRows || []), { jadwal: person.jadwal, zona_waktu: 'Asia/Makassar' }] : (classRows || []);
     const now = new Date();
     const tanggal = req.body.tanggal || localDate(now, classes[0]?.zona_waktu || 'Asia/Makassar');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal) || Number.isNaN(Date.parse(tanggal)) || new Date(`${tanggal}T12:00:00Z`).toISOString().slice(0, 10) !== tanggal) return fail(res, 'Tanggal tidak valid');
@@ -1122,9 +1215,9 @@ app.post('/api/ujian/register', async (req, res) => {
 app.get('/api/ujian/riwayat-all', async (req, res) => {
   try {
     const { data, error } = await supabase.from('riwayat_kelas')
-      .select('*, santri:santri_id(nama_lengkap, nomor_induk, no_hp_wali, no_hp_ayah, no_hp_ibu, kelas:kelas_id(nama_kelas)), kelas_dari:kelas_dari_id(nama_kelas), kelas_ke:kelas_ke_id(nama_kelas)')
+      .select('*, santri:santri_id(nama_lengkap, nomor_induk, no_hp_wali, no_hp_ayah, no_hp_ibu, kelas:kelas_id(nama_kelas)), kelas_dari:kelas_dari_id(nama_kelas, urutan, target_masa_tempuh), kelas_ke:kelas_ke_id(nama_kelas)')
       .order('created_at', { ascending: false })
-      .limit(200);
+      .limit(2000);
     if (error) throw error;
     // Filter out records where kelas_ke === kelas_dari (belum naik)
     const filtered = (data || []).filter(h => h.kelas_ke_id !== h.kelas_dari_id);

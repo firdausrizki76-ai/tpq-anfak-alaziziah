@@ -3,7 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, BookOpen, GraduationCap, 
   CalendarCheck, CreditCard, Wallet, FileBarChart, Settings, LogOut, Menu, X,
-  Award, UserPlus, Medal, DollarSign, Calendar
+  Award, UserPlus, Medal, DollarSign, Calendar, Clock
 } from 'lucide-react';
 import './AppLayout.css';
 
@@ -29,6 +29,7 @@ const AppLayout = () => {
     { path: '/santri', icon: <Users size={20} />, label: 'Santri' },
     { path: '/guru', icon: <GraduationCap size={20} />, label: 'Guru' },
     { path: '/kelas', icon: <BookOpen size={20} />, label: 'Kelas' },
+    { path: '/jadwal-shift', icon: <Clock size={20} />, label: 'Jadwal & Shift' },
     { path: '/absensi', icon: <CalendarCheck size={20} />, label: 'Absensi' },
     { path: '/prestasi', icon: <Medal size={20} />, label: 'Prestasi' },
     { path: '/ujian', icon: <Award size={20} />, label: 'Ujian & Kenaikan' },

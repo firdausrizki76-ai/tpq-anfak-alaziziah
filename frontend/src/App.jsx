@@ -10,6 +10,7 @@ import AdminPendaftaranPage from './pages/pendaftaran/AdminPendaftaranPage';
 import SantriPage from './pages/santri/SantriPage';
 import GuruPage from './pages/guru/GuruPage';
 import KelasPage from './pages/kelas/KelasPage';
+import JadwalShiftPage from './pages/kelas/JadwalShiftPage';
 import AbsensiPage from './pages/absensi/AbsensiPage';
 import PrestasiAdminPage from './pages/prestasi/PrestasiAdminPage';
 import PembayaranPage from './pages/pembayaran/PembayaranPage';
@@ -33,6 +34,7 @@ import StudentTabunganPage from './pages/student/StudentTabunganPage';
 import StudentTagihanPage from './pages/student/StudentTagihanPage';
 import StudentIzinPage from './pages/student/StudentIzinPage';
 import StudentRiwayatPendidikan from './pages/student/StudentRiwayatPendidikan';
+import StudentAttendancePage from './pages/student/StudentAttendancePage';
 import ProfilePage from './pages/shared/ProfilePage';
 import TeacherIzinPage from './pages/teacher/TeacherIzinPage';
 
@@ -79,6 +81,7 @@ function App() {
           <Route path="/santri" element={<SantriPage />} />
           <Route path="/guru" element={<GuruPage />} />
           <Route path="/kelas" element={<KelasPage />} />
+          <Route path="/jadwal-shift" element={<JadwalShiftPage />} />
           <Route path="/absensi" element={<AbsensiPage />} />
           <Route path="/absensi/scan" element={<ScannerPage />} />
           <Route path="/prestasi" element={<PrestasiAdminPage />} />
@@ -96,7 +99,7 @@ function App() {
           <Route path="/guru/dashboard" element={<TeacherDashboard />} />
           <Route path="/guru/kelas" element={<ClassListPage />} />
           <Route path="/guru/prestasi" element={<TeacherPrestasiPage />} />
-          <Route path="/guru/absen" element={<ScannerPage />} />
+          <Route path="/guru/absen" element={<AttendanceHistoryPage />} />
           <Route path="/guru/absen/riwayat" element={<AttendanceHistoryPage />} />
           <Route path="/guru/tabungan" element={<TabunganPage />} />
           <Route path="/guru/ujian" element={<UjianPage />} />
@@ -109,6 +112,7 @@ function App() {
         <Route element={<ProtectedRoute allowedRole="siswa"><StudentLayout /></ProtectedRoute>}>
           <Route path="/siswa" element={<Navigate to="/siswa/dashboard" replace />} />
           <Route path="/siswa/dashboard" element={<StudentDashboard />} />
+          <Route path="/siswa/absen" element={<StudentAttendancePage />} />
           <Route path="/siswa/prestasi" element={<StudentPrestasiPage />} />
           <Route path="/siswa/izin" element={<StudentIzinPage />} />
           <Route path="/siswa/tabungan" element={<StudentTabunganPage />} />
