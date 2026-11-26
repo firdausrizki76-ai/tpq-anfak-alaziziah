@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Edit, X, Save, Download, Users, BookOpen, User, Loader2 } from 'lucide-react';
+import { Search, Edit, X, Save, Download, Users, BookOpen, User, Loader2, Plus } from 'lucide-react';
 import { kelasAPI, guruAPI, shiftAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 const DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -53,12 +53,19 @@ const KelasPage = () => {
     setSelectedKelas(kelas); setError(''); setFormData({ deskripsi: kelas.deskripsi || '', wali_kelas_id: kelas.wali_kelas_id || '', shift_id: kelas.shift_id || '', target_masa_tempuh: kelas.target_masa_tempuh ?? '' }); setActiveModal('edit');
   };
 
+  const openCreate = () => {
+    const nextUrutan = Math.max(0, ...kelasList.map(k => Number(k.urutan) || 0)) + 1;
+    setSelectedKelas(null); setError('');
+    setFormData({ kode_kelas: '', nama_kelas: '', urutan: nextUrutan, deskripsi: '', wali_kelas_id: '', shift_id: '', target_masa_tempuh: '' });
+    setActiveModal('create');
+  };
+
   const closeModal = () => { setActiveModal(null); setSelectedKelas(null); setSantriInKelas([]); };
   const handleInputChange = (e) => { setFormData(prev => ({ ...prev, [e.target.name]: e.target.value })); };
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setSaving(true);
-    try { await kelasAPI.update(selectedKelas.id, formData); await loadData(); closeModal(); } catch (e) { setError(e.message); }
+    try { if (activeModal === 'create') await kelasAPI.create(formData); else await kelasAPI.update(selectedKelas.id, formData); await loadData(); closeModal(); } catch (e) { setError(e.message); }
     setSaving(false);
   };
 
@@ -72,6 +79,7 @@ const KelasPage = () => {
     <div className="flex-col gap-6 w-full">
       <div className="page-header mb-6 flex justify-between items-center">
         <div><h1 className="page-title">Data Kelas</h1><p className="page-subtitle">Manajemen kelas dan rombongan belajar (18 level Qiraati)</p></div>
+        <button className="btn-primary" onClick={openCreate}><Plus size={18} /> Tambah Kelas</button>
       </div>
 
       <div className="card w-full">
@@ -110,10 +118,18 @@ const KelasPage = () => {
         </div>
       </div>
 
-      {activeModal === 'edit' && selectedKelas && (
+      {(activeModal === 'create' || (activeModal === 'edit' && selectedKelas)) && (
         <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '620px' }}>
-          <div className="modal-header"><h2 className="modal-title">Edit Kelas: {selectedKelas.nama_kelas}</h2><X className="modal-close" onClick={closeModal} /></div>
+          <div className="modal-header"><h2 className="modal-title">{activeModal === 'create' ? 'Tambah Kelas Baru' : `Edit Kelas: ${selectedKelas.nama_kelas}`}</h2><X className="modal-close" onClick={closeModal} /></div>
           <form onSubmit={handleSubmit}><div className="modal-body space-y-4">
+            {activeModal === 'create' && <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: 12 }}>
+                <div className="form-group"><label className="form-label">Kode Kelas</label><input required name="kode_kelas" className="input-field" value={formData.kode_kelas} onChange={handleInputChange} placeholder="PRA-C" /></div>
+                <div className="form-group"><label className="form-label">Nama Kelas</label><input required name="nama_kelas" className="input-field" value={formData.nama_kelas} onChange={handleInputChange} placeholder="Contoh: Pra TK C" /></div>
+                <div className="form-group"><label className="form-label">Urutan</label><input required type="number" min="1" name="urutan" className="input-field" value={formData.urutan} onChange={handleInputChange} /></div>
+              </div>
+              <p className="text-xs text-gray-500">Urutan menentukan jenjang naik kelas: santri naik ke kelas dengan urutan berikutnya.</p>
+            </>}
             <div className="form-group">
               <label className="form-label">Wali Kelas</label>
               <select name="wali_kelas_id" value={formData.wali_kelas_id} onChange={handleInputChange} className="input-field">

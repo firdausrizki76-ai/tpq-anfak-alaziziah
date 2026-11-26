@@ -13,6 +13,9 @@ const TabunganPage = () => {
   const [selectedSantri, setSelectedSantri] = useState(null);
   const [riwayat, setRiwayat] = useState([]);
   const [loadingRiwayat, setLoadingRiwayat] = useState(false);
+  const [guruHist, setGuruHist] = useState(null); // { guru, inputs, setoran }
+  const [guruHistRange, setGuruHistRange] = useState({ dari: '', sampai: '' });
+  const [loadingGuruHist, setLoadingGuruHist] = useState(false);
   const [guruSummary, setGuruSummary] = useState([]);
   const [showSummary, setShowSummary] = useState(false);
   const [rekapAdmin, setRekapAdmin] = useState([]);
@@ -106,6 +109,23 @@ const TabunganPage = () => {
   };
 
   const downloadMutasi = () => { window.print(); };
+
+  const loadGuruHist = async (guru, range = guruHistRange) => {
+    setLoadingGuruHist(true);
+    try {
+      const params = { guru_id: guru.guru_id };
+      if (range.dari) params.dari = range.dari;
+      if (range.sampai) params.sampai = range.sampai;
+      const data = await tabunganAPI.getRiwayatGuru(params);
+      setGuruHist({ guru, inputs: data?.inputs || [], setoran: data?.setoran || [] });
+    } catch (e) { window.alert(e.message); }
+    setLoadingGuruHist(false);
+  };
+
+  const openGuruHist = (guru) => {
+    const range = { dari: '', sampai: '' };
+    setGuruHistRange(range); setGuruHist({ guru, inputs: [], setoran: [] }); loadGuruHist(guru, range);
+  };
 
   const closeModal = () => { setActiveModal(null); setSelectedSantri(null); setRiwayat([]); };
   const handleInputChange = (e) => {
@@ -444,6 +464,9 @@ const TabunganPage = () => {
                   <span>Koleksi: {formatRp(g.total_koleksi)}</span>
                   <span>Setor: {formatRp(g.total_setoran)}</span>
                 </div>
+                <button type="button" className="btn-primary" style={{ width: '100%', marginTop: '12px', justifyContent: 'center', backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }} onClick={() => openGuruHist(g)}>
+                  <History size={16} /> Riwayat Inputan
+                </button>
               </div>
             </div>
           ))}
@@ -654,6 +677,67 @@ const TabunganPage = () => {
             </div>
           </div>
           <div className="modal-footer"><button className="btn-primary" onClick={closeModal}>Tutup</button></div>
+        </div></div>
+      )}
+
+      {guruHist && (
+        <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '860px' }}>
+          <div className="modal-header">
+            <h2 className="modal-title">Riwayat Inputan: {guruHist.guru.nama_guru}</h2>
+            <X className="modal-close" onClick={() => setGuruHist(null)} />
+          </div>
+          <div className="modal-body">
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '16px' }}>
+              <div className="form-group" style={{ margin: 0 }}><label className="form-label">Dari</label><input type="date" className="input-field" value={guruHistRange.dari} onChange={e => setGuruHistRange(r => ({ ...r, dari: e.target.value }))} /></div>
+              <div className="form-group" style={{ margin: 0 }}><label className="form-label">Sampai</label><input type="date" className="input-field" value={guruHistRange.sampai} onChange={e => setGuruHistRange(r => ({ ...r, sampai: e.target.value }))} /></div>
+              <button type="button" className="btn-primary" onClick={() => loadGuruHist(guruHist.guru)} disabled={loadingGuruHist}>Terapkan</button>
+              <button type="button" className="btn-primary" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={() => { const r = { dari: '', sampai: '' }; setGuruHistRange(r); loadGuruHist(guruHist.guru, r); }}>Reset</button>
+            </div>
+            {(() => {
+              const setor = guruHist.inputs.filter(i => i.jenis === 'setor').reduce((a, i) => a + i.nominal, 0);
+              const tarik = guruHist.inputs.filter(i => i.jenis === 'tarik').reduce((a, i) => a + i.nominal, 0);
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ padding: 12, borderRadius: 12, backgroundColor: '#ecfdf5' }}><div className="text-xs" style={{ color: '#047857', fontWeight: 700 }}>Total Setoran Santri</div><div style={{ fontWeight: 800, fontSize: 18, color: '#047857' }}>{formatRp(setor)}</div></div>
+                  <div style={{ padding: 12, borderRadius: 12, backgroundColor: '#fef2f2' }}><div className="text-xs" style={{ color: '#991b1b', fontWeight: 700 }}>Total Penarikan</div><div style={{ fontWeight: 800, fontSize: 18, color: '#991b1b' }}>{formatRp(tarik)}</div></div>
+                  <div style={{ padding: 12, borderRadius: 12, backgroundColor: '#f1f5f9' }}><div className="text-xs" style={{ color: '#334155', fontWeight: 700 }}>Jumlah Transaksi</div><div style={{ fontWeight: 800, fontSize: 18, color: '#334155' }}>{guruHist.inputs.length}</div></div>
+                </div>
+              );
+            })()}
+            <h4 style={{ fontSize: 13, fontWeight: 700, color: '#334155', margin: '0 0 8px' }}>Transaksi yang diinput guru</h4>
+            <div className="table-responsive" style={{ maxHeight: '280px', overflowY: 'auto' }}>
+              <table className="data-table w-full">
+                <thead><tr><th>Tanggal</th><th>Santri</th><th>Kelas</th><th>Jenis</th><th>Nominal</th><th>Keterangan</th></tr></thead>
+                <tbody>
+                  {loadingGuruHist ? <tr><td colSpan="6" className="text-center py-6"><Loader2 size={22} className="animate-spin mx-auto" /></td></tr>
+                  : guruHist.inputs.length === 0 ? <tr><td colSpan="6" className="text-center py-6 text-gray-400">Belum ada inputan pada rentang ini</td></tr>
+                  : guruHist.inputs.map(i => (
+                    <tr key={i.id}>
+                      <td>{new Date(i.tanggal).toLocaleDateString('id-ID')}</td>
+                      <td className="font-medium">{i.santri?.nama_lengkap || '-'}</td>
+                      <td>{i.santri?.kelas?.nama_kelas || '-'}</td>
+                      <td><span className="badge" style={i.jenis === 'setor' ? { backgroundColor: '#ecfdf5', color: '#047857' } : { backgroundColor: '#fef2f2', color: '#991b1b' }}>{i.jenis === 'setor' ? 'Setor' : 'Tarik'}</span></td>
+                      <td style={{ fontWeight: 700 }}>{formatRp(i.nominal)}</td>
+                      <td className="text-xs text-gray-500">{i.keterangan || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <h4 style={{ fontSize: 13, fontWeight: 700, color: '#334155', margin: '16px 0 8px' }}>Setoran guru ke pusat</h4>
+            <div className="table-responsive" style={{ maxHeight: '180px', overflowY: 'auto' }}>
+              <table className="data-table w-full">
+                <thead><tr><th>Tanggal</th><th>Nominal</th><th>Keterangan</th><th>Status</th></tr></thead>
+                <tbody>
+                  {guruHist.setoran.length === 0 ? <tr><td colSpan="4" className="text-center py-4 text-gray-400">Belum ada setoran ke pusat</td></tr>
+                  : guruHist.setoran.map(r => (
+                    <tr key={r.id}><td>{new Date(r.tanggal).toLocaleDateString('id-ID')}</td><td style={{ fontWeight: 700 }}>{formatRp(r.nominal)}</td><td className="text-xs text-gray-500">{r.keterangan || '-'}</td><td className="text-xs" style={{ textTransform: 'uppercase', fontWeight: 700 }}>{r.status}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="modal-footer"><button className="btn-primary" onClick={() => setGuruHist(null)}>Tutup</button></div>
         </div></div>
       )}
 
