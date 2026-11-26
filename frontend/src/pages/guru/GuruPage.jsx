@@ -375,13 +375,13 @@ const GuruPage = () => {
               KEMENTERIAN AGAMA REPUBLIK INDONESIA
             </div>
             <div style={{ fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase' }}>
-              KANTOR KEMENTERIAN AGAMA KOTA BANJARBARU
+              KANTOR KEMENTERIAN AGAMA KABUPATEN MAGELANG
             </div>
             <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#064e3b', textTransform: 'uppercase', margin: '2px 0' }}>
-              TPQ ANFAK AL AZIZAH BANJARBARU
+              TPQ ANFAK AL AZIZAH MAGELANG
             </div>
             <div style={{ fontSize: '10px', color: '#333333', fontStyle: 'italic' }}>
-              Alamat: Tepus Wetan, Surodadi, Candimulyo, Magelang / Banjarbaru • Kontak: 0812-2770-5767
+              Alamat: Tepus Wetan, Surodadi, Candimulyo, Magelang • Kontak: 0812-2770-5767
             </div>
           </div>
         </div>
