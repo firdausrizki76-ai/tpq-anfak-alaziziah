@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Eye, Edit, Trash2, X, Save, Download, User, Briefcase, Phone, Mail, MapPin, Loader2 } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Trash2, X, Save, Download, User, Briefcase, Phone, Mail, MapPin, Loader2, Filter, Printer } from 'lucide-react';
 import { guruAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 import StatisticsCards from '../../components/StatisticsCards';
@@ -9,6 +9,7 @@ const GuruPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [activeModal, setActiveModal] = useState(null);
 
@@ -126,7 +127,11 @@ const GuruPage = () => {
     return fileId ? `https://lh3.googleusercontent.com/d/${fileId}=s400` : link;
   };
 
-  const filtered = guruList.filter(g => !searchQuery || (g.nama_lengkap || '').toLowerCase().includes(searchQuery.toLowerCase()) || (g.nip || '').includes(searchQuery));
+  const filtered = guruList.filter(g => {
+    const matchQuery = !searchQuery || (g.nama_lengkap || '').toLowerCase().includes(searchQuery.toLowerCase()) || (g.nip || '').includes(searchQuery);
+    const matchStatus = filterStatus === 'all' || !filterStatus || g.status === filterStatus;
+    return matchQuery && matchStatus;
+  });
 
   const sortedGuru = [...filtered].sort((a, b) => {
     if (!sortConfig.key) return 0;
@@ -144,26 +149,51 @@ const GuruPage = () => {
 
   return (
     <div className="flex-col gap-6 w-full">
-      <div className="page-header mb-6 flex justify-between items-center">
-        <div><h1 className="page-title">Data Guru</h1><p className="page-subtitle">Kelola data tenaga pengajar dan staf</p></div>
-        <button className="btn-primary" onClick={() => openModal('add')}><Plus size={18} /> Tambah Guru</button>
-      </div>
-
-      <StatisticsCards loading={loading} items={[
-        { label: 'Total Guru', value: guruList.length },
-        { label: 'Guru Aktif', value: guruList.filter(g => g.status === 'aktif').length },
-        { label: 'Guru Nonaktif', value: guruList.filter(g => g.status === 'nonaktif').length, color: '#64748b' },
-        { label: 'Laki-laki', value: guruList.filter(g => g.jenis_kelamin === 'L').length },
-        { label: 'Perempuan', value: guruList.filter(g => g.jenis_kelamin === 'P').length },
-      ]} />
-      <div className="card w-full">
-        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-          <div className="input-with-icon" style={{ maxWidth: '300px', width: '100%' }}>
-            <Search className="icon" size={18} />
-            <input type="text" className="input-field" placeholder="Cari nama atau NIP..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-          </div>
-          <button className="btn-primary" style={{ backgroundColor: 'white', color: 'var(--color-primary-container)', border: '1px solid var(--color-surface-container-highest)', borderBottom: '2px solid var(--color-gold)' }} onClick={handleExport}><Download size={18} /> Export Data</button>
+      <div className="no-print flex-col gap-6 w-full">
+        <div className="page-header mb-6 flex justify-between items-center">
+          <div><h1 className="page-title">Data Guru</h1><p className="page-subtitle">Kelola data tenaga pengajar dan staf</p></div>
+          <button className="btn-primary" onClick={() => openModal('add')}><Plus size={18} /> Tambah Guru</button>
         </div>
+
+        <StatisticsCards loading={loading} items={[
+          { label: 'Total Guru', value: guruList.length },
+          { label: 'Guru Aktif', value: guruList.filter(g => g.status === 'aktif').length },
+          { label: 'Guru Nonaktif', value: guruList.filter(g => g.status === 'nonaktif').length, color: '#64748b' },
+          { label: 'Laki-laki', value: guruList.filter(g => g.jenis_kelamin === 'L').length },
+          { label: 'Perempuan', value: guruList.filter(g => g.jenis_kelamin === 'P').length },
+        ]} />
+        <div className="card w-full">
+          <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
+            <div className="flex items-center gap-3 flex-1 flex-wrap">
+              <div className="input-with-icon" style={{ minWidth: '220px', maxWidth: '300px', flex: 1 }}>
+                <Search className="icon" size={18} />
+                <input type="text" className="input-field" placeholder="Cari nama atau NIP..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              </div>
+              <div className="input-with-icon" style={{ minWidth: '160px' }}>
+                <Filter className="icon" size={18} />
+                <select className="input-field" style={{ paddingLeft: '40px' }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                  <option value="all">Semua Status</option>
+                  <option value="aktif">Aktif</option>
+                  <option value="nonaktif">Nonaktif</option>
+                  <option value="cuti">Cuti</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button 
+                className="btn-primary" 
+                style={{ backgroundColor: '#0284c7', color: '#ffffff' }} 
+                onClick={() => window.print()} 
+                disabled={loading || sortedGuru.length === 0} 
+                title="Cetak Data Guru Resmi (Print / Simpan PDF)"
+              >
+                <Printer size={18} /> Cetak Guru
+              </button>
+              <button className="btn-primary" style={{ backgroundColor: 'white', color: 'var(--color-primary-container)', border: '1px solid var(--color-surface-container-highest)', borderBottom: '2px solid var(--color-gold)' }} onClick={handleExport}>
+                <Download size={18} /> Export Data
+              </button>
+            </div>
+          </div>
 
         <div className="table-responsive">
           <table className="data-table w-full">
@@ -333,6 +363,89 @@ const GuruPage = () => {
           </div>
         </div></div>
       )}
+      </div>
+
+      {/* ================= PRINT-ONLY OFFICIAL DOCUMENT ================= */}
+      <div className="print-only" style={{ padding: '24px 30px', backgroundColor: '#ffffff', color: '#000000', fontFamily: 'serif' }}>
+        {/* KOP RESMI */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', borderBottom: '3px double #000', paddingBottom: '12px', marginBottom: '16px' }}>
+          <img src="/assets/logoapp.png" alt="Logo TPQ" style={{ width: '70px', height: '70px', objectFit: 'contain' }} />
+          <div style={{ textAlign: 'center', flex: 1 }}>
+            <div style={{ fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              KEMENTERIAN AGAMA REPUBLIK INDONESIA
+            </div>
+            <div style={{ fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+              KANTOR KEMENTERIAN AGAMA KOTA BANJARBARU
+            </div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#064e3b', textTransform: 'uppercase', margin: '2px 0' }}>
+              TPQ ANFAK AL AZIZAH BANJARBARU
+            </div>
+            <div style={{ fontSize: '10px', color: '#333333', fontStyle: 'italic' }}>
+              Alamat: Tepus Wetan, Surodadi, Candimulyo, Magelang / Banjarbaru • Kontak: 0812-2770-5767
+            </div>
+          </div>
+        </div>
+
+        {/* JUDUL DOKUMEN & METADATA FILTER */}
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+          <div style={{ fontSize: '15px', fontWeight: 'bold', textDecoration: 'underline', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            DAFTAR DATA TENAGA PENDIDIK & STAF (GURU)
+          </div>
+          <div style={{ fontSize: '11px', marginTop: '4px', display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <span><strong>Status:</strong> {filterStatus === 'all' ? 'Semua Status' : filterStatus.toUpperCase()}</span>
+            <span>•</span>
+            <span><strong>Total:</strong> {sortedGuru.length} Guru (L: {sortedGuru.filter(g => g.jenis_kelamin === 'L').length}, P: {sortedGuru.filter(g => g.jenis_kelamin === 'P').length})</span>
+            <span>•</span>
+            <span><strong>Tanggal Cetak:</strong> {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          </div>
+        </div>
+
+        {/* TABEL GURU RESMI */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', border: '1.5px solid #000', fontSize: '10px', fontFamily: 'sans-serif' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#f1f5f9' }}>
+              <th style={{ border: '1px solid #000', padding: '5px 4px', textAlign: 'center', width: '28px' }}>No</th>
+              <th style={{ border: '1px solid #000', padding: '5px 6px', textAlign: 'center', width: '90px' }}>NIP</th>
+              <th style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'left' }}>Nama Lengkap</th>
+              <th style={{ border: '1px solid #000', padding: '5px 4px', textAlign: 'center', width: '35px' }}>L/P</th>
+              <th style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'left', width: '120px' }}>Jabatan</th>
+              <th style={{ border: '1px solid #000', padding: '5px 6px', textAlign: 'left', width: '100px' }}>No. Handphone</th>
+              <th style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'left' }}>Alamat</th>
+              <th style={{ border: '1px solid #000', padding: '5px 4px', textAlign: 'center', width: '60px' }}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedGuru.map((g, idx) => (
+              <tr key={g.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
+                <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center' }}>{idx + 1}</td>
+                <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', fontWeight: 'bold' }}>{g.nip || '-'}</td>
+                <td style={{ border: '1px solid #000', padding: '4px 8px', fontWeight: '600' }}>{g.nama_lengkap}</td>
+                <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center' }}>{g.jenis_kelamin || '-'}</td>
+                <td style={{ border: '1px solid #000', padding: '4px 8px' }}>{g.jabatan || 'Guru'}</td>
+                <td style={{ border: '1px solid #000', padding: '4px 6px' }}>{g.no_hp || '-'}</td>
+                <td style={{ border: '1px solid #000', padding: '4px 8px', fontSize: '9px' }}>{g.alamat || '-'}</td>
+                <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                  {g.status}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* TANDA TANGAN PENGESAHAN */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '28px', fontSize: '11px', fontFamily: 'serif', pageBreakInside: 'avoid' }}>
+          <div style={{ textAlign: 'center', width: '220px' }}>
+            <p style={{ margin: 0 }}>Mengetahui,</p>
+            <p style={{ margin: '2px 0 55px 0' }}>Koordinator Pendidikan / Kurikulum</p>
+            <p style={{ fontWeight: 'bold', textDecoration: 'underline', margin: 0 }}>( ..................................................... )</p>
+          </div>
+          <div style={{ textAlign: 'center', width: '230px' }}>
+            <p style={{ margin: 0 }}>Banjarbaru, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p style={{ margin: '2px 0 55px 0' }}>Kepala TPQ Anfak Al Azizah</p>
+            <p style={{ fontWeight: 'bold', textDecoration: 'underline', margin: 0 }}>( ..................................................... )</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

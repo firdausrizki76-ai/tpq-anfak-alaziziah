@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Clock, AlertCircle, Lock, X, Save, Loader2, Wallet, Receipt, FileText } from 'lucide-react';
+import { BookOpen, Clock, AlertCircle, Lock, X, Save, Loader2, Wallet, Receipt, FileText, CalendarCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI, tabunganAPI, pembayaranAPI, santriAPI } from '../../services/api';
 import './StudentDashboard.css';
@@ -146,6 +146,21 @@ const StudentDashboard = () => {
           </div>
           <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#334155', margin: 0 }}>Pengajuan Izin</h3>
         </div>
+      </div>
+
+      {/* Riwayat Absensi Quick Link */}
+      <div 
+        onClick={() => navigate('/siswa/absen')}
+        style={{ backgroundColor: '#eff6ff', borderRadius: '24px', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', border: '1px solid #dbeafe', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}
+      >
+        <div style={{ padding: '12px', backgroundColor: '#dbeafe', borderRadius: '16px', color: '#2563eb' }}>
+          <CalendarCheck size={24} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e40af', margin: '0 0 4px 0' }}>Riwayat Absensi Santri</h3>
+          <p style={{ fontSize: '11px', color: '#3b82f6', margin: 0, fontWeight: '500' }}>Cek riwayat kehadiran & rekap absen harian</p>
+        </div>
+        <div style={{ color: '#2563eb', fontWeight: 'bold' }}>→</div>
       </div>
 
       {/* Riwayat Pendidikan Quick Link */}

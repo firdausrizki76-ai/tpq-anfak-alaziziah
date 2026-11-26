@@ -6,6 +6,10 @@ import './ScannerPage.css';
 
 const ScannerPage = () => {
   const navigate = useNavigate();
+  const userStr = localStorage.getItem('tpq_user');
+  const user = userStr ? JSON.parse(userStr) : {};
+  const isAuthorized = user.role === 'admin' || user.role === 'kepala';
+
   const [scanResult, setScanResult] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -15,6 +19,17 @@ const ScannerPage = () => {
   const jenisAbsenRef = useRef('datang');
   const scannerRef = useRef(null);
   const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (!isAuthorized) {
+      const timer = setTimeout(() => {
+        if (user.role === 'guru') navigate('/guru/absen', { replace: true });
+        else if (user.role === 'siswa') navigate('/siswa/dashboard', { replace: true });
+        else navigate('/dashboard', { replace: true });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthorized, user.role, navigate]);
 
   useEffect(() => {
     // Preload beep sound
@@ -190,6 +205,27 @@ const ScannerPage = () => {
     if (!nisInput.trim()) return;
     await processAttendance(nisInput.trim());
   };
+
+  if (!isAuthorized) {
+    return (
+      <div style={{ padding: '40px 20px', textAlign: 'center', maxWidth: '500px', margin: '60px auto', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', fontFamily: 'var(--font-family-body, sans-serif)' }}>
+        <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#fef2f2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <AlertCircle size={36} />
+        </div>
+        <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>Akses Dibatasi</h2>
+        <p style={{ color: '#64748b', fontSize: '13px', lineHeight: 1.5, marginBottom: '24px' }}>
+          Fitur Scan Barcode absensi hanya dapat diakses oleh akun <strong>Kepala Lembaga</strong> dan <strong>Admin</strong>.
+        </p>
+        <button 
+          onClick={() => navigate(user.role === 'guru' ? '/guru/absen' : '/dashboard')} 
+          className="btn-primary" 
+          style={{ margin: '0 auto', display: 'inline-flex' }}
+        >
+          Kembali ke Halaman Utama
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="scanner-container">

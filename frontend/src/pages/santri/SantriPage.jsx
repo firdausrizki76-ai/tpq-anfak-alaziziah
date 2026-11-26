@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Filter, Download, Eye, Edit, Trash2, X, Save, User, UserCheck, Calendar, Phone, MapPin, Loader2 } from 'lucide-react';
+import { Search, Plus, Filter, Download, Eye, Edit, Trash2, X, Save, User, UserCheck, Calendar, Phone, MapPin, Loader2, Printer } from 'lucide-react';
 import { santriAPI, kelasAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 import StatisticsCards from '../../components/StatisticsCards';
@@ -14,6 +14,7 @@ const SantriPage = () => {
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterKelas, setFilterKelas] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
   const handleSort = (key) => {
@@ -165,7 +166,8 @@ const SantriPage = () => {
     const query = searchQuery.trim().toLowerCase();
     const matchSearch = !query || s.nama_lengkap?.toLowerCase().includes(query) || s.nomor_induk?.toLowerCase().includes(query) || formatSantriAddress(s).toLowerCase().includes(query);
     const matchKelas = !filterKelas || s.kelas_id === filterKelas;
-    return matchSearch && matchKelas;
+    const matchStatus = filterStatus === 'all' || !filterStatus || s.status === filterStatus;
+    return matchSearch && matchKelas && matchStatus;
   });
 
   const sortedList = [...filteredList].sort((a, b) => {
@@ -212,7 +214,8 @@ const SantriPage = () => {
 
   return (
     <div className="flex-col gap-6 w-full">
-      <div className="page-header mb-6 flex justify-between items-center">
+      <div className="no-print flex-col gap-6 w-full">
+        <div className="page-header mb-6 flex justify-between items-center">
         <div>
           <h1 className="page-title">Data Santri</h1>
           <p className="page-subtitle">Kelola data seluruh santri TPQ Anfak Al Azizah</p>
@@ -232,24 +235,45 @@ const SantriPage = () => {
       ]} />
       <div className="card w-full">
         <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-          <div className="flex items-center gap-4 flex-1">
-            <div className="input-with-icon" style={{ maxWidth: '300px', width: '100%' }}>
+          <div className="flex items-center gap-3 flex-1 flex-wrap">
+            <div className="input-with-icon" style={{ minWidth: '220px', maxWidth: '300px', flex: 1 }}>
               <Search className="icon" size={18} />
               <input type="text" className="input-field" placeholder="Cari nama, NIS, atau alamat..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
-            <div className="input-with-icon">
+            <div className="input-with-icon" style={{ minWidth: '160px' }}>
               <Filter className="icon" size={18} />
               <select className="input-field" style={{ paddingLeft: '40px' }} value={filterKelas} onChange={(e) => setFilterKelas(e.target.value)}>
                 <option value="">Semua Kelas</option>
                 {kelasList.map(k => <option key={k.id} value={k.id}>{k.nama_kelas}</option>)}
               </select>
             </div>
+            <div className="input-with-icon" style={{ minWidth: '160px' }}>
+              <Filter className="icon" size={18} />
+              <select className="input-field" style={{ paddingLeft: '40px' }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                <option value="all">Semua Status</option>
+                <option value="aktif">Aktif</option>
+                <option value="nonaktif">Nonaktif</option>
+                <option value="pindah">Keluar / Pindah</option>
+                <option value="lulus">Khotam / Lulus</option>
+              </select>
+            </div>
           </div>
-          <button className="btn-primary" style={{ backgroundColor: 'white', color: 'var(--color-primary-container)', border: '1px solid var(--color-surface-container-highest)', borderBottom: '2px solid var(--color-gold)' }} onClick={handleExport} disabled={loading || sortedList.length === 0} title="Unduh data lengkap sesuai pencarian, filter kelas, dan urutan tabel">
-            <Download size={18} /> Export XLS
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              className="btn-primary" 
+              style={{ backgroundColor: '#0284c7', color: '#ffffff' }} 
+              onClick={() => window.print()} 
+              disabled={loading || sortedList.length === 0} 
+              title="Cetak Data Santri Resmi (Print / Simpan PDF)"
+            >
+              <Printer size={18} /> Cetak Santri
+            </button>
+            <button className="btn-primary" style={{ backgroundColor: 'white', color: 'var(--color-primary-container)', border: '1px solid var(--color-surface-container-highest)', borderBottom: '2px solid var(--color-gold)' }} onClick={handleExport} disabled={loading || sortedList.length === 0} title="Unduh data lengkap sesuai pencarian, filter kelas, filter status, dan urutan tabel">
+              <Download size={18} /> Export XLS
+            </button>
+          </div>
         </div>
-        <p className="text-xs text-gray-500 mb-4">Export memuat data lengkap sesuai pencarian dan filter kelas yang dipilih.</p>
+        <p className="text-xs text-gray-500 mb-4">Export dan cetak memuat data santri sesuai pencarian dan filter kelas/status yang dipilih.</p>
 
         <div className="table-responsive">
           <table className="data-table w-full">
@@ -660,6 +684,94 @@ const SantriPage = () => {
           </div>
         </div>
       )}
+      </div>
+
+      {/* ================= PRINT-ONLY OFFICIAL DOCUMENT ================= */}
+      <div className="print-only" style={{ padding: '24px 30px', backgroundColor: '#ffffff', color: '#000000', fontFamily: 'serif' }}>
+        {/* KOP RESMI */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', borderBottom: '3px double #000', paddingBottom: '12px', marginBottom: '16px' }}>
+          <img src="/assets/logoapp.png" alt="Logo TPQ" style={{ width: '70px', height: '70px', objectFit: 'contain' }} />
+          <div style={{ textAlign: 'center', flex: 1 }}>
+            <div style={{ fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              KEMENTERIAN AGAMA REPUBLIK INDONESIA
+            </div>
+            <div style={{ fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+              KANTOR KEMENTERIAN AGAMA KOTA BANJARBARU
+            </div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#064e3b', textTransform: 'uppercase', margin: '2px 0' }}>
+              TPQ ANFAK AL AZIZAH BANJARBARU
+            </div>
+            <div style={{ fontSize: '10px', color: '#333333', fontStyle: 'italic' }}>
+              Alamat: Tepus Wetan, Surodadi, Candimulyo, Magelang / Banjarbaru • Kontak: 0812-2770-5767
+            </div>
+          </div>
+        </div>
+
+        {/* JUDUL DOKUMEN & METADATA FILTER */}
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+          <div style={{ fontSize: '15px', fontWeight: 'bold', textDecoration: 'underline', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            DAFTAR DATA SANTRI
+          </div>
+          <div style={{ fontSize: '11px', marginTop: '4px', display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <span><strong>Kelas:</strong> {kelasList.find(k => k.id === filterKelas)?.nama_kelas || 'Semua Kelas'}</span>
+            <span>•</span>
+            <span><strong>Status:</strong> {filterStatus === 'all' ? 'Semua Status' : filterStatus.toUpperCase()}</span>
+            <span>•</span>
+            <span><strong>Total:</strong> {sortedList.length} Santri (L: {sortedList.filter(s => s.jenis_kelamin === 'L').length}, P: {sortedList.filter(s => s.jenis_kelamin === 'P').length})</span>
+            <span>•</span>
+            <span><strong>Tanggal Cetak:</strong> {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          </div>
+        </div>
+
+        {/* TABEL SANTRI RESMI */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', border: '1.5px solid #000', fontSize: '10px', fontFamily: 'sans-serif' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#f1f5f9' }}>
+              <th style={{ border: '1px solid #000', padding: '5px 4px', textAlign: 'center', width: '28px' }}>No</th>
+              <th style={{ border: '1px solid #000', padding: '5px 4px', textAlign: 'center', width: '70px' }}>NIS</th>
+              <th style={{ border: '1px solid #000', padding: '5px 6px', textAlign: 'left' }}>Nama Lengkap</th>
+              <th style={{ border: '1px solid #000', padding: '5px 4px', textAlign: 'center', width: '30px' }}>L/P</th>
+              <th style={{ border: '1px solid #000', padding: '5px 6px', textAlign: 'left', width: '90px' }}>Kelas</th>
+              <th style={{ border: '1px solid #000', padding: '5px 6px', textAlign: 'left', width: '110px' }}>Wali / No. HP</th>
+              <th style={{ border: '1px solid #000', padding: '5px 6px', textAlign: 'left' }}>Alamat</th>
+              <th style={{ border: '1px solid #000', padding: '5px 4px', textAlign: 'center', width: '60px' }}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedList.map((s, idx) => (
+              <tr key={s.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
+                <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center' }}>{idx + 1}</td>
+                <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', fontWeight: 'bold' }}>{s.nomor_induk}</td>
+                <td style={{ border: '1px solid #000', padding: '4px 6px', fontWeight: '600' }}>{s.nama_lengkap}</td>
+                <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center' }}>{s.jenis_kelamin || '-'}</td>
+                <td style={{ border: '1px solid #000', padding: '4px 6px' }}>{s.kelas?.nama_kelas || '-'}</td>
+                <td style={{ border: '1px solid #000', padding: '4px 6px' }}>
+                  <div>{s.nama_wali || s.nama_ayah || s.nama_ibu || '-'}</div>
+                  <div style={{ fontSize: '9px', color: '#444' }}>{s.no_hp_wali || s.no_hp_ayah || s.no_hp_ibu || '-'}</div>
+                </td>
+                <td style={{ border: '1px solid #000', padding: '4px 6px', fontSize: '9px' }}>{formatSantriAddress(s) || '-'}</td>
+                <td style={{ border: '1px solid #000', padding: '4px', textAlign: 'center', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                  {s.status}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* TANDA TANGAN PENGESAHAN */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '28px', fontSize: '11px', fontFamily: 'serif', pageBreakInside: 'avoid' }}>
+          <div style={{ textAlign: 'center', width: '220px' }}>
+            <p style={{ margin: 0 }}>Mengetahui,</p>
+            <p style={{ margin: '2px 0 55px 0' }}>Petugas Tata Usaha / Admin</p>
+            <p style={{ fontWeight: 'bold', textDecoration: 'underline', margin: 0 }}>( ..................................................... )</p>
+          </div>
+          <div style={{ textAlign: 'center', width: '230px' }}>
+            <p style={{ margin: 0 }}>Banjarbaru, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p style={{ margin: '2px 0 55px 0' }}>Kepala TPQ Anfak Al Azizah</p>
+            <p style={{ fontWeight: 'bold', textDecoration: 'underline', margin: 0 }}>( ..................................................... )</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

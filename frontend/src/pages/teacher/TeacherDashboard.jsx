@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, QrCode, BookOpen, CheckCircle, Loader2, Lock, X, Save, FileText } from 'lucide-react';
+import { Users, CalendarCheck, BookOpen, CheckCircle, Loader2, Lock, X, Save, FileText } from 'lucide-react';
 import { absensiAPI, kelasAPI, authAPI } from '../../services/api';
 
 const TeacherDashboard = () => {
@@ -114,9 +114,9 @@ const TeacherDashboard = () => {
           style={{ backgroundColor: 'white', borderRadius: '24px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9' }}
         >
           <div style={{ padding: '16px', backgroundColor: '#dcfce7', borderRadius: '50%', color: '#064e3b', marginBottom: '12px' }}>
-            <QrCode size={28} />
+            <CalendarCheck size={28} />
           </div>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#334155', margin: 0 }}>Scan Santri</h3>
+          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#334155', margin: 0 }}>Riwayat Absensi</h3>
         </div>
         <div 
           onClick={() => navigate('/guru/kelas')}
