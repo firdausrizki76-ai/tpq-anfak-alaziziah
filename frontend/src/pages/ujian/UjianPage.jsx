@@ -128,7 +128,19 @@ const UjianPage = () => {
     setRegFormData({ nomor_tes: '', tanggal_mulai: new Date().toISOString().split('T')[0], tanggal_selesai: '', masa_tempuh: '' });
   };
 
-  const handleInputChange = (e) => { setFormData(prev => ({ ...prev, [e.target.name]: e.target.value })); };
+  const daysBetween = (a, b) => (a && b ? Math.floor((new Date(b) - new Date(a)) / (1000 * 60 * 60 * 24)) + 1 : null);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => {
+      const next = { ...prev, [name]: value };
+      // Saat tanggal mulai/selesai diubah, isi ulang masa tempuh dari tanggal (masih bisa dikoreksi manual setelahnya).
+      if (name === 'tanggal_mulai' || name === 'tanggal_selesai') {
+        const d = daysBetween(next.tanggal_mulai, next.tanggal_selesai);
+        if (d !== null && d >= 0) next.masa_tempuh = String(d);
+      }
+      return next;
+    });
+  };
 
   const handleToggleSantri = (id) => {
     setSelectedSantriIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -201,11 +213,14 @@ const UjianPage = () => {
     setSaving(true);
     try {
       // Hitung ulang masa tempuh jika tanggal berubah
+      // Masa tempuh: nilai yang diketik/dikoreksi admin dipakai; jika kosong, hitung dari tanggal.
       let masa_tempuh = editingHistory.masa_tempuh;
-      if (formData.tanggal_mulai && formData.tanggal_selesai) {
-        const d1 = new Date(formData.tanggal_mulai);
-        const d2 = new Date(formData.tanggal_selesai);
-        masa_tempuh = Math.floor((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+      if (formData.masa_tempuh !== '' && formData.masa_tempuh !== undefined) {
+        masa_tempuh = parseInt(formData.masa_tempuh, 10);
+        if (!Number.isInteger(masa_tempuh) || masa_tempuh < 0) throw new Error('Masa tempuh harus berupa angka 0 atau lebih');
+      } else {
+        const d = daysBetween(formData.tanggal_mulai, formData.tanggal_selesai);
+        if (d !== null) masa_tempuh = d;
       }
 
       await ujianAPI.updateHistory(editingHistory.id, {
@@ -1092,7 +1107,8 @@ const UjianPage = () => {
                                       keterangan: h.catatan || '',
                                       tanggal_naik: h.tanggal_naik || '',
                                       tanggal_mulai: h.tanggal_mulai || '',
-                                      tanggal_selesai: h.tanggal_selesai || ''
+                                      tanggal_selesai: h.tanggal_selesai || '',
+                                      masa_tempuh: h.masa_tempuh ?? ''
                                     });
                                   }}
                                 >
@@ -1136,6 +1152,17 @@ const UjianPage = () => {
                               <div className="form-group">
                                 <label className="text-[10px] font-bold text-gray-500 uppercase">Tgl Naik</label>
                                 <input type="date" name="tanggal_naik" className="input-field py-1 px-2 text-xs" value={formData.tanggal_naik} onChange={handleInputChange} />
+                              </div>
+                            </div>
+                            <div className="form-group">
+                              <label className="text-[10px] font-bold text-gray-500 uppercase">Masa Tempuh (hari) — bisa dikoreksi manual</label>
+                              <div className="flex items-center gap-2">
+                                <input type="number" min="0" name="masa_tempuh" className="input-field py-1 px-2 text-xs" style={{ maxWidth: 120 }} value={formData.masa_tempuh ?? ''} onChange={handleInputChange} />
+                                {daysBetween(formData.tanggal_mulai, formData.tanggal_selesai) !== null && (
+                                  <button type="button" className="text-[10px]" style={{ color: '#2563eb', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => setFormData(prev => ({ ...prev, masa_tempuh: String(daysBetween(prev.tanggal_mulai, prev.tanggal_selesai)) }))}>
+                                    Pakai hitungan tanggal ({daysBetween(formData.tanggal_mulai, formData.tanggal_selesai)} hari)
+                                  </button>
+                                )}
                               </div>
                             </div>
                             <div className="form-group">

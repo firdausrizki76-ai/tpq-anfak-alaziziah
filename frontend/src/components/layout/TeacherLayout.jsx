@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, CalendarCheck, User, Wallet, Award, Calendar } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, CalendarCheck, User, Wallet, Award, Calendar, FileText } from 'lucide-react';
 
 const TeacherLayout = () => {
   const navigate = useNavigate();
@@ -11,6 +11,7 @@ const TeacherLayout = () => {
     { path: '/guru/kelas', icon: Users, label: 'Kelas' },
     { path: '/guru/prestasi', icon: Award, label: 'Prestasi' },
     { path: '/guru/absen', icon: CalendarCheck, label: 'Absen' },
+    { path: '/guru/izin', icon: FileText, label: 'Izin' },
     { path: '/guru/tabungan', icon: Wallet, label: 'Tabungan' },
     { path: '/guru/ujian', icon: BookOpen, label: 'Tes' },
     { path: '/guru/kalender', icon: Calendar, label: 'Kalender' },
@@ -56,6 +57,7 @@ const TeacherLayout = () => {
         backdropFilter: 'blur(12px)', 
         display: 'flex', 
         justifyContent: 'space-around', 
+        overflowX: 'auto', 
         padding: '8px 0 12px 0', 
         boxShadow: '0 -4px 16px rgba(0,0,0,0.05)', 
         borderTop: '1px solid #f1f5f9', 
@@ -79,13 +81,13 @@ const TeacherLayout = () => {
                 fontFamily: 'var(--font-family-body, sans-serif)', 
                 fontSize: '10px', 
                 cursor: 'pointer', 
-                flex: 1,
+                flex: '1 0 58px',
                 fontWeight: isActive ? '700' : '500',
                 padding: '4px 0'
               }}
             >
               <div style={{ 
-                padding: '6px 16px', 
+                padding: '6px 10px', 
                 borderRadius: '16px', 
                 transition: 'all 0.2s',
                 backgroundColor: isActive ? '#dcfce7' : 'transparent',
