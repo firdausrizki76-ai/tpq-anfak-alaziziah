@@ -1616,20 +1616,21 @@ app.delete('/api/pendaftaran/:id', async (req, res) => {
 app.get('/api/prestasi', async (req, res) => {
   try {
     const { santri_id, guru_id, kelas_id, tanggal, dari, sampai, kategori } = req.query;
-    let q = supabase.from('prestasi_santri')
-      .select('*, santri:santri_id(id, nama_lengkap, nomor_induk, kelas_id, kelas:kelas_id(id, nama_kelas, kode_kelas)), guru:guru_id(id, nama_lengkap)')
-      .order('tanggal', { ascending: false })
-      .order('created_at', { ascending: false });
-
-    if (santri_id) q = q.eq('santri_id', santri_id);
-    if (guru_id) q = q.eq('guru_id', guru_id);
-    if (tanggal) q = q.eq('tanggal', tanggal);
-    if (dari) q = q.gte('tanggal', dari);
-    if (sampai) q = q.lte('tanggal', sampai);
-    if (kategori && kategori !== 'semua') q = q.eq('kategori', kategori);
-
-    const { data, error } = await q;
-    if (error) throw error;
+    // Ambil semua halaman (batas bawaan Supabase 1000 baris) agar statistik bulanan tidak terpotong.
+    const data = await fetchAllRows(() => {
+      let q = supabase.from('prestasi_santri')
+        .select('*, santri:santri_id(id, nama_lengkap, nomor_induk, kelas_id, kelas:kelas_id(id, nama_kelas, kode_kelas)), guru:guru_id(id, nama_lengkap)')
+        .order('tanggal', { ascending: false })
+        .order('created_at', { ascending: false })
+        .order('id');
+      if (santri_id) q = q.eq('santri_id', santri_id);
+      if (guru_id) q = q.eq('guru_id', guru_id);
+      if (tanggal) q = q.eq('tanggal', tanggal);
+      if (dari) q = q.gte('tanggal', dari);
+      if (sampai) q = q.lte('tanggal', sampai);
+      if (kategori && kategori !== 'semua') q = q.eq('kategori', kategori);
+      return q;
+    });
 
     let result = data || [];
     if (kelas_id) {
@@ -1637,6 +1638,40 @@ app.get('/api/prestasi', async (req, res) => {
     }
 
     ok(res, result);
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+// ==================== TEMPLATE MATERI PER KELAS ====================
+app.get('/api/materi', async (req, res) => {
+  try {
+    let q = supabase.from('materi_kelas').select('id, kelas_id, nama, urutan').order('urutan').order('nama');
+    if (req.query.kelas_id) q = q.eq('kelas_id', req.query.kelas_id);
+    const { data, error } = await q;
+    if (error) throw error;
+    ok(res, data || []);
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+// Ganti seluruh daftar materi sebuah kelas dengan daftar baru (urutan mengikuti urutan input).
+app.put('/api/materi/kelas/:kelasId', async (req, res) => {
+  try {
+    const kelasId = req.params.kelasId;
+    const raw = Array.isArray(req.body.materi) ? req.body.materi : [];
+    const names = [...new Set(raw.map(m => String(m || '').trim()).filter(Boolean))];
+    if (names.length > 500) return fail(res, 'Maksimal 500 materi per kelas');
+    const { data: existing, error: exErr } = await supabase.from('materi_kelas').select('id, nama').eq('kelas_id', kelasId);
+    if (exErr) throw exErr;
+    if (names.length) {
+      const { error } = await supabase.from('materi_kelas').upsert(names.map((nama, i) => ({ kelas_id: kelasId, nama, urutan: i + 1 })), { onConflict: 'kelas_id,nama' });
+      if (error) throw error;
+    }
+    const removeIds = (existing || []).filter(m => !names.includes(m.nama)).map(m => m.id);
+    if (removeIds.length) {
+      const { error } = await supabase.from('materi_kelas').delete().in('id', removeIds);
+      if (error) throw error;
+    }
+    const { data } = await supabase.from('materi_kelas').select('id, kelas_id, nama, urutan').eq('kelas_id', kelasId).order('urutan');
+    ok(res, data || [], 'Daftar materi disimpan');
   } catch (e) { fail(res, e.message, 500); }
 });
 

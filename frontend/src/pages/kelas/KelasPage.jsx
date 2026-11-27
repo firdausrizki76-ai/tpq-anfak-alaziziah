@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Edit, X, Save, Download, Users, BookOpen, User, Loader2, Plus } from 'lucide-react';
-import { kelasAPI, guruAPI, shiftAPI } from '../../services/api';
+import { Search, Edit, X, Save, Download, Users, BookOpen, User, Loader2, Plus, ListChecks } from 'lucide-react';
+import { kelasAPI, guruAPI, shiftAPI, materiAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 const DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 const ZONES = { 'Asia/Jakarta': 'WIB', 'Asia/Makassar': 'WITA', 'Asia/Jayapura': 'WIT' };
@@ -9,6 +9,8 @@ const KelasPage = () => {
   const [kelasList, setKelasList] = useState([]);
   const [guruList, setGuruList] = useState([]);
   const [shiftList, setShiftList] = useState([]);
+  const [materiAll, setMateriAll] = useState([]);
+  const [materiText, setMateriText] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -25,14 +27,16 @@ const KelasPage = () => {
   const loadData = async () => {
     setLoading(true);
     try { 
-      const [data, guruData, shiftData] = await Promise.all([
+      const [data, guruData, shiftData, materiData] = await Promise.all([
         kelasAPI.getAll().catch(() => []),
         guruAPI.getAll().catch(() => []),
-        shiftAPI.getAll().catch(() => [])
+        shiftAPI.getAll().catch(() => []),
+        materiAPI.getAll().catch(() => [])
       ]);
       setKelasList(data || []); 
       setGuruList(guruData || []);
       setShiftList(shiftData || []);
+      setMateriAll(materiData || []);
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -58,6 +62,21 @@ const KelasPage = () => {
     setSelectedKelas(null); setError('');
     setFormData({ kode_kelas: '', nama_kelas: '', urutan: nextUrutan, deskripsi: '', wali_kelas_id: '', shift_id: '', target_masa_tempuh: '' });
     setActiveModal('create');
+  };
+
+  const openMateri = (kelas) => {
+    setSelectedKelas(kelas); setError('');
+    setMateriText(materiAll.filter(m => m.kelas_id === kelas.id).map(m => m.nama).join('\n'));
+    setActiveModal('materi');
+  };
+
+  const saveMateri = async (e) => {
+    e.preventDefault(); setSaving(true); setError('');
+    try {
+      await materiAPI.saveForKelas(selectedKelas.id, materiText.split('\n'));
+      await loadData(); closeModal();
+    } catch (err) { setError(err.message); }
+    setSaving(false);
   };
 
   const closeModal = () => { setActiveModal(null); setSelectedKelas(null); setSantriInKelas([]); };
@@ -95,19 +114,21 @@ const KelasPage = () => {
 
         <div className="table-responsive">
           <table className="data-table w-full">
-            <thead><tr><th>Urutan</th><th>Kode Kelas</th><th>Nama Kelas</th><th>Wali Kelas</th><th>Shift / Jadwal</th><th>Target Masa Tempuh</th><th>Jumlah Santri</th><th className="text-center">Aksi</th></tr></thead>
+            <thead><tr><th>Urutan</th><th>Kode Kelas</th><th>Nama Kelas</th><th>Wali Kelas</th><th>Shift / Jadwal</th><th>Target Masa Tempuh</th><th>Materi</th><th>Jumlah Santri</th><th className="text-center">Aksi</th></tr></thead>
             <tbody>
-              {loading ? <tr><td colSpan="8" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
+              {loading ? <tr><td colSpan="9" className="text-center" style={{ padding: '40px' }}><Loader2 size={24} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
               : kelasList.filter(k => k.nama_kelas.toLowerCase().includes(search.toLowerCase())).map(kelas => (
                 <tr key={kelas.id}>
                   <td>{kelas.urutan}</td><td>{kelas.kode_kelas}</td><td className="font-medium">{kelas.nama_kelas}</td>
                   <td>{kelas.wali_kelas?.nama_lengkap || '-'}</td>
                   <td>{shiftList.find(sh => sh.id === kelas.shift_id) ? <div className="text-xs font-semibold" style={{ color: '#047857' }}>{shiftList.find(sh => sh.id === kelas.shift_id).nama}</div> : null}{kelas.jadwal?.length ? kelas.jadwal.map((j, i) => <div key={i} className="text-xs">{DAYS[j.hari]} {j.mulai}–{j.selesai} {ZONES[kelas.zona_waktu || 'Asia/Makassar']}</div>) : <span className="text-xs text-gray-400">Belum diatur</span>}</td>
                   <td>{kelas.target_masa_tempuh ? `${kelas.target_masa_tempuh} hari` : <span className="text-xs text-gray-400">Belum diatur</span>}</td>
+                  <td>{(() => { const n = materiAll.filter(m => m.kelas_id === kelas.id).length; return n ? `${n} materi` : <span className="text-xs text-gray-400">Belum diisi</span>; })()}</td>
                   <td>{kelas.jumlah_santri || 0} Santri</td>
                   <td>
                     <div className="flex justify-center gap-2">
                       <button className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Lihat Santri" onClick={() => openViewSantri(kelas)}><Users size={18} /></button>
+                      <button className="p-2 text-emerald-600 hover:bg-emerald-50 rounded transition-colors" title="Atur Daftar Materi" onClick={() => openMateri(kelas)}><ListChecks size={18} /></button>
                       <button className="p-2 text-orange-600 hover:bg-orange-50 rounded transition-colors" title="Edit Kelas" onClick={() => openEdit(kelas)}><Edit size={18} /></button>
                     </div>
                   </td>
@@ -151,6 +172,22 @@ const KelasPage = () => {
               <input type="number" min="1" name="target_masa_tempuh" className="input-field" value={formData.target_masa_tempuh} onChange={handleInputChange} placeholder="Contoh: 30" />
               <p className="text-xs text-gray-500 mt-2">Lama belajar yang ditargetkan untuk menyelesaikan jilid/kelas ini. Dipakai untuk statistik di Ujian & Kenaikan.</p>
             </div>
+            {error && <p role="alert" className="text-red-600 text-sm">{error}</p>}
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="btn-primary" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} onClick={closeModal}>Batal</button>
+            <button type="submit" className="btn-primary" disabled={saving}><Save size={18} /> Simpan</button>
+          </div></form>
+        </div></div>
+      )}
+
+      {activeModal === 'materi' && selectedKelas && (
+        <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '560px' }}>
+          <div className="modal-header"><h2 className="modal-title">Daftar Materi: {selectedKelas.nama_kelas}</h2><X className="modal-close" onClick={closeModal} /></div>
+          <form onSubmit={saveMateri}><div className="modal-body space-y-3">
+            <p className="text-xs text-gray-500">Tulis <strong>satu materi per baris</strong>, atau tempel (paste) langsung dari Excel/Word. Daftar ini akan muncul sebagai pilihan saat guru menginput prestasi santri kelas ini. Urutan mengikuti urutan baris.</p>
+            <textarea className="input-field" rows="14" style={{ resize: 'vertical', fontFamily: 'inherit' }} value={materiText} onChange={e => setMateriText(e.target.value)} placeholder={'Contoh:\nHalaman 1\nHalaman 2\nHalaman 3'} />
+            <p className="text-xs text-gray-500">{new Set(materiText.split('\n').map(x => x.trim()).filter(Boolean)).size} materi (baris kembar dihitung satu)</p>
             {error && <p role="alert" className="text-red-600 text-sm">{error}</p>}
           </div>
           <div className="modal-footer">

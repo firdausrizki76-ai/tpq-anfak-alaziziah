@@ -6,6 +6,10 @@ import {
 } from 'lucide-react';
 import { prestasiAPI, kelasAPI, pengaturanAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
+import MateriPicker from '../../components/MateriPicker';
+import StatistikProgres from './StatistikProgres';
+import { composeMateri } from '../../utils/materi';
+import { PROGRES_OPTIONS, normalizeProgres, progresInfo } from '../../utils/progres';
 
 const PrestasiAdminPage = () => {
   const [activeTab, setActiveTab] = useState('rekap'); // 'rekap' | 'riwayat'
@@ -29,6 +33,7 @@ const PrestasiAdminPage = () => {
   // Filters for History
   const [filterTanggal, setFilterTanggal] = useState('');
   const [filterKategori, setFilterKategori] = useState('semua');
+  const [filterProgres, setFilterProgres] = useState('semua');
 
   // Rapot Modal State
   const [rapotData, setRapotData] = useState(null);
@@ -40,10 +45,11 @@ const PrestasiAdminPage = () => {
     santri_id: '',
     tanggal: new Date().toISOString().split('T')[0],
     kategori: 'Qiraati',
-    jilid_surat: '',
+    materi_pilih: [],
+    materi_lain: '',
     halaman_ayat: '',
     nilai: 'A (Sangat Lancar)',
-    status: 'lancar',
+    status: 'lanjut',
     catatan: ''
   });
   const [submitting, setSubmitting] = useState(false);
@@ -216,24 +222,27 @@ const PrestasiAdminPage = () => {
       alert('Silakan pilih santri');
       return;
     }
-    if (!inputForm.jilid_surat.trim()) {
-      alert('Materi / Jilid / Surat wajib diisi');
+    const jilid_surat = composeMateri(inputForm.materi_pilih, inputForm.materi_lain);
+    if (!jilid_surat) {
+      alert('Pilih atau ketik minimal satu materi');
       return;
     }
 
     setSubmitting(true);
     try {
-      await prestasiAPI.create(inputForm);
+      const { materi_pilih: _p, materi_lain: _l, ...payload } = inputForm;
+      await prestasiAPI.create({ ...payload, jilid_surat });
       alert('Prestasi harian santri berhasil disimpan!');
       setShowInputModal(false);
       setInputForm({
         santri_id: '',
         tanggal: new Date().toISOString().split('T')[0],
         kategori: 'Qiraati',
-        jilid_surat: '',
+        materi_pilih: [],
+        materi_lain: '',
         halaman_ayat: '',
         nilai: 'A (Sangat Lancar)',
-        status: 'lancar',
+        status: 'lanjut',
         catatan: ''
       });
       if (activeTab === 'riwayat') loadHistory();
@@ -253,6 +262,8 @@ const PrestasiAdminPage = () => {
       alert('Gagal menghapus: ' + e.message);
     }
   };
+
+  const visibleHistory = filterProgres === 'semua' ? historyList : historyList.filter(h => normalizeProgres(h.status) === filterProgres);
 
   const filteredSantri = santriList.filter(s => {
     if (!search) return true;
@@ -470,6 +481,8 @@ const PrestasiAdminPage = () => {
       )}
 
       {/* TAB 2: RIWAYAT & MUTABA'AH HARIAN */}
+      {activeTab === 'riwayat' && <StatistikProgres kelasList={kelasList} />}
+
       {activeTab === 'riwayat' && (
         <div className="card w-full no-print">
           <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
@@ -501,6 +514,19 @@ const PrestasiAdminPage = () => {
                   {kategoriList.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
+                </select>
+              </div>
+
+              <div className="input-with-icon">
+                <Filter className="icon" size={18} />
+                <select
+                  className="input-field"
+                  style={{ paddingLeft: '40px' }}
+                  value={filterProgres}
+                  onChange={(e) => setFilterProgres(e.target.value)}
+                >
+                  <option value="semua">Semua Status Progres</option>
+                  {PROGRES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.long}</option>)}
                 </select>
               </div>
 
@@ -545,6 +571,7 @@ const PrestasiAdminPage = () => {
                   <th>Materi / Jilid / Surat</th>
                   <th>Hal / Ayat</th>
                   <th>Nilai</th>
+                  <th>Status Progres</th>
                   <th>Catatan Ustadz</th>
                   <th>Pencatat</th>
                   <th className="text-center" style={{ width: '80px' }}>Aksi</th>
@@ -553,19 +580,19 @@ const PrestasiAdminPage = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="10" className="text-center" style={{ padding: '40px' }}>
+                    <td colSpan="11" className="text-center" style={{ padding: '40px' }}>
                       <Loader2 size={24} className="animate-spin" style={{ margin: '0 auto 8px auto', color: 'var(--color-primary-container)' }} />
                       <span style={{ color: '#64748b' }}>Memuat riwayat prestasi...</span>
                     </td>
                   </tr>
-                ) : historyList.length === 0 ? (
+                ) : visibleHistory.length === 0 ? (
                   <tr>
-                    <td colSpan="10" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>
+                    <td colSpan="11" className="text-center" style={{ padding: '40px', color: 'var(--color-outline)' }}>
                       Belum ada catatan mutaba'ah pada filter ini.
                     </td>
                   </tr>
                 ) : (
-                  historyList.map(item => (
+                  visibleHistory.map(item => (
                     <tr key={item.id}>
                       <td style={{ whiteSpace: 'nowrap' }}>
                         {new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -594,8 +621,13 @@ const PrestasiAdminPage = () => {
                           fontWeight: 'bold', 
                           color: (item.nilai || '').includes('A') || item.status === 'lanjut' ? '#16a34a' : '#ea580c' 
                         }}>
-                          {item.nilai || item.status}
+                          {item.nilai || '-'}
                         </span>
+                      </td>
+                      <td>
+                        {progresInfo(item.status)
+                          ? <span className="badge" style={{ backgroundColor: progresInfo(item.status).bg, color: progresInfo(item.status).color, fontWeight: 'bold' }}>{progresInfo(item.status).label}</span>
+                          : '-'}
                       </td>
                       <td style={{ fontSize: '12px', fontStyle: 'italic', maxWidth: '240px' }}>
                         {item.catatan || '-'}
@@ -825,7 +857,7 @@ const PrestasiAdminPage = () => {
                       className="input-field"
                       style={{ fontWeight: 'bold', color: 'var(--color-primary-container)' }}
                       value={inputForm.santri_id}
-                      onChange={(e) => setInputForm(prev => ({ ...prev, santri_id: e.target.value }))}
+                      onChange={(e) => setInputForm(prev => ({ ...prev, santri_id: e.target.value, materi_pilih: [] }))}
                       required
                     >
                       <option value="">-- Pilih Santri --</option>
@@ -837,15 +869,13 @@ const PrestasiAdminPage = () => {
                     </select>
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Materi / Jilid / Surat <span style={{ color: 'red' }}>*</span></label>
-                    <input 
-                      type="text" 
-                      className="input-field" 
-                      placeholder="Contoh: Jilid 2 / Surat Al-Ikhlas"
-                      value={inputForm.jilid_surat}
-                      onChange={(e) => setInputForm(prev => ({ ...prev, jilid_surat: e.target.value }))}
-                      required
+                  <div className="form-group col-span-2">
+                    <label className="form-label">Materi / Jilid / Surat <span style={{ color: 'red' }}>*</span> <span style={{ fontWeight: 'normal', color: '#94a3b8' }}>(boleh pilih lebih dari satu)</span></label>
+                    <MateriPicker
+                      kelasId={santriList.find(x => x.id === inputForm.santri_id)?.kelas_id || ''}
+                      selected={inputForm.materi_pilih}
+                      custom={inputForm.materi_lain}
+                      onChange={({ selected, custom }) => setInputForm(prev => ({ ...prev, materi_pilih: selected, materi_lain: custom }))}
                     />
                   </div>
 
@@ -882,9 +912,7 @@ const PrestasiAdminPage = () => {
                       value={inputForm.status}
                       onChange={(e) => setInputForm(prev => ({ ...prev, status: e.target.value }))}
                     >
-                      <option value="lanjut">Lanjut Materi Berikutnya</option>
-                      <option value="lancar">Lancar (Tetap)</option>
-                      <option value="ulang">Ulang Materi Ini</option>
+                      {PROGRES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.long}</option>)}
                     </select>
                   </div>
 

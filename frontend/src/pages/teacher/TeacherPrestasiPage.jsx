@@ -3,12 +3,14 @@ import {
   Award, CheckCircle2, Calendar, BookOpen, User, 
   Plus, Loader2, Sparkles, AlertCircle, RefreshCw, Trash2, ArrowRight
 } from 'lucide-react';
-import { prestasiAPI, kelasAPI, pengaturanAPI } from '../../services/api';
+import { prestasiAPI, kelasAPI, santriAPI, pengaturanAPI } from '../../services/api';
+import MateriPicker from '../../components/MateriPicker';
+import { composeMateri } from '../../utils/materi';
+import { PROGRES_OPTIONS, progresInfo } from '../../utils/progres';
 
 const TeacherPrestasiPage = () => {
   const [kelasList, setKelasList] = useState([]);
-  const [selectedKelas, setSelectedKelas] = useState('');
-  const [santriList, setSantriList] = useState([]);
+  const [allSantri, setAllSantri] = useState([]);
   const [todayRecords, setTodayRecords] = useState([]);
   const [kategoriList, setKategoriList] = useState([
     'Qiraati', 'Tahfidz', 'Doa Harian', 'Hadits', 'Praktik Ibadah', 'Adab & Akhlak'
@@ -23,7 +25,8 @@ const TeacherPrestasiPage = () => {
     santri_id: '',
     tanggal: new Date().toISOString().split('T')[0],
     kategori: 'Qiraati',
-    jilid_surat: '',
+    materi_pilih: [],
+    materi_lain: '',
     halaman_ayat: '',
     nilai: 'A (Sangat Lancar)',
     status: 'lanjut',
@@ -49,24 +52,12 @@ const TeacherPrestasiPage = () => {
     } catch (_) {}
   };
 
-  useEffect(() => {
-    if (selectedKelas) {
-      loadSantri();
-    }
-  }, [selectedKelas]);
-
   const loadClasses = async () => {
     setLoading(true);
     try {
-      const data = await kelasAPI.getAll();
-      setKelasList(data || []);
-      // Preselect teacher's class if available
-      const myClass = (data || []).find(k => k.wali_kelas_id === user.id || k.wali_kelas?.id === user.id);
-      if (myClass) {
-        setSelectedKelas(myClass.id);
-      } else if (data && data.length > 0) {
-        setSelectedKelas(data[0].id);
-      }
+      const [kelas, santri] = await Promise.all([kelasAPI.getAll(), santriAPI.getAll({ status: 'aktif' })]);
+      setKelasList(kelas || []);
+      setAllSantri(santri || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -74,14 +65,12 @@ const TeacherPrestasiPage = () => {
     }
   };
 
-  const loadSantri = async () => {
-    try {
-      const data = await kelasAPI.getSantri(selectedKelas);
-      setSantriList(data || []);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  // Guru wali kelas hanya melihat santri kelasnya; guru lain (non-wali) melihat semua santri aktif.
+  const myClassIds = kelasList.filter(k => k.wali_kelas_id === user.id || k.wali_kelas?.id === user.id).map(k => k.id);
+  const santriList = (myClassIds.length ? allSantri.filter(s => myClassIds.includes(s.kelas_id)) : allSantri)
+    .slice().sort((x, y) => (x.nama_lengkap || '').localeCompare(y.nama_lengkap || ''));
+  const chosenSantri = allSantri.find(s => s.id === form.santri_id);
+  const chosenKelas = kelasList.find(k => k.id === chosenSantri?.kelas_id);
 
   const loadTodayPrestasi = async () => {
     try {
@@ -99,15 +88,18 @@ const TeacherPrestasiPage = () => {
       alert('Pilih santri terlebih dahulu.');
       return;
     }
-    if (!form.jilid_surat.trim()) {
-      alert('Materi / Jilid / Surat wajib diisi.');
+    const jilid_surat = composeMateri(form.materi_pilih, form.materi_lain);
+    if (!jilid_surat) {
+      alert('Pilih atau ketik minimal satu materi.');
       return;
     }
 
     setSubmitting(true);
     try {
+      const { materi_pilih: _p, materi_lain: _l, ...payload } = form;
       await prestasiAPI.create({
-        ...form,
+        ...payload,
+        jilid_surat,
         guru_id: user.id
       });
       setSuccessMsg('Alhamdulillah! Catatan prestasi santri berhasil disimpan.');
@@ -116,7 +108,8 @@ const TeacherPrestasiPage = () => {
       // Reset form specific fields while keeping santri selected or switching
       setForm(prev => ({
         ...prev,
-        jilid_surat: '',
+        materi_pilih: [],
+        materi_lain: '',
         halaman_ayat: '',
         catatan: ''
       }));
@@ -205,27 +198,21 @@ const TeacherPrestasiPage = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <div>
               <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>
-                Kelas
+                Kelas (otomatis)
               </label>
-              <select
-                value={selectedKelas}
-                onChange={(e) => {
-                  setSelectedKelas(e.target.value);
-                  setForm(prev => ({ ...prev, santri_id: '' }));
-                }}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '12px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '12px',
-                  backgroundColor: '#ffffff'
-                }}
-              >
-                {kelasList.map(k => (
-                  <option key={k.id} value={k.id}>{k.nama_kelas}</option>
-                ))}
-              </select>
+              <div style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                color: chosenKelas ? '#064e3b' : '#94a3b8',
+                backgroundColor: '#f8fafc',
+                boxSizing: 'border-box'
+              }}>
+                {chosenKelas ? chosenKelas.nama_kelas : 'Otomatis dari santri'}
+              </div>
             </div>
 
             <div>
@@ -255,7 +242,7 @@ const TeacherPrestasiPage = () => {
             </label>
             <select
               value={form.santri_id}
-              onChange={(e) => setForm(prev => ({ ...prev, santri_id: e.target.value }))}
+              onChange={(e) => setForm(prev => ({ ...prev, santri_id: e.target.value, materi_pilih: [] }))}
               required
               style={{
                 width: '100%',
@@ -271,7 +258,7 @@ const TeacherPrestasiPage = () => {
               <option value="">-- Pilih Santri ({santriList.length} Anak) --</option>
               {santriList.map(s => (
                 <option key={s.id} value={s.id}>
-                  {s.nomor_induk} - {s.nama_lengkap}
+                  {s.nama_lengkap} ({kelasList.find(k => k.id === s.kelas_id)?.nama_kelas || '-'})
                 </option>
               ))}
             </select>
@@ -305,46 +292,36 @@ const TeacherPrestasiPage = () => {
             </div>
           </div>
 
-          {/* Materi / Jilid / Surat */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '10px' }}>
-            <div>
-              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>
-                Materi / Jilid / Surat <span style={{ color: '#e11d48' }}>*</span>
-              </label>
-              <input
-                type="text"
-                placeholder={form.kategori === 'Tahfidz' ? 'Contoh: An-Naba' : 'Contoh: Jilid 3'}
-                value={form.jilid_surat}
-                onChange={(e) => setForm(prev => ({ ...prev, jilid_surat: e.target.value }))}
-                required
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  borderRadius: '12px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '12px'
-                }}
-              />
-            </div>
+          {/* Materi (dari template kelas) */}
+          <div>
+            <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '6px' }}>
+              Materi / Jilid / Surat <span style={{ color: '#e11d48' }}>*</span> <span style={{ fontWeight: 'normal', color: '#94a3b8' }}>(boleh pilih lebih dari satu)</span>
+            </label>
+            <MateriPicker
+              kelasId={chosenKelas?.id || ''}
+              selected={form.materi_pilih}
+              custom={form.materi_lain}
+              onChange={({ selected, custom }) => setForm(prev => ({ ...prev, materi_pilih: selected, materi_lain: custom }))}
+            />
+          </div>
 
-            <div>
-              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>
-                Halaman / Ayat
-              </label>
-              <input
-                type="text"
-                placeholder="Hal 14 / Ayat 1-10"
-                value={form.halaman_ayat}
-                onChange={(e) => setForm(prev => ({ ...prev, halaman_ayat: e.target.value }))}
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  borderRadius: '12px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '12px'
-                }}
-              />
-            </div>
+          <div>
+            <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>
+              Halaman / Ayat
+            </label>
+            <input
+              type="text"
+              placeholder="Hal 14 / Ayat 1-10"
+              value={form.halaman_ayat}
+              onChange={(e) => setForm(prev => ({ ...prev, halaman_ayat: e.target.value }))}
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: '12px',
+                border: '1px solid #cbd5e1',
+                fontSize: '12px'
+              }}
+            />
           </div>
 
           {/* Nilai & Status */}
@@ -374,7 +351,7 @@ const TeacherPrestasiPage = () => {
 
             <div>
               <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>
-                Status Lanjut
+                Status Progres
               </label>
               <select
                 value={form.status}
@@ -386,13 +363,11 @@ const TeacherPrestasiPage = () => {
                   border: '1px solid #cbd5e1',
                   fontSize: '12px',
                   fontWeight: 'bold',
-                  color: form.status === 'lanjut' ? '#059669' : form.status === 'ulang' ? '#e11d48' : '#0f172a',
+                  color: progresInfo(form.status)?.color || '#0f172a',
                   backgroundColor: '#ffffff'
                 }}
               >
-                <option value="lanjut">Lanjut Materi Berikutnya</option>
-                <option value="lancar">Lancar (Tetap di Sini)</option>
-                <option value="ulang">Ulang Materi Ini</option>
+                {PROGRES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.long}</option>)}
               </select>
             </div>
           </div>
@@ -499,15 +474,13 @@ const TeacherPrestasiPage = () => {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                    padding: '3px 8px',
-                    borderRadius: '8px',
-                    backgroundColor: item.status === 'lanjut' ? '#dcfce7' : '#fee2e2',
-                    color: item.status === 'lanjut' ? '#166534' : '#991b1b'
-                  }}>
-                    {item.nilai || item.status}
+                  {progresInfo(item.status) && (
+                    <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '8px', backgroundColor: progresInfo(item.status).bg, color: progresInfo(item.status).color }}>
+                      {progresInfo(item.status).label}
+                    </span>
+                  )}
+                  <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '8px', backgroundColor: '#f1f5f9', color: '#334155' }}>
+                    {item.nilai || '-'}
                   </span>
 
                   <button

@@ -79,6 +79,12 @@ export const guruAPI = {
   setShift: (id, shift_ids) => request(`/guru/${id}/shift`, { method: 'PUT', body: { shift_ids } }),
 };
 
+// Template materi per kelas
+export const materiAPI = {
+  getAll: (params = {}) => request('/materi?' + new URLSearchParams(params).toString()),
+  saveForKelas: (kelasId, materi) => request('/materi/kelas/' + kelasId, { method: 'PUT', body: { materi } }),
+};
+
 // Shift Jadwal
 export const shiftAPI = {
   getAll: () => request('/shift'),
