@@ -4,20 +4,21 @@ import { materiAPI } from '../services/api';
 
 // Pilih satu atau beberapa materi dari template kelas, plus isian bebas jika materi tidak ada di daftar.
 // Controlled: selected (array nama materi), custom (teks), onChange({ selected, custom }).
-const MateriPicker = ({ kelasId, selected, custom, onChange }) => {
+const MateriPicker = ({ kelasId, kategori, selected, custom, onChange }) => {
   const [materi, setMateri] = useState([]);
   const [loadedFor, setLoadedFor] = useState(null);
+  const cacheKey = kelasId ? `${kelasId}|${kategori || ''}` : null;
   const [filter, setFilter] = useState('');
-  const loading = !!kelasId && loadedFor !== kelasId;
+  const loading = !!kelasId && loadedFor !== cacheKey;
 
   useEffect(() => {
     if (!kelasId) return undefined;
     let current = true;
-    materiAPI.getAll({ kelas_id: kelasId })
-      .then(data => { if (current) { setMateri(data || []); setLoadedFor(kelasId); } })
-      .catch(() => { if (current) { setMateri([]); setLoadedFor(kelasId); } });
+    materiAPI.getAll({ kelas_id: kelasId, ...(kategori ? { kategori } : {}) })
+      .then(data => { if (current) { setMateri(data || []); setLoadedFor(cacheKey); } })
+      .catch(() => { if (current) { setMateri([]); setLoadedFor(cacheKey); } });
     return () => { current = false; };
-  }, [kelasId]);
+  }, [kelasId, kategori, cacheKey]);
 
   const toggle = (nama) => onChange({ selected: selected.includes(nama) ? selected.filter(n => n !== nama) : [...selected, nama], custom });
   const visible = (kelasId ? materi : []).filter(m => !filter || m.nama.toLowerCase().includes(filter.toLowerCase()));
@@ -27,7 +28,7 @@ const MateriPicker = ({ kelasId, selected, custom, onChange }) => {
     <div>
       {!kelasId ? <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 8px' }}>Pilih santri terlebih dahulu agar daftar materi kelasnya muncul.</p>
       : loading ? <div style={{ padding: 8 }}><Loader2 size={16} className="animate-spin" /></div>
-      : materi.length === 0 ? <p style={{ fontSize: 11, color: '#b45309', margin: '0 0 8px' }}>Kelas ini belum punya daftar materi. Ketik materi di kolom bawah, atau minta admin mengisi daftar di menu Kelas.</p>
+      : materi.length === 0 ? <p style={{ fontSize: 11, color: '#b45309', margin: '0 0 8px' }}>Kelas ini belum punya daftar materi {kategori || ''}. Ketik materi di kolom bawah, atau minta admin mengisi daftar di menu Kelas.</p>
       : (<>
         {materi.length > 12 && <input type="text" placeholder="Cari materi..." value={filter} onChange={e => setFilter(e.target.value)} style={{ ...inputStyle, marginBottom: 8 }} />}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 150, overflowY: 'auto', padding: 2 }}>

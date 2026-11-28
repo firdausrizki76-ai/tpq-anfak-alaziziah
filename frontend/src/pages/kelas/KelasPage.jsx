@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Edit, X, Save, Download, Users, BookOpen, User, Loader2, Plus, ListChecks } from 'lucide-react';
-import { kelasAPI, guruAPI, shiftAPI, materiAPI } from '../../services/api';
+import { kelasAPI, guruAPI, shiftAPI, materiAPI, pengaturanAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 const DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-const ZONES = { 'Asia/Jakarta': 'WIB', 'Asia/Makassar': 'WITA', 'Asia/Jayapura': 'WIT' };
+const ZONES = { 'Asia/Jakarta': 'WIB', 'Asia/Jakarta': 'WITA', 'Asia/Jayapura': 'WIT' };
 
 const KelasPage = () => {
   const [kelasList, setKelasList] = useState([]);
   const [guruList, setGuruList] = useState([]);
   const [shiftList, setShiftList] = useState([]);
   const [materiAll, setMateriAll] = useState([]);
-  const [materiText, setMateriText] = useState('');
+  const [kategoriList, setKategoriList] = useState(['Qiraati', 'Doa & Tachfid']);
+  const [materiKategori, setMateriKategori] = useState('Qiraati');
+  const [materiDrafts, setMateriDrafts] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -23,6 +25,14 @@ const KelasPage = () => {
   const [formData, setFormData] = useState({ deskripsi: '', wali_kelas_id: '' });
 
   useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    pengaturanAPI.get().then(cfg => {
+      try {
+        const parsed = JSON.parse(cfg?.kategori_prestasi || '[]');
+        if (Array.isArray(parsed) && parsed.length) { setKategoriList(parsed); setMateriKategori(parsed[0]); }
+      } catch { /* pakai bawaan */ }
+    }).catch(() => {});
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
@@ -64,16 +74,26 @@ const KelasPage = () => {
     setActiveModal('create');
   };
 
+  const materiOf = (kelasId, kategori) => materiAll.filter(m => m.kelas_id === kelasId && m.kategori === kategori).map(m => m.nama);
+
   const openMateri = (kelas) => {
     setSelectedKelas(kelas); setError('');
-    setMateriText(materiAll.filter(m => m.kelas_id === kelas.id).map(m => m.nama).join('\n'));
+    const drafts = {};
+    kategoriList.forEach(k => { drafts[k] = materiOf(kelas.id, k).join('\n'); });
+    setMateriDrafts(drafts); setMateriKategori(kategoriList[0]);
     setActiveModal('materi');
   };
 
   const saveMateri = async (e) => {
     e.preventDefault(); setSaving(true); setError('');
     try {
-      await materiAPI.saveForKelas(selectedKelas.id, materiText.split('\n'));
+      // Simpan semua kategori yang isinya berubah.
+      for (const k of kategoriList) {
+        const baru = (materiDrafts[k] || '').split('\n');
+        const lama = materiOf(selectedKelas.id, k);
+        const bersih = [...new Set(baru.map(x => x.trim()).filter(Boolean))];
+        if (bersih.join('\n') !== lama.join('\n')) await materiAPI.saveForKelas(selectedKelas.id, baru, k);
+      }
       await loadData(); closeModal();
     } catch (err) { setError(err.message); }
     setSaving(false);
@@ -121,9 +141,12 @@ const KelasPage = () => {
                 <tr key={kelas.id}>
                   <td>{kelas.urutan}</td><td>{kelas.kode_kelas}</td><td className="font-medium">{kelas.nama_kelas}</td>
                   <td>{kelas.wali_kelas?.nama_lengkap || '-'}</td>
-                  <td>{shiftList.find(sh => sh.id === kelas.shift_id) ? <div className="text-xs font-semibold" style={{ color: '#047857' }}>{shiftList.find(sh => sh.id === kelas.shift_id).nama}</div> : null}{kelas.jadwal?.length ? kelas.jadwal.map((j, i) => <div key={i} className="text-xs">{DAYS[j.hari]} {j.mulai}–{j.selesai} {ZONES[kelas.zona_waktu || 'Asia/Makassar']}</div>) : <span className="text-xs text-gray-400">Belum diatur</span>}</td>
+                  <td>{shiftList.find(sh => sh.id === kelas.shift_id) ? <div className="text-xs font-semibold" style={{ color: '#047857' }}>{shiftList.find(sh => sh.id === kelas.shift_id).nama}</div> : null}{kelas.jadwal?.length ? kelas.jadwal.map((j, i) => <div key={i} className="text-xs">{DAYS[j.hari]} {j.mulai}–{j.selesai} {ZONES[kelas.zona_waktu || 'Asia/Jakarta']}</div>) : <span className="text-xs text-gray-400">Belum diatur</span>}</td>
                   <td>{kelas.target_masa_tempuh ? `${kelas.target_masa_tempuh} hari` : <span className="text-xs text-gray-400">Belum diatur</span>}</td>
-                  <td>{(() => { const n = materiAll.filter(m => m.kelas_id === kelas.id).length; return n ? `${n} materi` : <span className="text-xs text-gray-400">Belum diisi</span>; })()}</td>
+                  <td>{(() => {
+                    const rows = kategoriList.map(k => ({ k, n: materiOf(kelas.id, k).length }));
+                    return rows.some(r => r.n) ? rows.map(r => <div key={r.k} className="text-xs">{r.k}: <strong>{r.n}</strong></div>) : <span className="text-xs text-gray-400">Belum diisi</span>;
+                  })()}</td>
                   <td>{kelas.jumlah_santri || 0} Santri</td>
                   <td>
                     <div className="flex justify-center gap-2">
@@ -185,9 +208,15 @@ const KelasPage = () => {
         <div className="modal-overlay"><div className="modal-container" style={{ maxWidth: '560px' }}>
           <div className="modal-header"><h2 className="modal-title">Daftar Materi: {selectedKelas.nama_kelas}</h2><X className="modal-close" onClick={closeModal} /></div>
           <form onSubmit={saveMateri}><div className="modal-body space-y-3">
-            <p className="text-xs text-gray-500">Tulis <strong>satu materi per baris</strong>, atau tempel (paste) langsung dari Excel/Word. Daftar ini akan muncul sebagai pilihan saat guru menginput prestasi santri kelas ini. Urutan mengikuti urutan baris.</p>
-            <textarea className="input-field" rows="14" style={{ resize: 'vertical', fontFamily: 'inherit' }} value={materiText} onChange={e => setMateriText(e.target.value)} placeholder={'Contoh:\nHalaman 1\nHalaman 2\nHalaman 3'} />
-            <p className="text-xs text-gray-500">{new Set(materiText.split('\n').map(x => x.trim()).filter(Boolean)).size} materi (baris kembar dihitung satu)</p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {kategoriList.map(k => (
+                <button key={k} type="button" onClick={() => setMateriKategori(k)} style={{ padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: materiKategori === k ? '1.5px solid #10b981' : '1.5px solid #e5e7eb', backgroundColor: materiKategori === k ? '#f0fdf4' : '#fff', color: materiKategori === k ? '#047857' : '#6b7280' }}>
+                  {k} ({new Set((materiDrafts[k] || '').split('\n').map(x => x.trim()).filter(Boolean)).size})
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500">Tulis <strong>satu materi per baris</strong> untuk kategori <strong>{materiKategori}</strong>, atau tempel (paste) langsung dari Excel/Word. Daftar ini muncul sebagai pilihan saat guru menginput prestasi kategori tersebut untuk santri kelas ini. Tombol Simpan menyimpan semua kategori sekaligus.</p>
+            <textarea className="input-field" rows="12" style={{ resize: 'vertical', fontFamily: 'inherit' }} value={materiDrafts[materiKategori] || ''} onChange={e => setMateriDrafts(d => ({ ...d, [materiKategori]: e.target.value }))} placeholder={'Contoh:\nHalaman 1\nHalaman 2\nHalaman 3'} />
             {error && <p role="alert" className="text-red-600 text-sm">{error}</p>}
           </div>
           <div className="modal-footer">

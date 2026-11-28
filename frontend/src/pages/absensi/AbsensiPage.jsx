@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, QrCode, Download, Printer, X, Calendar, Users, FileText, Loader2, BarChart3, Trophy } from 'lucide-react';
+import { Search, QrCode, Download, Printer, X, Calendar, Users, FileText, Loader2, BarChart3, Trophy, CalendarDays } from 'lucide-react';
 import { absensiAPI, kelasAPI, santriAPI, guruAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 import { Link } from 'react-router-dom';
 import StatisticsCards from '../../components/StatisticsCards';
 import { dateInputValue, formatDuration } from '../../utils/date';
 import PeringkatTepatWaktu from './PeringkatTepatWaktu';
+import KehadiranBulanan from './KehadiranBulanan';
 
 const AbsensiPage = () => {
   const [absensiList, setAbsensiList] = useState([]);
@@ -33,7 +34,7 @@ const AbsensiPage = () => {
 
   const loadAbsensi = useCallback(async () => {
     const requestId = ++attendanceRequest.current.version;
-    if (activeTab === 'rekap' || activeTab === 'peringkat' || !filterTanggal) return;
+    if (activeTab === 'rekap' || activeTab === 'peringkat' || activeTab === 'bulanan' || !filterTanggal) return;
     setError('');
     setLoading(true);
     try { 
@@ -142,7 +143,7 @@ const AbsensiPage = () => {
     terlambat: validAttendance.filter(a => a.terlambat_menit > 0).length,
     pulang_cepat: validAttendance.filter(a => a.pulang_cepat_menit > 0).length,
   };
-  const timeText = value => value ? new Date(value).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '—';
+  const timeText = value => value ? new Date(value).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) : '—';
 
   return (
     <div className="flex-col gap-6 w-full">
@@ -161,7 +162,8 @@ const AbsensiPage = () => {
           { id: 'santri', label: 'Absensi Santri', icon: Users },
           { id: 'guru', label: 'Absensi Guru', icon: FileText },
           { id: 'rekap', label: 'Rekap Kehadiran', icon: BarChart3 },
-          { id: 'peringkat', label: 'Peringkat Tepat Waktu', icon: Trophy }
+          { id: 'bulanan', label: 'Kehadiran Bulanan', icon: CalendarDays },
+          { id: 'peringkat', label: 'Peringkat Reward', icon: Trophy }
         ].map(tab => (
           <button key={tab.id} type="button" className="flex items-center gap-2 transition-all duration-200" style={{
             padding: '10px 24px', borderRadius: '100px', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
@@ -178,7 +180,8 @@ const AbsensiPage = () => {
 
       {error && <p role="alert" className="text-red-600 mb-4">{error}</p>}
       {activeTab === 'peringkat' && <PeringkatTepatWaktu kelasList={kelasList} />}
-      <div style={{ display: activeTab === 'peringkat' ? 'none' : 'contents' }}>
+      {activeTab === 'bulanan' && <KehadiranBulanan kelasList={kelasList} />}
+      <div style={{ display: (activeTab === 'peringkat' || activeTab === 'bulanan') ? 'none' : 'contents' }}>
       <StatisticsCards loading={activeTab === 'rekap' ? loadingRekap : loading} items={[
         { label: 'Hadir', value: summary.hadir }, { label: 'Izin', value: summary.izin, color: '#2563eb' },
         { label: 'Sakit', value: summary.sakit, color: '#a16207' }, { label: 'Alfa', value: summary.alfa, color: '#dc2626' },

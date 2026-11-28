@@ -22,7 +22,7 @@ const PrestasiAdminPage = () => {
 
   // Category Management State
   const [kategoriList, setKategoriList] = useState([
-    'Qiraati', 'Tahfidz', 'Tahsin', 'Doa Harian', 'Hadits', 'Praktik Ibadah', 'Adab & Akhlak'
+    'Qiraati', 'Doa & Tachfid'
   ]);
   const [showKategoriModal, setShowKategoriModal] = useState(false);
   const [newCatInput, setNewCatInput] = useState('');
@@ -843,7 +843,7 @@ const PrestasiAdminPage = () => {
                     <select 
                       className="input-field"
                       value={inputForm.kategori}
-                      onChange={(e) => setInputForm(prev => ({ ...prev, kategori: e.target.value }))}
+                      onChange={(e) => setInputForm(prev => ({ ...prev, kategori: e.target.value, materi_pilih: [] }))}
                     >
                       {kategoriList.map(cat => (
                         <option key={cat} value={cat}>{cat}</option>
@@ -873,6 +873,7 @@ const PrestasiAdminPage = () => {
                     <label className="form-label">Materi / Jilid / Surat <span style={{ color: 'red' }}>*</span> <span style={{ fontWeight: 'normal', color: '#94a3b8' }}>(boleh pilih lebih dari satu)</span></label>
                     <MateriPicker
                       kelasId={santriList.find(x => x.id === inputForm.santri_id)?.kelas_id || ''}
+                      kategori={inputForm.kategori}
                       selected={inputForm.materi_pilih}
                       custom={inputForm.materi_lain}
                       onChange={({ selected, custom }) => setInputForm(prev => ({ ...prev, materi_pilih: selected, materi_lain: custom }))}

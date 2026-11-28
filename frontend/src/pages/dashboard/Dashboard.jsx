@@ -78,8 +78,8 @@ const Dashboard = () => {
         />
         <StatCard 
           title="Hadir Hari Ini (Santri)" 
-          value={stats ? `${stats.hadirHariIni} / ${stats.totalSantriAktif ?? stats.totalSantri}` : '—'} 
-          subtext={stats ? `Tingkat kehadiran ${(stats.totalSantriAktif ?? stats.totalSantri) > 0 ? Math.round((stats.hadirHariIni / (stats.totalSantriAktif ?? stats.totalSantri)) * 100) : 0}%` : '—'} 
+          value={stats ? `${(stats.totalSantriAktif ?? stats.totalSantri) > 0 ? Math.round((stats.hadirHariIni / (stats.totalSantriAktif ?? stats.totalSantri)) * 100) : 0}%` : '-'} 
+          subtext={stats ? `${stats.hadirHariIni} dari ${stats.totalSantriAktif ?? stats.totalSantri} santri hadir hari ini` : '-'} 
           icon={UserCheck}
           loading={loading}
         />

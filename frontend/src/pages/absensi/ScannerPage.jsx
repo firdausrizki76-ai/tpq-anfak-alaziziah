@@ -158,7 +158,7 @@ const ScannerPage = () => {
       setScanResult({
         nama: subject.nama_lengkap,
         nomor: type === 'santri' ? subject.nomor_induk : subject.nip,
-        waktu: new Date(result.waktu_pulang || result.waktu_datang || result.waktu_scan).toLocaleTimeString('id-ID'),
+        waktu: new Date(result.waktu_pulang || result.waktu_datang || result.waktu_scan).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' }),
         jenis: type === 'guru' ? `Guru • ${jenisAbsenRef.current === 'pulang' ? 'Pulang' : 'Datang'}` : 'Santri • Hadir'
       });
 
@@ -314,13 +314,7 @@ const ScannerPage = () => {
                 <span>Absensi Berhasil</span>
               </div>
               <p style={{ marginTop: '16px', fontSize: '12px', color: '#94a3b8' }}>
-                {scanResult.waktu} {(() => {
-                  const offset = -(new Date().getTimezoneOffset() / 60);
-                  if (offset === 7) return 'WIB';
-                  if (offset === 8) return 'WITA';
-                  if (offset === 9) return 'WIT';
-                  return '';
-                })()}
+                {scanResult.waktu} WIB
               </p>
             </div>
           )}

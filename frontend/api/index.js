@@ -480,7 +480,7 @@ app.put('/api/kelas/:id', async (req, res) => {
       const { data: current } = await supabase.from('kelas').select('shift_id').eq('id', req.params.id).single();
       if (current?.shift_id) req.body.jadwal = [];
     } else if (Object.hasOwn(req.body, 'jadwal')) {
-      try { req.body.jadwal = validateSchedule(req.body.jadwal, req.body.zona_waktu || 'Asia/Makassar'); }
+      try { req.body.jadwal = validateSchedule(req.body.jadwal, req.body.zona_waktu || 'Asia/Jakarta'); }
       catch (e) { return fail(res, e.message); }
     }
     const { data, error } = await supabase.from('kelas').update(req.body).eq('id', req.params.id).select().single();
@@ -613,9 +613,9 @@ app.post('/api/absensi', async (req, res) => {
       : supabase.from('kelas').select('*').eq('id', person.kelas_id || '00000000-0000-0000-0000-000000000000'));
     if (classError) throw classError;
     // Guru juga punya jadwal sendiri dari shift (guru non-wali atau tugas tambahan).
-    const classes = tipe === 'guru' && person.jadwal?.length ? [...(classRows || []), { jadwal: person.jadwal, zona_waktu: 'Asia/Makassar' }] : (classRows || []);
+    const classes = tipe === 'guru' && person.jadwal?.length ? [...(classRows || []), { jadwal: person.jadwal, zona_waktu: 'Asia/Jakarta' }] : (classRows || []);
     const now = new Date();
-    const tanggal = req.body.tanggal || localDate(now, classes[0]?.zona_waktu || 'Asia/Makassar');
+    const tanggal = req.body.tanggal || localDate(now, classes[0]?.zona_waktu || 'Asia/Jakarta');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal) || Number.isNaN(Date.parse(tanggal)) || new Date(`${tanggal}T12:00:00Z`).toISOString().slice(0, 10) !== tanggal) return fail(res, 'Tanggal tidak valid');
     const timestamp = req.body.waktu_scan ? new Date(req.body.waktu_scan) : now;
     if (Number.isNaN(timestamp.getTime())) return fail(res, 'Waktu absensi tidak valid');
@@ -677,6 +677,69 @@ app.get('/api/absensi/rekap', async (req, res) => {
     if (tanggal_selesai) q = q.lte('tanggal', tanggal_selesai);
     const data = await fetchAllRows(() => q.order('tanggal', { ascending: false }).order('id'));
     ok(res, summarizeAttendance(data, role, kelas_id));
+  } catch (e) { fail(res, e.message, 500); }
+});
+
+// Kehadiran per orang dalam satu bulan, dihitung terhadap HARI EFEKTIF:
+// semua hari dalam bulan (sampai hari ini untuk bulan berjalan) dikurangi Kamis (libur mingguan)
+// dan tanggal libur pada Kalender Pendidikan (is_libur = true). Hari Minggu tetap efektif.
+app.get('/api/absensi/kehadiran-bulanan', async (req, res) => {
+  try {
+    const bulan = String(req.query.bulan || '');
+    const role = req.query.tipe === 'guru' ? 'guru' : 'santri';
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(bulan)) return fail(res, 'Format bulan harus YYYY-MM');
+    const [y, m] = bulan.split('-').map(Number);
+    const first = `${bulan}-01`;
+    const last = `${bulan}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, '0')}`;
+    const today = localDate(new Date(), 'Asia/Jakarta');
+    const until = today < first ? null : (today < last ? today : last);
+
+    const { data: libur, error: liburErr } = await supabase.from('kalender_pendidikan')
+      .select('tanggal, judul').eq('is_libur', true).gte('tanggal', first).lte('tanggal', last);
+    if (liburErr) throw liburErr;
+    const liburMap = new Map();
+    (libur || []).forEach(l => liburMap.set(l.tanggal, [...(liburMap.get(l.tanggal) || []), l.judul]));
+
+    const efektif = [];
+    const dikecualikan = [];
+    if (until) {
+      for (let d = new Date(`${first}T12:00:00Z`); d.toISOString().slice(0, 10) <= until; d.setUTCDate(d.getUTCDate() + 1)) {
+        const iso = d.toISOString().slice(0, 10);
+        if (d.getUTCDay() === 4) dikecualikan.push({ tanggal: iso, alasan: 'Libur mingguan (Kamis)' });
+        else if (liburMap.has(iso)) dikecualikan.push({ tanggal: iso, alasan: liburMap.get(iso).join(', ') });
+        else efektif.push(iso);
+      }
+    }
+    const efektifSet = new Set(efektif);
+
+    const people = role === 'santri'
+      ? await fetchAllRows(() => supabase.from('santri').select('id, nama_lengkap, nomor_induk, kelas_id, kelas:kelas_id(nama_kelas)').eq('status', 'aktif').order('nama_lengkap').order('id'))
+      : await fetchAllRows(() => supabase.from('guru').select('id, nama_lengkap, nip').eq('status', 'aktif').order('nama_lengkap').order('id'));
+    const field = role === 'santri' ? 'santri_id' : 'guru_id';
+    const records = await fetchAllRows(() => supabase.from('absensi').select(`${field}, tanggal, status, keterangan`).eq('tipe', role).gte('tanggal', first).lte('tanggal', last).order('id'));
+
+    const stat = new Map();
+    for (const r of records) {
+      if (r.keterangan?.includes('(MENUNGGU PERSETUJUAN)') || !efektifSet.has(r.tanggal)) continue;
+      const id = r[field];
+      if (!stat.has(id)) stat.set(id, { days: new Map() });
+      stat.get(id).days.set(r.tanggal, r.status); // satu status per hari
+    }
+
+    let rows = people
+      .filter(p => role !== 'santri' || !req.query.kelas_id || p.kelas_id === req.query.kelas_id)
+      .map(p => {
+        const days = stat.get(p.id)?.days || new Map();
+        const c = { hadir: 0, izin: 0, sakit: 0, alfa: 0 };
+        days.forEach(st => { if (c[st] !== undefined) c[st]++; });
+        const tercatat = c.hadir + c.izin + c.sakit + c.alfa;
+        return {
+          id: p.id, nama: p.nama_lengkap, kelas: role === 'santri' ? (p.kelas?.nama_kelas || '-') : '-',
+          ...c, belum_tercatat: Math.max(0, efektif.length - tercatat),
+          persen: efektif.length ? Math.round((c.hadir / efektif.length) * 1000) / 10 : 0,
+        };
+      });
+    ok(res, { bulan, sampai: until, hari_efektif: efektif.length, tanggal_efektif: efektif, dikecualikan, rows });
   } catch (e) { fail(res, e.message, 500); }
 });
 
@@ -1644,25 +1707,28 @@ app.get('/api/prestasi', async (req, res) => {
 // ==================== TEMPLATE MATERI PER KELAS ====================
 app.get('/api/materi', async (req, res) => {
   try {
-    let q = supabase.from('materi_kelas').select('id, kelas_id, nama, urutan').order('urutan').order('nama');
+    let q = supabase.from('materi_kelas').select('id, kelas_id, kategori, nama, urutan').order('urutan').order('nama');
     if (req.query.kelas_id) q = q.eq('kelas_id', req.query.kelas_id);
+    if (req.query.kategori) q = q.eq('kategori', req.query.kategori);
     const { data, error } = await q;
     if (error) throw error;
     ok(res, data || []);
   } catch (e) { fail(res, e.message, 500); }
 });
 
-// Ganti seluruh daftar materi sebuah kelas dengan daftar baru (urutan mengikuti urutan input).
+// Ganti seluruh daftar materi (satu kelas + satu kategori) dengan daftar baru; urutan mengikuti urutan input.
 app.put('/api/materi/kelas/:kelasId', async (req, res) => {
   try {
     const kelasId = req.params.kelasId;
+    const kategori = String(req.body.kategori || 'Qiraati').trim();
+    if (!kategori) return fail(res, 'Kategori wajib diisi');
     const raw = Array.isArray(req.body.materi) ? req.body.materi : [];
     const names = [...new Set(raw.map(m => String(m || '').trim()).filter(Boolean))];
     if (names.length > 500) return fail(res, 'Maksimal 500 materi per kelas');
-    const { data: existing, error: exErr } = await supabase.from('materi_kelas').select('id, nama').eq('kelas_id', kelasId);
+    const { data: existing, error: exErr } = await supabase.from('materi_kelas').select('id, nama').eq('kelas_id', kelasId).eq('kategori', kategori);
     if (exErr) throw exErr;
     if (names.length) {
-      const { error } = await supabase.from('materi_kelas').upsert(names.map((nama, i) => ({ kelas_id: kelasId, nama, urutan: i + 1 })), { onConflict: 'kelas_id,nama' });
+      const { error } = await supabase.from('materi_kelas').upsert(names.map((nama, i) => ({ kelas_id: kelasId, kategori, nama, urutan: i + 1 })), { onConflict: 'kelas_id,kategori,nama' });
       if (error) throw error;
     }
     const removeIds = (existing || []).filter(m => !names.includes(m.nama)).map(m => m.id);
@@ -1670,7 +1736,7 @@ app.put('/api/materi/kelas/:kelasId', async (req, res) => {
       const { error } = await supabase.from('materi_kelas').delete().in('id', removeIds);
       if (error) throw error;
     }
-    const { data } = await supabase.from('materi_kelas').select('id, kelas_id, nama, urutan').eq('kelas_id', kelasId).order('urutan');
+    const { data } = await supabase.from('materi_kelas').select('id, kelas_id, kategori, nama, urutan').eq('kelas_id', kelasId).eq('kategori', kategori).order('urutan');
     ok(res, data || [], 'Daftar materi disimpan');
   } catch (e) { fail(res, e.message, 500); }
 });

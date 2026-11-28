@@ -4,8 +4,8 @@ import { shiftAPI, kelasAPI, guruAPI } from '../../services/api';
 import '../dashboard/Dashboard.css';
 
 const DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-const ZONES = { 'Asia/Jakarta': 'WIB', 'Asia/Makassar': 'WITA', 'Asia/Jayapura': 'WIT' };
-const emptyForm = { nama: '', hari: [1, 2, 3, 4, 5], jam_mulai: '16:00', jam_selesai: '17:30', zona_waktu: 'Asia/Makassar', urutan: 1 };
+const ZONES = { 'Asia/Jakarta': 'WIB', 'Asia/Jakarta': 'WITA', 'Asia/Jayapura': 'WIT' };
+const emptyForm = { nama: '', hari: [1, 2, 3, 4, 5], jam_mulai: '16:00', jam_selesai: '17:30', zona_waktu: 'Asia/Jakarta', urutan: 1 };
 
 const dayLabel = (hari = []) => hari.map(h => DAYS[h].slice(0, 3)).join(', ') || '-';
 const shiftLabel = (s) => `${s.nama} (${dayLabel(s.hari)} ${s.jam_mulai}–${s.jam_selesai} ${ZONES[s.zona_waktu] || ''})`;

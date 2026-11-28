@@ -109,7 +109,7 @@ const AttendanceHistoryPage = () => {
     if (!isoString) return '-';
     try {
       const date = new Date(isoString);
-      return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WITA';
+      return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) + ' WIB';
     } catch {
       return '-';
     }
@@ -406,7 +406,7 @@ const AttendanceHistoryPage = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                         <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold' }}>{a.santri?.nomor_induk}</span>
                         <span style={{ fontSize: '10px', color: '#94a3b8' }}>•</span>
-                        <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold' }}>{new Date(a.waktu_scan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WITA</span>
+                        <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold' }}>{new Date(a.waktu_scan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })} WIB</span>
                       </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>

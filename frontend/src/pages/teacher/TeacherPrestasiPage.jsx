@@ -13,7 +13,7 @@ const TeacherPrestasiPage = () => {
   const [allSantri, setAllSantri] = useState([]);
   const [todayRecords, setTodayRecords] = useState([]);
   const [kategoriList, setKategoriList] = useState([
-    'Qiraati', 'Tahfidz', 'Doa Harian', 'Hadits', 'Praktik Ibadah', 'Adab & Akhlak'
+    'Qiraati', 'Doa & Tachfid'
   ]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -46,7 +46,7 @@ const TeacherPrestasiPage = () => {
         const parsed = JSON.parse(settings.kategori_prestasi);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setKategoriList(parsed);
-          setForm(prev => ({ ...prev, kategori: parsed[0] }));
+          setForm(prev => ({ ...prev, kategori: parsed.includes(prev.kategori) ? prev.kategori : parsed[0] }));
         }
       }
     } catch (_) {}
@@ -274,7 +274,7 @@ const TeacherPrestasiPage = () => {
                 <button
                   key={cat}
                   type="button"
-                  onClick={() => setForm(prev => ({ ...prev, kategori: cat }))}
+                  onClick={() => setForm(prev => ({ ...prev, kategori: cat, materi_pilih: [] }))}
                   style={{
                     padding: '8px 4px',
                     borderRadius: '10px',
@@ -299,6 +299,7 @@ const TeacherPrestasiPage = () => {
             </label>
             <MateriPicker
               kelasId={chosenKelas?.id || ''}
+              kategori={form.kategori}
               selected={form.materi_pilih}
               custom={form.materi_lain}
               onChange={({ selected, custom }) => setForm(prev => ({ ...prev, materi_pilih: selected, materi_lain: custom }))}

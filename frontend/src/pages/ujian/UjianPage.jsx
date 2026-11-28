@@ -52,17 +52,6 @@ const UjianPage = () => {
   const isGuru = user.role === 'guru';
   const isAdminOrKepala = isAdmin || isKepala;
 
-  useEffect(() => {
-    if (regFormData.tanggal_mulai && regFormData.tanggal_selesai) {
-      const d1 = new Date(regFormData.tanggal_mulai);
-      const d2 = new Date(regFormData.tanggal_selesai);
-      const diff = Math.floor((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
-      if (diff > 0) {
-        setRegFormData(prev => ({ ...prev, masa_tempuh: diff }));
-      }
-    }
-  }, [regFormData.tanggal_mulai, regFormData.tanggal_selesai]);
-
   useEffect(() => { loadData(); }, []);
 
   // Setelah dialog cetak ditutup, lepaskan aturan cetak khusus agar tidak bocor ke cetak berikutnya.
@@ -978,11 +967,12 @@ const UjianPage = () => {
                 <input type="date" className="input-field text-sm" value={regFormData.tanggal_selesai} onChange={(e) => setRegFormData({...regFormData, tanggal_selesai: e.target.value})} />
               </div>
               <div className="form-group col-span-2">
-                <label className="form-label text-xs font-bold text-blue-600">Masa Tempuh (Otomatis)</label>
+                <label className="form-label text-xs font-bold text-blue-600">Masa Tempuh (isi manual)</label>
                 <div className="flex items-center gap-2">
                   <input type="number" className="input-field text-sm bg-blue-50 border-blue-200 font-bold text-blue-700" placeholder="60" value={regFormData.masa_tempuh} onChange={(e) => setRegFormData({...regFormData, masa_tempuh: e.target.value})} />
                   <span className="text-sm font-bold text-blue-600">Hari</span>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">Diketik sendiri, tidak dihitung dari tanggal. Jika dikosongkan, dipakai 60 hari.</p>
               </div>
             </div>
 

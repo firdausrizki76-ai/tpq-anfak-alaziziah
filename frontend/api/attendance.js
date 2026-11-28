@@ -1,6 +1,6 @@
-export const TIME_ZONES = { 'Asia/Jakarta': 7, 'Asia/Makassar': 8, 'Asia/Jayapura': 9 };
+export const TIME_ZONES = { 'Asia/Jakarta': 7, 'Asia/Jakarta': 8, 'Asia/Jayapura': 9 };
 
-export function localDate(now = new Date(), zone = 'Asia/Makassar') {
+export function localDate(now = new Date(), zone = 'Asia/Jakarta') {
   return new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
 }
 
@@ -28,8 +28,8 @@ export function validateShift({ nama, hari, jam_mulai, jam_selesai, zona_waktu }
   if (!Array.isArray(hari) || !hari.length) throw new Error('Pilih minimal satu hari');
   const days = [...new Set(hari.map(Number))].sort((a, b) => a - b);
   // Reuses the schedule validator for day/time/zone checks.
-  validateSchedule(days.map(d => ({ hari: d, mulai: jam_mulai, selesai: jam_selesai })), zona_waktu || 'Asia/Makassar');
-  return { nama: String(nama).trim(), hari: days, jam_mulai, jam_selesai, zona_waktu: zona_waktu || 'Asia/Makassar' };
+  validateSchedule(days.map(d => ({ hari: d, mulai: jam_mulai, selesai: jam_selesai })), zona_waktu || 'Asia/Jakarta');
+  return { nama: String(nama).trim(), hari: days, jam_mulai, jam_selesai, zona_waktu: zona_waktu || 'Asia/Jakarta' };
 }
 
 // Expands shifts into per-day sessions (each keeps its own time zone).
@@ -41,7 +41,7 @@ export function shiftSessions(shifts) {
 export function scheduleBounds(classes, tanggal) {
   const day = new Date(`${tanggal}T12:00:00Z`).getUTCDay();
   const sessions = classes.flatMap(k => (k.jadwal || []).filter(j => j.hari === day).map(j => {
-    const offset = TIME_ZONES[j.zona_waktu || k.zona_waktu || 'Asia/Makassar'];
+    const offset = TIME_ZONES[j.zona_waktu || k.zona_waktu || 'Asia/Jakarta'];
     return {
       start: new Date(`${tanggal}T${j.mulai}:00+${String(offset).padStart(2, '0')}:00`).toISOString(),
       end: new Date(`${tanggal}T${j.selesai}:00+${String(offset).padStart(2, '0')}:00`).toISOString(),

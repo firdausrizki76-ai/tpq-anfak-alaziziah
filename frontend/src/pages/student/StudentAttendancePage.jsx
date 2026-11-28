@@ -58,7 +58,7 @@ const StudentAttendancePage = () => {
     if (!isoString) return '-';
     try {
       const date = new Date(isoString);
-      return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WITA';
+      return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) + ' WIB';
     } catch {
       return '-';
     }

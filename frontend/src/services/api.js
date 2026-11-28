@@ -82,7 +82,7 @@ export const guruAPI = {
 // Template materi per kelas
 export const materiAPI = {
   getAll: (params = {}) => request('/materi?' + new URLSearchParams(params).toString()),
-  saveForKelas: (kelasId, materi) => request('/materi/kelas/' + kelasId, { method: 'PUT', body: { materi } }),
+  saveForKelas: (kelasId, materi, kategori) => request('/materi/kelas/' + kelasId, { method: 'PUT', body: { materi, kategori } }),
 };
 
 // Shift Jadwal
@@ -110,6 +110,7 @@ export const absensiAPI = {
     const qs = new URLSearchParams(params).toString();
     return request(`/absensi${qs ? `?${qs}` : ''}`);
   },
+  getKehadiranBulanan: (params = {}) => request('/absensi/kehadiran-bulanan?' + new URLSearchParams(params).toString()),
   getRekap: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return request(`/absensi/rekap${qs ? `?${qs}` : ''}`);
