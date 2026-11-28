@@ -49,7 +49,8 @@ const JadwalShiftPage = () => {
   const saveShift = async (e) => {
     e.preventDefault(); setSaving(true); setError('');
     try {
-      if (editingShift) await shiftAPI.update(editingShift.id, form); else await shiftAPI.create(form);
+      const payload = { ...form, zona_waktu: 'Asia/Jakarta' };
+      if (editingShift) await shiftAPI.update(editingShift.id, payload); else await shiftAPI.create(payload);
       await loadData(); closeModal();
     } catch (err) { setError(err.message); }
     setSaving(false);
@@ -155,7 +156,7 @@ const JadwalShiftPage = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               <div className="form-group"><label className="form-label">Jam Mulai</label><input required type="time" className="input-field" value={form.jam_mulai} onChange={e => setForm(f => ({ ...f, jam_mulai: e.target.value }))} /></div>
               <div className="form-group"><label className="form-label">Jam Selesai</label><input required type="time" className="input-field" value={form.jam_selesai} onChange={e => setForm(f => ({ ...f, jam_selesai: e.target.value }))} /></div>
-              <div className="form-group"><label className="form-label">Zona Waktu</label><select className="input-field" value={form.zona_waktu} onChange={e => setForm(f => ({ ...f, zona_waktu: e.target.value }))}>{Object.entries(ZONES).map(([z, l]) => <option key={z} value={z}>{l}</option>)}</select></div>
+              <div className="form-group"><label className="form-label">Zona Waktu</label><div className="input-field" style={{ backgroundColor: '#f8fafc', fontWeight: 700, color: '#047857' }}>WIB</div></div>
             </div>
             {editingShift && (editingShift.kelas?.length > 0 || editingShift.jumlah_guru > 0) && <p className="text-xs text-amber-600">Perubahan akan langsung diterapkan ke {editingShift.kelas.length} kelas dan {editingShift.jumlah_guru} guru yang memakai shift ini. Catatan absensi lama tidak berubah.</p>}
             {error && <p role="alert" className="text-red-600 text-sm">{error}</p>}
